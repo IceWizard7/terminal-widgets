@@ -45,3 +45,9 @@ For full documentation see [Configuration Guide](docs/configuration_guide.md)
 
 ### 3. Adding new widgets
 See [Widget Guide](docs/widget_guide.md)
+
+---
+
+### 4. License
+
+See [License](LICENSE)
