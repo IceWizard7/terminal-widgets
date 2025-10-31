@@ -1,0 +1,8 @@
+name: 'greetings'
+title: ' Greeting '
+enable: True
+interval: 0
+height: 4
+width: 30
+y: 16
+x: 87

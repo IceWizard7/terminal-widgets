@@ -1,0 +1,5 @@
+psutil
+requests
+feedparser
+PyYAML
+python-dotenv

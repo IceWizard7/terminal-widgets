@@ -1,0 +1,8 @@
+name: 'clock'
+title: ' ⏲ Clock '
+enable: True
+interval: 0
+height: 5
+width: 30
+y: 4
+x: 87

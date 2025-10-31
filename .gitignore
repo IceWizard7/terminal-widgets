@@ -1,0 +1,7 @@
+widgets/save_file.txt
+.idea/*
+__pycache__/*
+widgets/__pycache__/*
+utils/__pycache__/*
+.idea/workspace.xml
+config/secrets.env

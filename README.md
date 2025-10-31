@@ -1,0 +1,47 @@
+## Terminal Widgets
+
+### 1. Get started
+1. Clone this repository
+2. Install dependencies: `pip install -r requirements.txt`
+3. Run the dashboard: `python main.py`
+
+> ⚠️ Make sure you are using the correct Python version (Python 3.14 recommended).
+
+
+For full documentation see [Docs](docs/setup_guide.md)
+
+---
+
+### 2. Configuration
+
+2.1 Configure your secrets in: `config/secrets.env`
+
+Example:
+```dotenv
+WEATHER_API_KEY='your_api_key'
+WEATHER_CITY='Berlin,DE'
+WEATHER_UNITS='metric'
+NEWS_FEED_URL='https://feeds.bbci.co.uk/news/rss.xml?edition=uk'
+NEWS_FEED_NAME='BCC'
+```
+
+2.2 Adjust widgets and layouts in: `config/widgets/*.yaml`
+
+Example:
+```yaml
+name: 'clock'
+title: ' ⏲ Clock'
+enable: True
+interval: 1
+height: 5
+width: 30
+y: 4
+x: 87
+```
+
+For full documentation see [Docs](docs/configuration_guide.md)
+
+---
+
+### 3. Adding new widgets
+See [Docs](docs/widget_guide.md)

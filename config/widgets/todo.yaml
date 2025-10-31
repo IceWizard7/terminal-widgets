@@ -1,0 +1,8 @@
+name: 'todo'
+title: ' To-Do '
+enable: True
+interval: 0
+height: 10
+width: 85
+y: 20
+x: 2
