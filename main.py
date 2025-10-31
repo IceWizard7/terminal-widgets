@@ -281,9 +281,5 @@ if __name__ == '__main__':
     main_entry_point()
 
 
-# TODO: Add repo name
-#
 # TODO: Neofetch widget add support for other devices
 # TODO: Add stuff to base.yaml
-#
-# TODO: If I ever release this, make sure to not reveal my API keys, location, etc.
