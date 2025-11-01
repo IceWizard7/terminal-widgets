@@ -88,8 +88,7 @@ def update(_widget: Widget) -> list[str]:
 
         user_name: str = os.getenv('USER') or os.getenv('LOGNAME') or 'Unknown'
         hostname: str = platform.node()
-        os_info: str = ' '.join(platform.linux_distribution()) if hasattr(platform,
-                                                                          'linux_distribution') else platform.platform()
+        os_info: str = platform.platform().split('+')[0]
         host_version: str = (run_cmd('cat /sys/firmware/devicetree/base/model') or 'Unknown Model').replace('\x00', '')
         kernel: str = platform.release()
         system_lang: str = system_lang
@@ -99,12 +98,13 @@ def update(_widget: Widget) -> list[str]:
 
         pkg_packages: str = run_cmd('dpkg --get-selections | wc -l') or 'Unknown'
         shell_path: str = os.getenv('SHELL', 'bash')
-        shell_version: str = run_cmd(f'{shell_path} --version | head -n 1') or shell_path
+        shell_version: str = run_cmd(f'{shell_path} --version | head -n 1').split(' ')[1:] or shell_path
 
         cpu_info: str = (platform.processor() or run_cmd(
             'cat /proc/cpuinfo | grep "Model name" | head -n 1 | cut -d: -f2')).strip()
         if not cpu_info:
-            cpu_info = run_cmd('lscpu | grep "Model name" | awk -F: "{print $2}"') or 'Unknown CPU'
+            cpu_info = (run_cmd('lscpu | grep "Model name" | awk -F: "{print $2}"').split('Model name:')[1].strip()
+                        or 'Unknown CPU')
 
         display_info: str = run_cmd('xdpyinfo | grep "dimensions:" | awk "{print $2}"') or 'Resolution: Unknown'
 
