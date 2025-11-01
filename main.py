@@ -283,6 +283,7 @@ if __name__ == '__main__':
 
 
 # TODO: Neofetch widget add support for other devices
+# TODO: Segfaults on some machines?!
 # TODO: Add stuff to base.yaml (-> also docs)
 # TODO: Add more widgets
-# TODO: Segfaults on some machines?!
+# TODO: Add examples / images
