@@ -104,7 +104,8 @@ def return_raspi_info() -> list[str]:
     pkg_packages: str = run_cmd('dpkg --get-selections | wc -l') or 'Unknown'
     shell_path: str = os.getenv('SHELL', 'bash')
     try:
-        shell_version: str = run_cmd(f'{shell_path} --version | head -n 1').split('version ')[1].split(' ')[0] or shell_path
+        shell_version: str = (run_cmd(f'{shell_path} --version | head -n 1').split('version ')[1].split(' ')[0]
+                              or shell_path)
     except IndexError:
         shell_version = 'Unknown'
 
@@ -115,7 +116,8 @@ def return_raspi_info() -> list[str]:
                     or 'Unknown CPU')
 
     if os.environ.get("DISPLAY"):
-        display_info: str = run_cmd("xdpyinfo 2>/dev/null | grep 'dimensions:' | awk '{print $2}'") or 'Display: Unknown'
+        display_info: str = (run_cmd("xdpyinfo 2>/dev/null | grep 'dimensions:' | awk '{print $2}'")
+                             or 'Display: Unknown')
     else:
         # Try using tvservice (Pi HDMI detection)
         display_info: str = run_cmd('tvservice -s | grep -o "[0-9]*x[0-9]*"') or 'Display: Headless'
