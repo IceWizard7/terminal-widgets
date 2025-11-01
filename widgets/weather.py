@@ -5,9 +5,18 @@ from core.config_loader import get_secret
 
 
 def update(_widget: Widget) -> list[str]:
-    api_key: str = get_secret('WEATHER_API_KEY')
-    city: str = get_secret('WEATHER_CITY')
-    units: str = get_secret('WEATHER_UNIT')
+    api_key: str | None = get_secret('WEATHER_API_KEY')
+    city: str | None = get_secret('WEATHER_CITY')
+    units: str | None = get_secret('WEATHER_UNIT')
+
+    if api_key is None or city is None or units is None:
+        return [
+            'Weather data not available.',
+            '',
+            'Check your API key',
+            'and configuration.'
+        ]
+
     url: str = f'https://api.openweathermap.org/data/2.5/weather?q={city}&appid={api_key}&units={units}'
     try:
         response = requests.get(url, timeout=5)

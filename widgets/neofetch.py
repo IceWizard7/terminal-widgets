@@ -33,7 +33,7 @@ def return_macos_info() -> list[str]:
     os_version: str = ' '.join(v for v in platform.mac_ver() if isinstance(v, str))
     host_version: str | None = run_cmd('sysctl -n hw.model')
     kernel: str = platform.release()
-    terminal: str = os.environ.get('TERM_PROGRAM')
+    terminal: str | None = os.environ.get('TERM_PROGRAM')
 
     brew_packages: str | None = run_cmd('brew list | wc -l')
     zsh_version: str | None = run_cmd('zsh --version')
@@ -89,8 +89,6 @@ def return_raspi_info() -> list[str]:
     os_info: str = platform.platform().split('+')[0]
     host_version: str = (run_cmd('cat /sys/firmware/devicetree/base/model') or 'Unknown Model').replace('\x00', '')
     kernel: str = platform.release()
-    system_lang: str = system_lang
-    encoding: str = encoding
     terminal: str = (
             os.environ.get("TERM_PROGRAM")
             or os.environ.get("TERM")
@@ -102,23 +100,30 @@ def return_raspi_info() -> list[str]:
     pkg_packages: str = run_cmd('dpkg --get-selections | wc -l') or 'Unknown'
     shell_path: str = os.getenv('SHELL', 'bash')
     try:
-        shell_version: str = (run_cmd(f'{shell_path} --version | head -n 1').split('version ')[1].split(' ')[0]
-                              or shell_path)
+        raw_shell_version: str | None = run_cmd(f'{shell_path} --version | head -n 1')
+        shell_version: str = shell_path
+        if raw_shell_version is not None:
+            shell_version = (raw_shell_version.split('version ')[1].split(' ')[0]
+                             or shell_path)
     except IndexError:
         shell_version = 'Unknown'
 
-    cpu_info: str = (platform.processor() or run_cmd(
-        'cat /proc/cpuinfo | grep "Model name" | head -n 1 | cut -d: -f2')).strip()
-    if not cpu_info:
-        cpu_info = (run_cmd('lscpu | grep "Model name" | awk -F: "{print $2}"').split('Model name:')[1].strip()
-                    or 'Unknown CPU')
+    cpu_info: str = 'Unknown CPU'
+    raw_cpu_info: str | None = platform.processor() or run_cmd(
+        'cat /proc/cpuinfo | grep "Model name" | head -n 1 | cut -d: -f2')
+    if raw_cpu_info is None:
+        raw_cpu_info = run_cmd('lscpu | grep "Model name" | awk -F: "{print $2}"')
+        if raw_cpu_info is not None:
+            cpu_info = raw_cpu_info.split('Model name:')[1].strip() or 'Unknown CPU'
+    else:
+        cpu_info = raw_cpu_info.strip()
 
     if os.environ.get("DISPLAY"):
-        display_info: str = (run_cmd("xdpyinfo 2>/dev/null | grep 'dimensions:' | awk '{print $2}'")
-                             or 'Display: Unknown')
+        display_info: str | None = (run_cmd("xdpyinfo 2>/dev/null | grep 'dimensions:' | awk '{print $2}'")
+                                    or 'Display: Unknown')
     else:
         # Try using tvservice (Pi HDMI detection)
-        display_info: str = run_cmd('tvservice -s | grep -o "[0-9]*x[0-9]*"') or 'Display: Headless'
+        display_info = run_cmd('tvservice -s | grep -o "[0-9]*x[0-9]*"') or 'Display: Headless'
 
     gpu_info: str = (run_cmd('vcgencmd version | grep version') or run_cmd(
         'lspci | grep -i "vga\\|3d\\|display"') or 'Unknown').strip()

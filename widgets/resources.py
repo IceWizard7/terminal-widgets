@@ -22,10 +22,11 @@ def update(_widget: Widget) -> list[str]:
     difference_bytes_sent: float = 0.0
     difference_bytes_recv: float = 0.0
 
-    if old_bytes_sent is not None:
-        difference_bytes_sent = (new_bytes_sent - old_bytes_sent) / _widget.config.interval
-    if old_bytes_recv is not None:
-        difference_bytes_recv = (new_bytes_recv - old_bytes_recv) / _widget.config.interval
+    if _widget.config.interval is not None:
+        if old_bytes_sent is not None:
+            difference_bytes_sent = (new_bytes_sent - old_bytes_sent) / _widget.config.interval
+        if old_bytes_recv is not None:
+            difference_bytes_recv = (new_bytes_recv - old_bytes_recv) / _widget.config.interval
 
     _widget.internal_data = {
         'bytes_sent': new_bytes_sent,

@@ -157,7 +157,7 @@ def add_widget_content(widget: Widget, content: list[str]) -> None:
             widget.win.addstr(1 + i, 1, line[:widget.dimensions.width - 2])
 
 
-def safe_addstr(widget: Widget, y: int, x: int, text: str, color: int = 0):
+def safe_addstr(widget: Widget, y: int, x: int, text: str, color: int = 0) -> None:
     max_y, max_x = widget.win.getmaxyx()
     if y < 0 or y >= max_y:
         return

@@ -6,8 +6,15 @@ from core.config_loader import get_secret
 
 
 def update(_widget: Widget) -> list[str]:
-    feed_url: str = get_secret('NEWS_FEED_URL')
-    feed_name: str = get_secret('NEWS_FEED_NAME')
+    feed_url: str | None = get_secret('NEWS_FEED_URL')
+    feed_name: str | None = get_secret('NEWS_FEED_NAME')
+
+    if feed_url is None:
+        return [
+            'News data not available.',
+            '',
+            'Check your configuration.'
+        ]
 
     if feed_name != '':
         _widget.title = f'{_widget.config.title} [{feed_name}]'
