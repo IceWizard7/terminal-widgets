@@ -1,7 +1,7 @@
 name: 'resources'
 title: ' ⚙ Resources '
 enable: True
-interval: 2
+interval: 4
 height: 10
 width: 85
 y: 16
