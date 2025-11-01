@@ -287,3 +287,4 @@ if __name__ == '__main__':
 # TODO: Add stuff to base.yaml (-> also docs)
 # TODO: Add more widgets
 # TODO: Add examples / images
+# TODO: Only redraw if data, etc. changed
