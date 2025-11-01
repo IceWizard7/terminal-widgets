@@ -286,10 +286,16 @@ if __name__ == '__main__':
     main_entry_point()
 
 
-# TODO: Neofetch widget add support for other devices
-# TODO: Segfaults on some machines?!
+# TODO: Segfaults on some machines?! Can't reproduce.
+
 # TODO: Add stuff to base.yaml (-> also docs)
-# TODO: Add more widgets
 # TODO: Add examples / images
 # TODO: Only redraw if data, etc. changed
 # TODO: 'r' should also reload secrets
+
+# Ideas:
+# - resources
+# - network
+# - uptime
+# - disk
+# - quote
