@@ -13,7 +13,7 @@ For simple widgets, set `interval = 0` (see [Configuration Guide](configuration_
 
 Import:
 ```python
-from .base import Widget, Config, draw_widget, add_widget_content
+from core.base import Widget, Config, draw_widget, add_widget_content
 ```
 
 Also import if needed:
@@ -34,6 +34,8 @@ Start the function with:
 draw_widget(widget)
 ```
 
+which will initialize the widget title and make it loadable, highlightable, etc.
+
 #### 3.2.3 Add widget content
 
 Add content with:
@@ -45,11 +47,13 @@ add_widget_content(widget, info)
 Advanced: For precise text positioning or colors in a terminal widget
 
 ```python
+from core.base import safe_addstr
+
 row: int = 3
 col: int = 2
 text: str = 'Example text'
 
-widget.win.addstr(row, col, text, curses.color_pair(PRIMARY_COLOR_NUMBER) | curses.A_BOLD)
+safe_addstr(widget, row, col, text, curses.color_pair(PRIMARY_COLOR_NUMBER) | curses.A_BOLD)
 ```
 
 #### 3.2.4 Widgets with heavy loading
@@ -57,24 +61,24 @@ widget.win.addstr(row, col, text, curses.color_pair(PRIMARY_COLOR_NUMBER) | curs
 If your widget requires heavy loading, API calls or the data doesn't need to be reloaded every frame, add: 
 
 ```python
-def update(_widget: Widget) -> dict[str, typing.Any]:
+def update(_widget: Widget) -> typing.Any:
 ```
 
 And modify the `draw` function to accept `info`
 (`info` will be passed automatically from the `update` function by the scheduler):
 
 ```python
-def draw(widget: Widget, info: dict[str, typing.Any]) -> None:
+def draw(widget: Widget, info: typing.Any) -> None:
 ```
 
-You can adapt the time, when the `update` function will be called again (reload) by changing
+You can adapt the time, when the `update` function will be called again (reloading the data) by changing
 `interval` in `config/widgets/custom.yaml`
 
 #### 3.2.5 Using secrets
 
 Import:
 ```python
-from utils.config_loader import get_secret
+from core.config_loader import get_secret
 ```
 
 To get secrets, use:
