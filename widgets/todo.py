@@ -6,27 +6,27 @@ import json
 
 
 def add_todo(widget: Widget, title: str) -> None:
-    if 'todos' in widget.data:
-        widget.data['todos'][widget.data['todo_count']] = f'({widget.data["todo_count"]}) {title}'
-        widget.data['todo_count'] += 1
+    if 'todos' in widget.draw_data:
+        widget.draw_data['todos'][widget.draw_data['todo_count']] = f'({widget.draw_data["todo_count"]}) {title}'
+        widget.draw_data['todo_count'] += 1
     else:
-        widget.data['todos'] = {1: f'(1) {title}'}
-        widget.data['todo_count'] = 2
+        widget.draw_data['todos'] = {1: f'(1) {title}'}
+        widget.draw_data['todo_count'] = 2
     save_todos(widget)  # auto-save
 
 
 def remove_todo(widget: Widget, line: int) -> None:
-    if 'todos' in widget.data:
-        keys = list(widget.data['todos'].keys())
+    if 'todos' in widget.draw_data:
+        keys = list(widget.draw_data['todos'].keys())
         todo_id = keys[line]
-        widget.data['todos'].pop(todo_id, None)
+        widget.draw_data['todos'].pop(todo_id, None)
     save_todos(widget)  # auto-save
 
 
 def save_todos(widget: Widget) -> None:
     with open(TODO_SAVE_PATH, 'w') as file:
-        if 'todos' in widget.data:
-            json.dump(widget.data['todos'], file)
+        if 'todos' in widget.draw_data:
+            json.dump(widget.draw_data['todos'], file)
         else:
             json.dump({}, file)
 
@@ -41,25 +41,25 @@ def load_todos(widget: Widget) -> None:
 
     data = {int(k): v for k, v in data.items()}
 
-    widget.data['todos'] = data
-    widget.data['todo_count'] = max(data.keys(), default=0) + 1
+    widget.draw_data['todos'] = data
+    widget.draw_data['todo_count'] = max(data.keys(), default=0) + 1
 
 
 def remove_highlighted_line(widget: Widget) -> None:
-    widget.data['selected_line'] = None
+    widget.draw_data['selected_line'] = None
 
 
 def mark_highlighted_line(todo_widget: Widget, my: int) -> None:
-    todos = list(todo_widget.data.get('todos', {}).values())
+    todos = list(todo_widget.draw_data.get('todos', {}).values())
     if not todos or ui_state.highlighted != todo_widget:
-        todo_widget.data['selected_line'] = None
+        todo_widget.draw_data['selected_line'] = None
         return
 
     # Click relative to widget border
     local_y = my - todo_widget.dimensions.y - 1  # -1 for top border
     if 0 <= local_y < min(len(todos), todo_widget.dimensions.height - 2):
         # Compute which part of todos is currently visible
-        abs_index = todo_widget.data.get('selected_line', 0) or 0
+        abs_index = todo_widget.draw_data.get('selected_line', 0) or 0
         start = max(abs_index - (todo_widget.dimensions.height - 2)//2, 0)
         if start + (todo_widget.dimensions.height - 2) > len(todos):
             start = max(len(todos) - (todo_widget.dimensions.height - 2), 0)
@@ -69,9 +69,9 @@ def mark_highlighted_line(todo_widget: Widget, my: int) -> None:
         if clicked_index >= len(todos):
             clicked_index = len(todos) - 1
 
-        todo_widget.data['selected_line'] = clicked_index
+        todo_widget.draw_data['selected_line'] = clicked_index
     else:
-        todo_widget.data['selected_line'] = None
+        todo_widget.draw_data['selected_line'] = None
 
 
 def render_todos(todos: list[str], highlighted_line: int | None, max_render: int) -> tuple[list[str], int | None]:
@@ -110,8 +110,8 @@ def render_todos(todos: list[str], highlighted_line: int | None, max_render: int
 def draw(widget: Widget) -> None:
     draw_widget(widget, widget.title)
 
-    todos, rel_index = render_todos(list(widget.data.get('todos', {}).values()),
-                                    widget.data.get('selected_line'),
+    todos, rel_index = render_todos(list(widget.draw_data.get('todos', {}).values()),
+                                    widget.draw_data.get('selected_line'),
                                     MAX_TODOS_RENDERING)
 
     for i, todo in enumerate(todos):

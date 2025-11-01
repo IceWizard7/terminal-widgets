@@ -80,10 +80,10 @@ def handle_key_input(
         return
 
     if highlighted_widget == todo_widget:
-        if 'todos' not in todo_widget.data:
+        if 'todos' not in todo_widget.draw_data:
             return
-        len_todos = len(todo_widget.data['todos'])
-        selected = todo_widget.data.get('selected_line', 0)
+        len_todos = len(todo_widget.draw_data['todos'])
+        selected = todo_widget.draw_data.get('selected_line', 0)
 
         if not isinstance(selected, int):
             selected = 0
@@ -101,7 +101,7 @@ def handle_key_input(
         if selected > (len_todos - 1):  # If you delete the last to-do, this will wrap around to 0
             selected = 0
 
-        todo_widget.data['selected_line'] = selected
+        todo_widget.draw_data['selected_line'] = selected
 
         # Add new to_do
         if key in (curses.KEY_ENTER, 10, 13):
@@ -114,7 +114,7 @@ def handle_key_input(
             if len_todos > 0:
                 confirm = base.prompt_user_input(todo_widget, 'Confirm deletion (y): ')
                 if confirm.lower().strip() in ['y']:
-                    todo.remove_todo(todo_widget, todo_widget.data['selected_line'])
+                    todo.remove_todo(todo_widget, todo_widget.draw_data['selected_line'])
 
         todo_widget.draw()
         todo_widget.direct_refresh()
@@ -134,7 +134,7 @@ def reload_widget_scheduler(widget_dict: dict[str, base.Widget], stop_event: thr
                 break
             if widget == todo_widget:
                 todo.load_todos(widget)
-                todo_widget.data['updating'] = False
+                todo_widget.draw_data['updating'] = False
                 continue
 
             if widget.last_updated is None:
@@ -143,10 +143,10 @@ def reload_widget_scheduler(widget_dict: dict[str, base.Widget], stop_event: thr
             # See widget.updatable()
             if now - widget.last_updated >= widget.interval:  # type: ignore[operator]
                 try:
-                    widget.data = widget.update()
+                    widget.draw_data = widget.update()
                     widget.last_updated = now
                 except Exception as e:
-                    widget.data = {"__error__": str(e)}
+                    widget.draw_data = {"__error__": str(e)}
         # Small sleep to avoid busy loop, tuned to a small value
         time.sleep(0.06667)  # -> 15 FPS
 
@@ -222,18 +222,18 @@ def main_curses(stdscr: typing.Any) -> None:
                     widget.direct_refresh()
                     continue
                 if widget == todo_widget:
-                    if 'updating' in widget.data:
-                        if todo_widget.data['updating']:
+                    if 'updating' in widget.draw_data:
+                        if todo_widget.draw_data['updating']:
                             continue  # Currently reloading
                     widget.draw()
                     widget.direct_refresh()
                     continue
 
-                if widget.data:
+                if widget.draw_data:
                     with widget.lock:
-                        data_copy = widget.data.copy()
+                        data_copy = widget.draw_data.copy()
                     if '__error__' in data_copy:
-                        base.display_error(widget, [widget.data['__error__']])
+                        base.display_error(widget, [widget.draw_data['__error__']])
                     else:
                         widget.draw(data_copy)
                 elif not widget.updatable():
@@ -278,7 +278,6 @@ def main_entry_point() -> None:
         except base.UnknownException as error:
             print(f'Unknown error\n{error.error_message}\n\n')
             raise
-            break
         break  # Exit if the end of the loop is reached (User exit)
 
 
@@ -295,7 +294,4 @@ if __name__ == '__main__':
 
 # Ideas:
 # - resources
-# - network
-# - uptime
-# - disk
 # - quote
