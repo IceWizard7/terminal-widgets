@@ -104,7 +104,7 @@ def update(_widget: Widget) -> list[str]:
         cpu_info: str = (platform.processor() or run_cmd(
             'cat /proc/cpuinfo | grep "Model name" | head -n 1 | cut -d: -f2')).strip()
         if not cpu_info:
-            cpu_info = run_cmd('lscpu | grep "Model name" | awk -F: '{print $2}'') or 'Unknown CPU'
+            cpu_info = run_cmd('lscpu | grep "Model name" | awk -F: "{print $2}"') or 'Unknown CPU'
 
         display_info: str = run_cmd('xdpyinfo | grep "dimensions:" | awk "{print $2}"') or 'Resolution: Unknown'
 
