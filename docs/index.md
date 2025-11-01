@@ -21,22 +21,24 @@ This dashboard lets you monitor Weather, News, Clock, Calendar, and more in a mo
 
 ```text
 .
+├── LICENSE
 ├── README.md
 ├── config
-│         ├── base.yaml  # Base configs
-│         ├── secrets.env  # Secrets
+│         ├── base.yaml
+│         ├── secrets.env
 │         └── widgets
-│             └── *.yaml  # Per-widget configs
-├── docs  # Documentation
+│             └── *.yaml
+├── core
+│     ├── __init__.py
+│     ├── base.py
+│     └── config_loader.py
+├── docs
 │    ├── configuration_guide.md
 │    ├── index.md
 │    ├── setup_guide.md
 │    └── widget_guide.md
-├── main.py  # Dashboard entry point
-├── requirements.txt  # Project requirements
-├── utils  # Help scripts
-│   ├── __init__.py
-│   └── config_loader.py
+├── main.py
+├── requirements.txt
 └── widgets
     └── *.py  # Python widget implementation (using curses)
 ```

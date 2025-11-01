@@ -4,7 +4,7 @@ import typing
 import threading
 import sys
 
-import widgets.base as base
+import core.base as base
 import widgets.clock as clock
 import widgets.greetings as greetings
 import widgets.calendar as calendar
@@ -16,7 +16,7 @@ import widgets.mode as mode
 # Add more widgets here (1)
 
 from widgets.config import MINIMUM_WIDTH, MINIMUM_HEIGHT
-from utils.config_loader import load_widget_config
+from core.config_loader import load_widget_config
 
 
 def switch_windows(
@@ -264,11 +264,12 @@ def main_entry_point() -> None:
             pass
         except base.TerminalTooSmall as e:
             print(
-                f'\n'
-                f'Terminal too small. Minimum size: {MINIMUM_WIDTH}x{MINIMUM_HEIGHT} (Width x Height)\n'
-                f'Current size: {e.width}x{e.height}.\n'
-                f'Either decrease your font size, increase the size of the terminal, or remove widgets.\n'
-                f'\n'
+                f'',
+                f'Terminal too small. Minimum size: {MINIMUM_WIDTH}x{MINIMUM_HEIGHT} (Width x Height)',
+                f'Current size: {e.width}x{e.height}',
+                f'Either decrease your font size, increase the size of the terminal, or remove widgets.',
+                f'',
+                sep='\n'
             )
             break
         except base.UnknownException as error:
@@ -284,3 +285,4 @@ if __name__ == '__main__':
 # TODO: Neofetch widget add support for other devices
 # TODO: Add stuff to base.yaml (-> also docs)
 # TODO: Add more widgets
+# TODO: Segfaults on some machines?!

@@ -7,7 +7,7 @@ import platform
 import os
 import curses
 import typing
-from .base import Widget, Config, draw_widget
+from core.base import Widget, Config, draw_widget
 
 
 def update(_widget: Widget) -> dict[str, typing.Any]:

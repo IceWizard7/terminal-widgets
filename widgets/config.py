@@ -3,6 +3,7 @@ import curses
 
 BASE_FOREGROUND: int = curses.COLOR_WHITE
 CUSTOM_BACKGROUND_VALUE: tuple[int, int, int] = (121, 114, 263)  # Range 0-1000
+CUSTOM_BACKGROUND_NUMBER: int = 20
 BASE_PAIR_NUMBER: int = 1
 
 PRIMARY_COLOR_NUMBER: int = 15

@@ -2,7 +2,7 @@ from pathlib import Path
 import yaml
 from dotenv import load_dotenv
 import typing
-from widgets.base import Config
+from core.base import Config
 import os
 
 BASE_DIR = Path(__file__).resolve().parent.parent

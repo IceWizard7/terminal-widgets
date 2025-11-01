@@ -1,6 +1,6 @@
 import curses
 import typing
-from .base import Widget, Config, draw_widget, ui_state
+from core.base import Widget, Config, draw_widget, ui_state
 from .config import TODO_SAVE_PATH, MAX_TODOS_RENDERING, SECONDARY_COLOR_NUMBER
 import json
 

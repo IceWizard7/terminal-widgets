@@ -1,6 +1,6 @@
 import time
 import typing
-from .base import Widget, draw_widget, add_widget_content, Config
+from core.base import Widget, draw_widget, add_widget_content, Config
 
 
 def draw(widget: Widget) -> None:

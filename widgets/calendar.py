@@ -2,7 +2,7 @@ import datetime
 import calendar
 import curses
 import typing
-from .base import Widget, draw_widget, Config
+from core.base import Widget, draw_widget, Config
 from .config import PRIMARY_COLOR_NUMBER
 
 

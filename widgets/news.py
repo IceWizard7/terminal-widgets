@@ -1,8 +1,8 @@
 import typing
 import requests
 import feedparser  # type: ignore[import-untyped]
-from .base import Widget, Config, draw_widget, add_widget_content
-from utils.config_loader import get_secret
+from core.base import Widget, Config, draw_widget, add_widget_content
+from core.config_loader import get_secret
 
 
 def update(_widget: Widget) -> list[str]:

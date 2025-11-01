@@ -1,5 +1,5 @@
 import typing
-from .base import Widget, Config, draw_widget, add_widget_content
+from core.base import Widget, Config, draw_widget, add_widget_content
 
 
 def draw(widget: Widget) -> None:
