@@ -31,10 +31,8 @@ def return_macos_info() -> list[str]:
     user_name: str = os.getenv('USER') or os.getenv('LOGNAME') or 'Unknown'
     hostname: str = platform.node()
     os_version: str = ' '.join(v for v in platform.mac_ver() if isinstance(v, str))
-    host_version: str = run_cmd('sysctl -n hw.model')
+    host_version: str | None = run_cmd('sysctl -n hw.model')
     kernel: str = platform.release()
-    system_lang: str = system_lang
-    encoding: str = encoding
     terminal: str = os.environ.get('TERM_PROGRAM')
 
     brew_packages: str | None = run_cmd('brew list | wc -l')
