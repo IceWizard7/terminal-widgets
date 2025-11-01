@@ -12,19 +12,18 @@ def update(_widget: Widget) -> list[str]:
     try:
         response = requests.get(url, timeout=5)
         data = response.json()
-    except Exception:
+    except requests.exceptions.RequestException:
         return [
             'Weather data not available.',
             '',
             'Check your internet',
-            'connection, API key',
-            'and configuration.'
+            'connection.'
         ]
 
-    if data.get('cod') != 200:
+    if data.get('cod') != 200:  # Anything else (unexpected)
         return [
             'Weather data not available.',
-            '',
+            f'Error: ({data.get("cod")})',
             'Check your internet',
             'connection, API key',
             'and configuration.'

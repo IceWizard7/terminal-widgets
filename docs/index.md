@@ -40,5 +40,5 @@ This dashboard lets you monitor Weather, News, Clock, Calendar, and more in a mo
 ├── main.py
 ├── requirements.txt
 └── widgets
-    └── *.py  # Python widget implementation (using curses)
+    └── *.py
 ```

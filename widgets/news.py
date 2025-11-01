@@ -16,15 +16,23 @@ def update(_widget: Widget) -> list[str]:
 
     try:
         response = requests.get(feed_url, timeout=5)
-        response.raise_for_status()  # Raises if status != 200
+        response.raise_for_status()  # Raises if status != 2xx
 
         # Parse from content (string)
         feed = feedparser.parse(response.text)
-    except Exception:
+
+        if feed.bozo:
+            # feedparser caught an internal parsing error
+            return [
+                'News data not available.',
+                '',
+                'Check your configuration.'
+            ]
+    except requests.exceptions.RequestException:
         return [
             'News data not available.',
             '',
-            'Check your internet connection and configuration.'
+            'Check your internet connection.'
         ]
 
     for i, entry in enumerate(feed.entries[:5]):  # Get top articles
