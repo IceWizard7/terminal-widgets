@@ -1,6 +1,6 @@
 import curses
 import typing
-from core.base import Widget, Config, draw_widget, ui_state
+from core.base import Widget, Config, draw_widget, ui_state, safe_addstr
 from .config import TODO_SAVE_PATH, MAX_TODOS_RENDERING, SECONDARY_COLOR_NUMBER
 import json
 
@@ -116,10 +116,10 @@ def draw(widget: Widget) -> None:
 
     for i, todo in enumerate(todos):
         if rel_index is not None and i == rel_index:
-            widget.win.addstr(1 + i, 1, todo[:widget.dimensions.width - 2],
-                              curses.A_REVERSE | curses.color_pair(SECONDARY_COLOR_NUMBER))
+            safe_addstr(widget, 1 + i, 1, todo[:widget.dimensions.width - 2],
+                        curses.A_REVERSE | curses.color_pair(SECONDARY_COLOR_NUMBER))
         else:
-            widget.win.addstr(1 + i, 1, todo[:widget.dimensions.width - 2])
+            safe_addstr(widget, 1 + i, 1, todo[:widget.dimensions.width - 2])
 
 
 def build(stdscr: typing.Any, config: Config) -> Widget:

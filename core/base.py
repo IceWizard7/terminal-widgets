@@ -156,6 +156,17 @@ def add_widget_content(widget: Widget, content: list[str]) -> None:
             widget.win.addstr(1 + i, 1, line[:widget.dimensions.width - 2])
 
 
+def safe_addstr(widget: Widget, y: int, x: int, text: str, color: int = 0):
+    max_y, max_x = widget.win.getmaxyx()
+    if y < 0 or y >= max_y:
+        return
+    safe_text = text[:max_x - x - 1]
+    try:
+        widget.win.addstr(y, x, safe_text, color)
+    except curses.error:
+        pass
+
+
 def loading_screen(widgets: list[Widget]) -> None:
     for widget in widgets:
         if not widget.config.enable:

@@ -7,7 +7,7 @@ import platform
 import os
 import curses
 import typing
-from core.base import Widget, Config, draw_widget
+from core.base import Widget, Config, draw_widget, safe_addstr
 
 
 def update(_widget: Widget) -> dict[str, typing.Any]:
@@ -23,6 +23,9 @@ def update(_widget: Widget) -> dict[str, typing.Any]:
     days = uptime.days
     hours, remainder = divmod(uptime.seconds, 3600)
     minutes, _ = divmod(remainder, 60)
+
+    system_lang = locale.getlocale()[0] or 'Unknown'
+    encoding = locale.getpreferredencoding() or 'UTF-8'
 
     brew_packages = run_cmd('brew list | wc -l')
     zsh_version = run_cmd('zsh --version')
@@ -55,8 +58,8 @@ def update(_widget: Widget) -> dict[str, typing.Any]:
         'brew_packages': brew_packages,
         'zsh_version': zsh_version,
         'display_info': display_info,
-        'system_lang': locale.getlocale()[0],
-        'encoding': locale.getpreferredencoding(),
+        'system_lang': system_lang,
+        'encoding': encoding,
         'terminal': os.environ.get('TERM_PROGRAM'),
         'terminal_font': terminal_font,
         'cpu_info': cpu_info,
@@ -94,7 +97,7 @@ def draw(widget: Widget, info: dict[str, typing.Any]) -> None:
     colors = [i for i in range(1, 18)]
 
     for i, line in enumerate(lines):
-        widget.win.addstr(1 + i, 2, line, curses.color_pair(colors[i % len(colors)] + 1))
+        safe_addstr(widget, 1 + i, 2, line, curses.color_pair(colors[i % len(colors)] + 1))
 
 
 def build(stdscr: typing.Any, config: Config) -> Widget:
