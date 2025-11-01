@@ -98,7 +98,7 @@ def update(_widget: Widget) -> list[str]:
 
         pkg_packages: str = run_cmd('dpkg --get-selections | wc -l') or 'Unknown'
         shell_path: str = os.getenv('SHELL', 'bash')
-        shell_version: str = run_cmd(f'{shell_path} --version | head -n 1').split(' ')[1] or shell_path
+        shell_version: str = run_cmd(f'{shell_path} --version | head -n 1').split('version')[1].split(' ')[0] or shell_path
 
         cpu_info: str = (platform.processor() or run_cmd(
             'cat /proc/cpuinfo | grep "Model name" | head -n 1 | cut -d: -f2')).strip()
