@@ -16,7 +16,7 @@ import widgets.mode as mode
 import widgets.resources as resources
 # Add more widgets here (1)
 
-from widgets.config import MINIMUM_WIDTH, MINIMUM_HEIGHT
+from config import MINIMUM_WIDTH, MINIMUM_HEIGHT
 from core.config_loader import load_widget_config
 
 
@@ -148,7 +148,7 @@ def reload_widget_scheduler(widget_dict: dict[str, base.Widget], stop_event: thr
                 except Exception as e:
                     widget.draw_data = {"__error__": str(e)}
         # Small sleep to avoid busy loop, tuned to a small value
-        time.sleep(0.06667)  # -> 15 FPS
+        time.sleep(0.06667)  # -> ~15 FPS
 
 
 def main_curses(stdscr: typing.Any) -> None:
