@@ -155,7 +155,10 @@ class BaseConfig:
             primary_color: dict[str, typing.Any],
             secondary_color: dict[str, typing.Any],
             loading_color: dict[str, typing.Any],
-            error_color: dict[str, typing.Any]
+            error_color: dict[str, typing.Any],
+            quit_key: str,
+            reload_key: str,
+            help_key: str
     ) -> None:
         self.background_color: RGBColor = (
             RGBColor(r=background_color['r'], g=background_color['g'], b=background_color['b'])
@@ -197,8 +200,9 @@ class BaseConfig:
         self.LOADING_PAIR_NUMBER: int = 4
         self.ERROR_PAIR_NUMBER: int = 5
 
-        self.TODO_SAVE_PATH: str = 'widgets/save_file.txt'
-        self.MAX_TODOS_RENDERING: int = 7
+        self.quit_key = quit_key
+        self.reload_key = reload_key
+        self.help_key = help_key
 
 
 def draw_colored_border(win: typing.Any, color_pair: int) -> None:

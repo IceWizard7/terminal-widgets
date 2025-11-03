@@ -23,7 +23,7 @@ def remove_todo(widget: Widget, line: int) -> None:
 
 
 def save_todos(widget: Widget) -> None:
-    with open(base_config.TODO_SAVE_PATH, 'w') as file:
+    with open(widget.config.save_path, 'w') as file:
         if 'todos' in widget.draw_data:
             json.dump(widget.draw_data['todos'], file)
         else:
@@ -32,7 +32,7 @@ def save_todos(widget: Widget) -> None:
 
 def load_todos(widget: Widget) -> None:
     try:
-        with open(base_config.TODO_SAVE_PATH, 'r') as file:
+        with open(widget.config.save_path, 'r') as file:
             data = json.load(file)
         data = {int(k): v for k, v in data.items()}
     except (FileNotFoundError, json.JSONDecodeError):
@@ -111,7 +111,7 @@ def draw(widget: Widget) -> None:
 
     todos, rel_index = render_todos(list(widget.draw_data.get('todos', {}).values()),
                                     widget.draw_data.get('selected_line'),
-                                    base_config.MAX_TODOS_RENDERING)
+                                    widget.config.max_rendering)
 
     for i, todo in enumerate(todos):
         if rel_index is not None and i == rel_index:
