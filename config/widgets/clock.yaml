@@ -8,5 +8,5 @@ y: 4
 x: 87
 
 weekday_format: '%A'
-date_format: '%d.%m.%Y'
+date_format: '%d.%m.%Y'  # us: '%m-%d-%Y', international: '%Y-%m-%d'
 time_format: '%H:%M:%S'
