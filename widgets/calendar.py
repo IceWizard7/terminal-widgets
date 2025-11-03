@@ -3,7 +3,7 @@ import calendar
 import curses
 import typing
 from core.base import Widget, draw_widget, Config, safe_addstr
-from .config import PRIMARY_COLOR_NUMBER
+from config import PRIMARY_COLOR_NUMBER
 
 
 def draw(widget: Widget) -> None:

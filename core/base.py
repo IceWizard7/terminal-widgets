@@ -3,7 +3,7 @@ import curses
 import typing
 import threading
 
-from widgets.config import (
+from config import (
     PRIMARY_COLOR_NUMBER, LOADING_COLOR_NUMBER, ERROR_COLOR_NUMBER,
     CUSTOM_BACKGROUND_VALUE, BASE_PAIR_NUMBER, BASE_FOREGROUND,
     MINIMUM_HEIGHT, MINIMUM_WIDTH, CUSTOM_BACKGROUND_NUMBER
