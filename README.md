@@ -1,5 +1,10 @@
 ## Terminal Widgets
 
+This tool lets you design and run dynamic, customizable dashboards directly
+inside your terminal, combining modular widgets, real-time data updates, and flexible layout management for a highly
+interactive CLI experience.
+
+---
 ### 1. Get started
 1. Clone this repository
 2. Install dependencies: `pip install -r requirements.txt`
