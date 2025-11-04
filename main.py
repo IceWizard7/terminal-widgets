@@ -129,7 +129,6 @@ def reload_widget_scheduler(widget_dict: dict[str, base.Widget], stop_event: thr
                 break
             if widget == todo_widget:
                 todo.load_todos(widget)
-                todo_widget.draw_data['updating'] = False
                 continue
 
             if widget.last_updated is None:
@@ -147,6 +146,7 @@ def reload_widget_scheduler(widget_dict: dict[str, base.Widget], stop_event: thr
 
 
 def main_curses(stdscr: typing.Any) -> None:
+    base.config_loader.reload_secrets()
     base.init_curses_setup(stdscr)
 
     clock_widget: base.Widget = clock.build(stdscr, base.config_loader.load_widget_config('clock'))
@@ -222,10 +222,8 @@ def main_curses(stdscr: typing.Any) -> None:
                     widget.draw()
                     widget.direct_refresh()
                     continue
+
                 if widget == todo_widget:
-                    if 'updating' in widget.draw_data:
-                        if todo_widget.draw_data['updating']:
-                            continue  # Currently reloading
                     widget.draw()
                     widget.direct_refresh()
                     continue
@@ -288,8 +286,6 @@ if __name__ == '__main__':
 
 
 # TODO: Add examples / images
-# TODO: Only redraw if data, etc. changed
-# TODO: 'r' should also reload secrets
 
 # Ideas:
 # - quote of the day, etc.
