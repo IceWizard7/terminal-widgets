@@ -35,7 +35,8 @@ def update(_widget: Widget) -> list[str]:
         'bytes_recv': new_bytes_recv,
     }
 
-    memory_used_mib: float = round(memory.used / (1024 ** 2), 2)
+    # memory.used returns something else...
+    memory_used_mib: float = round(memory.total / (1024 ** 2), 2) - round(memory.available / (1024 ** 2), 2)
     memory_total_mib: float = round(memory.total / (1024 ** 2), 2)
     memory_percent: float = round(memory_used_mib * 100 / memory_total_mib, 2)
 
