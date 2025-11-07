@@ -147,10 +147,7 @@ def reload_widget_scheduler(widget_dict: dict[str, base.Widget], stop_event: thr
 
 
 def main_curses(stdscr: typing.Any) -> None:
-    # Always make relative paths work from the script’s directory
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    os.chdir(script_dir)
-
+    base.init_paths()
     base.config_loader.reload_secrets()
     base.init_curses_setup(stdscr)
 
