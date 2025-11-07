@@ -181,8 +181,8 @@ def main_curses(stdscr: typing.Any) -> None:
 
     widget_list = list(widget_dict.values())
 
-    min_height = max(widget.dimensions.height + widget.dimensions.y for widget in widget_list)
-    min_width = max(widget.dimensions.width + widget.dimensions.x for widget in widget_list)
+    min_height = max(widget.dimensions.height + widget.dimensions.y for widget in widget_list if widget.config.enabled)
+    min_width = max(widget.dimensions.width + widget.dimensions.x for widget in widget_list if widget.config.enabled)
     base.validate_terminal_size(stdscr, min_height, min_width)
 
     base.loading_screen(widget_list)
@@ -197,8 +197,10 @@ def main_curses(stdscr: typing.Any) -> None:
 
     while True:
         try:
-            min_height = max(widget.dimensions.height + widget.dimensions.y for widget in widget_list)
-            min_width = max(widget.dimensions.width + widget.dimensions.x for widget in widget_list)
+            min_height = max(
+                widget.dimensions.height + widget.dimensions.y for widget in widget_list if widget.config.enabled)
+            min_width = max(
+                widget.dimensions.width + widget.dimensions.x for widget in widget_list if widget.config.enabled)
             base.validate_terminal_size(stdscr, min_height, min_width)
 
             key: typing.Any = stdscr.getch()  # Keypresses

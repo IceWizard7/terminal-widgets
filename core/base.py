@@ -63,11 +63,11 @@ class Widget:
         self.win.noutrefresh()
 
     def draw(self, *args: typing.Any, **kwargs: typing.Any) -> None:
-        if self.config.enable:
+        if self.config.enabled:
             self._draw_func(self, *args, **kwargs)
 
     def update(self) -> dict[str, typing.Any] | list[str] | None:
-        if self._update_func and self.config.enable:
+        if self._update_func and self.config.enabled:
             return self._update_func(self)
         return None
 
@@ -109,7 +109,7 @@ class Config:
             self,
             name: str,
             title: str,
-            enable: bool,
+            enabled: bool,
             interval: int | float | None,
             height: int,
             width: int,
@@ -120,7 +120,7 @@ class Config:
     ) -> None:
         self.name = name
         self.title = title
-        self.enable = enable
+        self.enabled = enabled
         self.interval = interval
         if interval == 0:
             self.interval = None
@@ -251,7 +251,7 @@ def safe_addstr(widget: Widget, y: int, x: int, text: str, color: int = 0) -> No
 
 def loading_screen(widgets: list[Widget]) -> None:
     for widget in widgets:
-        if not widget.config.enable:
+        if not widget.config.enabled:
             continue
         draw_widget(widget, loading=True)
         add_widget_content(widget, [' Loading... '])
