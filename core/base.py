@@ -302,12 +302,6 @@ def init_colors() -> None:
         curses.init_pair(i, color, base_config.BACKGROUND_NUMBER)  # type: ignore[arg-type]
 
 
-def init_paths() -> None:
-    # Always make relative paths work from the script’s directory
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    os.chdir(script_dir)
-
-
 def init_curses_setup(stdscr: typing.Any) -> None:
     curses.mousemask(curses.ALL_MOUSE_EVENTS)
     curses.curs_set(0)
