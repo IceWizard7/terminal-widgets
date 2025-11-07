@@ -28,7 +28,8 @@ def draw(widget: Widget) -> None:
             if d == 0:
                 safe_addstr(widget, row, col, ' ')
             elif d == day:
-                safe_addstr(widget, row, col, f'{d:02}', curses.color_pair(base_config.PRIMARY_PAIR_NUMBER) | curses.A_BOLD)
+                safe_addstr(widget, row, col, f'{d:02}', curses.color_pair(base_config.PRIMARY_PAIR_NUMBER) |
+                            curses.A_BOLD)
             else:
                 safe_addstr(widget, row, col, f'{d:02}')
             col += 3
