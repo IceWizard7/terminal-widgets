@@ -34,12 +34,19 @@ For full documentation see [Setup Guide](docs/setup_guide.md)
 
 2.1 Changing standard colors and configuration in `config/base.yaml`
 
+If you remove anything or let anything blank, it will just fall back to the standard configuration. \
+However, you will get warned.
+
 Example:
 ```yaml
+use_standard_terminal_background: False
+
 background_color:
   r: 31  # Red value
   g: 29  # Green value
   b: 67  # Blue value
+  
+...
 ```
 
 2.2 Configure your secrets in: `config/secrets.env`

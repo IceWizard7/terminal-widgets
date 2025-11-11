@@ -3,8 +3,14 @@
 ### 2.1 Changing standard colors and configuration
 Edit the `base.yaml` file under `config/base.yaml` to change standard colors and configuration.
 
+If you remove anything or let anything blank, it will just fall back to the standard configuration. \
+However, you will get warned.
+
 Example:
 ```yaml
+use_standard_terminal_background: False  # Whether to use the standard terminal background, or
+# the specified background_color
+
 background_color:
   r: 31  # Red value
   g: 29  # Green value
@@ -14,8 +20,11 @@ error_color:
   r: 255  # Red value
   g: 0  # Green value
   b: 0  # Blue value
+  
+# ...
 
 # Any key (a-z, 0-9) works
+# You have to put it in quotes though, e.g. '7', or 'd'
 quit_key: 'q'
 reload_key: 'r'
 help_key: 'h'
@@ -23,7 +32,7 @@ help_key: 'h'
 
 ### 2.2 Configure secrets
 Edit the `secrets.env` file located at `config/secrets.env` to add your API keys and preferred settings.
-> ⚠️ Make sure to NEVER share your secrets with anybody.
+> ⚠️ Make sure to **NEVER** share your secrets with anybody.
 
 Example:
 ```dotenv
@@ -56,4 +65,8 @@ height: 5  # Height of Widget
 width: 30  # Width of Widget
 y: 4  # Position of Widget (y)
 x: 87  # Position of Widget (x)
+
+weekday_format: '%A'  # day of the week
+date_format: '%d.%m.%Y'  # us: '%m.%d.%Y', international: '%Y-%m-%d'
+time_format: '%H:%M:%S'  # time
 ```
