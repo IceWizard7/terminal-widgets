@@ -31,7 +31,7 @@ help_key: 'h'
 ```
 
 ### 2.2 Configure secrets
-Edit the `secrets.env` file located at `config/secrets.env` to add your API keys and preferred settings.
+Edit / create the `secrets.env` file located at `config/secrets.env` to add your API keys and preferred settings.
 > ⚠️ Make sure to **NEVER** share your secrets with anybody.
 
 Example:
