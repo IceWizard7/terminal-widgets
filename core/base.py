@@ -1,8 +1,9 @@
 from __future__ import annotations  # allows forward references in type hints
 from pathlib import Path
 import yaml
-from dotenv import load_dotenv
+from dotenv import load_dotenv  # type: ignore[import-not-found]
 import os
+import sys
 import curses
 import typing
 import threading
@@ -91,11 +92,18 @@ class RestartException(Exception):
 
 class TerminalTooSmall(Exception):
     def __init__(self, height: int, width: int, min_height: int, min_width: int) -> None:
+        """Raised to signal that the terminal is too small"""
         self.height = height
         self.width = width
         self.min_height = min_height
         self.min_width = min_width
-        super().__init__(height, width)  # Raised to signal that the terminal is too small
+        super().__init__(height, width)
+
+
+class ConfigError(Exception):
+    def __init__(self, error_details: str) -> None:
+        self.error_details: typing.Any = error_details
+        super().__init__(error_details)
 
 
 class UnknownException(Exception):
@@ -149,6 +157,10 @@ class RGBColor:
             round(self.g * 1000 / 255),
             round(self.b * 1000 / 255),
         )
+
+    @staticmethod
+    def add_rgb_color_from_dict(color: dict[str, typing.Any]) -> RGBColor:
+        return RGBColor(r=color['r'], g=color['g'], b=color['b'])
 
 
 class BaseStandardFallBackConfig:
@@ -210,46 +222,58 @@ class BaseConfig:
         self.help_key: str = base_standard_fallback_config.help_key
 
         if background_color is not None:
-            self.background_color: RGBColor = (
-                RGBColor(r=background_color['r'], g=background_color['g'], b=background_color['b'])
-            )
+            try:
+                self.background_color = RGBColor.add_rgb_color_from_dict(background_color)
+            except KeyError as e:
+                raise ConfigError(f'background_color missing value for {e}')
         else:
             print(f'⚠️ Configuration for background_color is missing (add it in base.yaml)')
+            print('Falling back to standard config.')
 
         if foreground_color is not None:
-            self.foreground_color: RGBColor = (
-                RGBColor(r=foreground_color['r'], g=foreground_color['g'], b=foreground_color['b'])
-            )
+            try:
+                self.foreground_color = RGBColor.add_rgb_color_from_dict(foreground_color)
+            except KeyError as e:
+                raise ConfigError(f'foreground_color missing value for {e}')
         else:
             print(f'⚠️ Configuration for foreground_color is missing (add it in base.yaml)')
+            print('Falling back to standard config.')
 
         if primary_color is not None:
-            self.primary_color: RGBColor = (
-                RGBColor(r=primary_color['r'], g=primary_color['g'], b=primary_color['b'])
-            )
+            try:
+                self.primary_color = RGBColor.add_rgb_color_from_dict(primary_color)
+            except KeyError as e:
+                raise ConfigError(f'primary_color missing value for {e}')
         else:
             print(f'⚠️ Configuration for primary_color is missing (add it in base.yaml)')
+            print('Falling back to standard config.')
 
         if secondary_color is not None:
-            self.secondary_color: RGBColor = (
-                RGBColor(r=secondary_color['r'], g=secondary_color['g'], b=secondary_color['b'])
-            )
+            try:
+                self.secondary_color = RGBColor.add_rgb_color_from_dict(secondary_color)
+            except KeyError as e:
+                raise ConfigError(f'secondary_color missing value for {e}')
         else:
             print(f'⚠️ Configuration for secondary_color is missing (add it in base.yaml)')
+            print('Falling back to standard config.')
 
         if loading_color is not None:
-            self.loading_color: RGBColor = (
-                RGBColor(r=loading_color['r'], g=loading_color['g'], b=loading_color['b'])
-            )
+            try:
+                self.loading_color = RGBColor.add_rgb_color_from_dict(loading_color)
+            except KeyError as e:
+                raise ConfigError(f'loading_color missing value for {e}')
         else:
             print(f'⚠️ Configuration for loading_color is missing (add it in base.yaml)')
+            print('Falling back to standard config.')
 
         if error_color is not None:
-            self.error_color: RGBColor = (
-                RGBColor(r=error_color['r'], g=error_color['g'], b=error_color['b'])
-            )
+            try:
+                self.error_color = RGBColor.add_rgb_color_from_dict(error_color)
+            except KeyError as e:
+                raise ConfigError(f'error_color missing value for {e}')
         else:
             print(f'⚠️ Configuration for error_color is missing (add it in base.yaml)')
+            print('Falling back to standard config.')
 
         self.base_colors: dict[int, tuple[int, RGBColor | int]] = {
             2: (1, self.foreground_color),
@@ -260,14 +284,17 @@ class BaseConfig:
         }
 
         if use_standard_terminal_background is not None:
+            if not isinstance(use_standard_terminal_background, bool):
+                raise ConfigError(f'use_standard_terminal_background not True or False')
             self.use_standard_terminal_background = use_standard_terminal_background
         else:
             print(f'⚠️ Configuration for use_standard_terminal_background is missing (add it in base.yaml)')
+            print('Falling back to standard config.')
 
         if self.use_standard_terminal_background:
             self.BACKGROUND_NUMBER: int = -1
         else:
-            self.BACKGROUND_NUMBER: int = 1
+            self.BACKGROUND_NUMBER = 1
 
         self.BACKGROUND_FOREGROUND_PAIR_NUMBER: int = 1
         self.PRIMARY_PAIR_NUMBER: int = 2
@@ -276,19 +303,34 @@ class BaseConfig:
         self.ERROR_PAIR_NUMBER: int = 5
 
         if quit_key is not None:
+            if len(quit_key) != 1:
+                raise ConfigError(f'quit_key value wrong length (not 1)')
+            if not (quit_key.isalpha() or quit_key.isdigit()):
+                raise ConfigError(f'quit_key value not alphabetic or numeric')
             self.quit_key = quit_key
         else:
             print(f'⚠️ Configuration for quit_key is missing (add it in base.yaml)')
+            print('Falling back to standard config.')
 
         if reload_key is not None:
+            if len(reload_key) != 1:
+                raise ConfigError(f'reload_key value wrong length (not 1)')
+            if not (reload_key.isalpha() or reload_key.isdigit()):
+                raise ConfigError(f'reload_key value not alphabetic or numeric')
             self.reload_key = reload_key
         else:
             print(f'⚠️ Configuration for reload_key is missing (add it in base.yaml)')
+            print('Falling back to standard config.')
 
         if help_key is not None:
+            if len(help_key) != 1:
+                raise ConfigError(f'help_key value wrong length (not 1)')
+            if not (help_key.isalpha() or help_key.isdigit()):
+                raise ConfigError(f'help_key value not alphabetic or numeric')
             self.help_key = help_key
         else:
             print(f'⚠️ Configuration for help_key is missing (add it in base.yaml)')
+            print('Falling back to standard config.')
 
 
 def draw_colored_border(win: typing.Any, color_pair: int) -> None:
@@ -525,7 +567,11 @@ class ConfigLoader:
         return Config(**pure_yaml)
 
 
-config_loader = ConfigLoader()
-ui_state: UIState = UIState()
-base_standard_fallback_config: BaseStandardFallBackConfig = BaseStandardFallBackConfig()
-base_config: BaseConfig = config_loader.load_base_config()
+try:
+    config_loader: ConfigLoader = ConfigLoader()
+    ui_state: UIState = UIState()
+    base_standard_fallback_config: BaseStandardFallBackConfig = BaseStandardFallBackConfig()
+    base_config: BaseConfig = config_loader.load_base_config()
+except Exception as _e:
+    print(_e)
+    sys.exit(1)

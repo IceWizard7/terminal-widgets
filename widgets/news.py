@@ -1,6 +1,6 @@
 import typing
 import requests
-import feedparser  # type: ignore[import-untyped]
+import feedparser  # type: ignore[import-not-found]
 from core.base import Widget, Config, draw_widget, add_widget_content, config_loader
 
 

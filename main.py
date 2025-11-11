@@ -151,7 +151,18 @@ def main_curses(stdscr: typing.Any) -> None:
     script_dir = os.path.dirname(os.path.abspath(__file__))
     os.chdir(script_dir)
 
+    # TODO: Problem... When base.yaml is fine and then at runtime I reload when its faulty the terminal doesn't get
+    # cleaned up that well.
+    # Fix (probably): Move:
+    # config_loader: ConfigLoader = ConfigLoader()
+    # ui_state: UIState = UIState()
+    # base_standard_fallback_config: BaseStandardFallBackConfig = BaseStandardFallBackConfig()
+    # base_config: BaseConfig = config_loader.load_base_config()
+    # to here somewhere.
+    # OUT of core/base
+
     base.config_loader.reload_secrets()
+    base.base_config = base.config_loader.load_base_config()
     base.init_curses_setup(stdscr)
 
     clock_widget: base.Widget = clock.build(stdscr, base.config_loader.load_widget_config('clock'))
@@ -269,12 +280,15 @@ def main_entry_point() -> None:
             sys.stdout.write('\033[2J\033[3J\033[H')  # clear screen, scrollback, and move cursor home
             sys.stdout.flush()
             continue  # Restart main
+        except base.ConfigError as e:
+            print(f'⚠️ Error: {e}')
+            break
         except KeyboardInterrupt:
             pass
         except base.TerminalTooSmall as e:
             print(
                 f'',
-                f'Terminal too small. Minimum size: {e.min_width}x{e.min_height}',
+                f'⚠️ Terminal too small. Minimum size: {e.min_width}x{e.min_height}',
                 f'(Width x Height)',
                 f'Current size: {e.width}x{e.height}',
                 f'Either decrease your font size, increase the size of the terminal, or remove widgets.',
