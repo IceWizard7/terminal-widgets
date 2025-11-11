@@ -101,7 +101,13 @@ class TerminalTooSmall(Exception):
 
 class ConfigError(Exception):
     def __init__(self, error_details: str) -> None:
-        self.error_details: typing.Any = error_details
+        self.error_details: str = error_details
+        super().__init__(error_details)
+
+
+class ConfigFileNotFoundError(Exception):
+    def __init__(self, error_details: str) -> None:
+        self.error_details: str = error_details
         super().__init__(error_details)
 
 
@@ -580,7 +586,7 @@ class ConfigLoader:
     def load_base_config(self) -> BaseConfig:
         base_path = self.CONFIG_DIR / 'base.yaml'
         if not base_path.exists():
-            raise FileNotFoundError(f'Base config "{base_path}" not found.')
+            raise ConfigFileNotFoundError(f'Base config "{base_path}" not found.')
         pure_yaml: dict[str, typing.Any] = self.load_yaml(base_path)
 
         return BaseConfig(**pure_yaml)
@@ -588,7 +594,7 @@ class ConfigLoader:
     def load_widget_config(self, widget_name: str) -> Config:
         path = self.WIDGETS_DIR / f'{widget_name}.yaml'
         if not path.exists():
-            raise FileNotFoundError(f'Config for widget "{widget_name}" not found.')
+            raise ConfigFileNotFoundError(f'Config for widget "{widget_name}" not found.')
         pure_yaml: dict[str, typing.Any] = self.load_yaml(path)
 
         return Config(**pure_yaml)

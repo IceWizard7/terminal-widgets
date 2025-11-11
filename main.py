@@ -164,8 +164,6 @@ def main_curses(stdscr: typing.Any) -> None:
     ui_state: base.UIState = base.UIState()
     base_config: base.BaseConfig = config_loader.load_base_config()
 
-    # TODO: Problem... When base.yaml is fine and then at runtime I reload when its faulty the terminal doesn't get
-
     base.init_curses_setup(stdscr, base_config)
 
     clock_widget: base.Widget = clock.build(stdscr, config_loader.load_widget_config('clock'))
@@ -263,7 +261,7 @@ def main_curses(stdscr: typing.Any) -> None:
 
                 widget.noutrefresh()
             curses.doupdate()
-        except (base.RestartException, base.TerminalTooSmall, base.ConfigError):
+        except (base.RestartException, base.TerminalTooSmall, base.ConfigError, base.ConfigFileNotFoundError):
             # Clean up threads and re-raise so outer loop stops
             stop_event.set()
             reloader_thread.join(timeout=1)
@@ -271,6 +269,14 @@ def main_curses(stdscr: typing.Any) -> None:
         except Exception as e:
             stop_event.set()
             reloader_thread.join(timeout=1)
+            try:
+                min_height = max(
+                    widget.dimensions.height + widget.dimensions.y for widget in widget_list if widget.config.enabled)
+                min_width = max(
+                    widget.dimensions.width + widget.dimensions.x for widget in widget_list if widget.config.enabled)
+                base.validate_terminal_size(stdscr, min_height, min_width)
+            except Exception:
+                raise  # if the terminal size just changed, raise that. needed if e.g. split windows
             raise base.UnknownException(f'Error: {e}')
 
 
@@ -285,6 +291,9 @@ def main_entry_point() -> None:
             continue  # Restart main
         except base.ConfigError as e:
             print(f'⚠️ Config Error: {e}')
+            break
+        except base.ConfigFileNotFoundError as e:
+            print(f'⚠️ Config File Not Found Error: {e}')
             break
         except KeyboardInterrupt:
             pass
@@ -311,6 +320,8 @@ if __name__ == '__main__':
 
 # TODO: Add examples / images
 # TODO: Autodetect system OS?
+
+# TODO: When config has flaws, this should not only say 1 problem but rather all...
 
 # Ideas:
 # - quote of the day, etc.
