@@ -19,6 +19,8 @@ import widgets.resources as resources
 
 
 def switch_windows(
+        ui_state: base.UIState,
+        base_config: base.BaseConfig,
         mx: int,
         my: int,
         _b_state: int,
@@ -29,37 +31,39 @@ def switch_windows(
     todo_widget = widgets['todo']
 
     # Find which widget was clicked
-    base.ui_state.highlighted = None
+    ui_state.highlighted = None
     for widget in widget_list:
         y1 = widget.dimensions.y
         y2 = y1 + widget.dimensions.height
         x1 = widget.dimensions.x
         x2 = x1 + widget.dimensions.width
         if y1 <= my <= y2 and x1 <= mx <= x2:
-            base.ui_state.highlighted = widget
+            ui_state.highlighted = widget
             break
-    mode_widget.draw()
+    mode_widget.draw(ui_state, base_config)
     mode_widget.direct_refresh()
 
-    todo.mark_highlighted_line(todo_widget, my)
+    todo.mark_highlighted_line(todo_widget, my, ui_state)
 
-    todo_widget.draw()
+    todo_widget.draw(ui_state, base_config)
     todo_widget.direct_refresh()
 
 
 def handle_key_input(
+        ui_state: base.UIState,
+        base_config: base.BaseConfig,
         key: typing.Any,
         stop_event: threading.Event,
         widget_dict: dict[str, base.Widget],
 ) -> None:
     mode_widget: base.Widget = widget_dict['mode']
     todo_widget: base.Widget = widget_dict['todo']
-    highlighted_widget: base.Widget | None = base.ui_state.highlighted
+    highlighted_widget: base.Widget | None = ui_state.highlighted
 
     if key == 27:  # ESC key
-        base.ui_state.highlighted = None
+        ui_state.highlighted = None
 
-        mode_widget.draw()
+        mode_widget.draw(ui_state, base_config)
         mode_widget.direct_refresh()
 
         todo.remove_highlighted_line(todo_widget)
@@ -67,11 +71,11 @@ def handle_key_input(
         return
 
     if highlighted_widget is None:
-        if key == ord(base.base_config.quit_key):
+        if key == ord(base_config.quit_key):
             stop_event.set()
-        elif key == ord(base.base_config.help_key):
+        elif key == ord(base_config.help_key):
             pass  # TODO: Help page? Even for each window?
-        elif key == ord(base.base_config.reload_key):  # Reload widgets & config
+        elif key == ord(base_config.reload_key):  # Reload widgets & config
             raise base.RestartException
         return
 
@@ -112,11 +116,11 @@ def handle_key_input(
                 if confirm.lower().strip() in ['y']:
                     todo.remove_todo(todo_widget, todo_widget.draw_data['selected_line'])
 
-        todo_widget.draw()
+        todo_widget.draw(ui_state, base_config)
         todo_widget.direct_refresh()
 
 
-def reload_widget_scheduler(widget_dict: dict[str, base.Widget], stop_event: threading.Event) -> None:
+def reload_widget_scheduler(config_loader: base.ConfigLoader, widget_dict: dict[str, base.Widget], stop_event: threading.Event) -> None:
     widget_list = list(widget_dict.values())
     reloadable_widgets = [w for w in widget_list if w.updatable()]
 
@@ -138,7 +142,7 @@ def reload_widget_scheduler(widget_dict: dict[str, base.Widget], stop_event: thr
             # See widget.updatable()
             if now - widget.last_updated >= widget.interval:  # type: ignore[operator]
                 try:
-                    widget.draw_data = widget.update()
+                    widget.draw_data = widget.update(config_loader)
                     widget.last_updated = now
                 except Exception as e:
                     widget.draw_data = {'__error__': str(e)}
@@ -151,29 +155,25 @@ def main_curses(stdscr: typing.Any) -> None:
     script_dir = os.path.dirname(os.path.abspath(__file__))
     os.chdir(script_dir)
 
+    config_loader: base.ConfigLoader = base.ConfigLoader()
+    ui_state: base.UIState = base.UIState()
+    base_config: base.BaseConfig = config_loader.load_base_config()
+
     # TODO: Problem... When base.yaml is fine and then at runtime I reload when its faulty the terminal doesn't get
-    # cleaned up that well.
-    # Fix (probably): Move:
-    # config_loader: ConfigLoader = ConfigLoader()
-    # ui_state: UIState = UIState()
-    # base_standard_fallback_config: BaseStandardFallBackConfig = BaseStandardFallBackConfig()
-    # base_config: BaseConfig = config_loader.load_base_config()
-    # to here somewhere.
-    # OUT of core/base
+    # TODO: Updated docs.
 
-    base.config_loader.reload_secrets()
-    base.base_config = base.config_loader.load_base_config()
-    base.init_curses_setup(stdscr)
+    config_loader.reload_secrets()  # TODO: needed??
+    base.init_curses_setup(stdscr, base_config)
 
-    clock_widget: base.Widget = clock.build(stdscr, base.config_loader.load_widget_config('clock'))
-    greetings_widget: base.Widget = greetings.build(stdscr, base.config_loader.load_widget_config('greetings'))
-    calendar_widget: base.Widget = calendar.build(stdscr, base.config_loader.load_widget_config('calendar'))
-    mode_widget: base.Widget = mode.build(stdscr, base.config_loader.load_widget_config('mode'))
-    todo_widget: base.Widget = todo.build(stdscr, base.config_loader.load_widget_config('todo'))
-    weather_widget: base.Widget = weather.build(stdscr, base.config_loader.load_widget_config('weather'))
-    news_widget: base.Widget = news.build(stdscr, base.config_loader.load_widget_config('news'))
-    neofetch_widget: base.Widget = neofetch.build(stdscr, base.config_loader.load_widget_config('neofetch'))
-    resources_widget: base.Widget = resources.build(stdscr, base.config_loader.load_widget_config('resources'))
+    clock_widget: base.Widget = clock.build(stdscr, config_loader.load_widget_config('clock'))
+    greetings_widget: base.Widget = greetings.build(stdscr, config_loader.load_widget_config('greetings'))
+    calendar_widget: base.Widget = calendar.build(stdscr, config_loader.load_widget_config('calendar'))
+    mode_widget: base.Widget = mode.build(stdscr, config_loader.load_widget_config('mode'))
+    todo_widget: base.Widget = todo.build(stdscr, config_loader.load_widget_config('todo'))
+    weather_widget: base.Widget = weather.build(stdscr, config_loader.load_widget_config('weather'))
+    news_widget: base.Widget = news.build(stdscr, config_loader.load_widget_config('news'))
+    neofetch_widget: base.Widget = neofetch.build(stdscr, config_loader.load_widget_config('neofetch'))
+    resources_widget: base.Widget = resources.build(stdscr, config_loader.load_widget_config('resources'))
     # Add more widgets here (2)
 
     # Loading order is defined here
@@ -196,10 +196,10 @@ def main_curses(stdscr: typing.Any) -> None:
     min_width = max(widget.dimensions.width + widget.dimensions.x for widget in widget_list if widget.config.enabled)
     base.validate_terminal_size(stdscr, min_height, min_width)
 
-    base.loading_screen(widget_list)
+    base.loading_screen(widget_list, ui_state, base_config)
 
     stop_event = threading.Event()
-    reloader_thread = threading.Thread(target=reload_widget_scheduler, args=(widget_dict, stop_event))
+    reloader_thread = threading.Thread(target=reload_widget_scheduler, args=(config_loader, widget_dict, stop_event))
     reloader_thread.daemon = True  # don't block exit if something goes wrong
     reloader_thread.start()
 
@@ -221,12 +221,12 @@ def main_curses(stdscr: typing.Any) -> None:
                 try:
                     _, mx, my, _, b_state = curses.getmouse()
                     if b_state & curses.BUTTON1_PRESSED:
-                        switch_windows(mx, my, b_state, widget_dict)
+                        switch_windows(ui_state, base_config, mx, my, b_state, widget_dict)
                 except curses.error:
                     # Ignore invalid mouse events (like scroll in some terminals)
                     continue
 
-            handle_key_input(key, stop_event, widget_dict)
+            handle_key_input(ui_state, base_config, key, stop_event, widget_dict)
 
             if stop_event.is_set():
                 break
@@ -237,12 +237,12 @@ def main_curses(stdscr: typing.Any) -> None:
                     break
 
                 if widget == mode_widget:
-                    widget.draw()
+                    widget.draw(ui_state, base_config)
                     widget.direct_refresh()
                     continue
 
                 if widget == todo_widget:
-                    widget.draw()
+                    widget.draw(ui_state, base_config)
                     widget.direct_refresh()
                     continue
 
@@ -250,17 +250,17 @@ def main_curses(stdscr: typing.Any) -> None:
                     with widget.lock:
                         data_copy = widget.draw_data.copy()
                     if '__error__' in data_copy:
-                        base.display_error(widget, [widget.draw_data['__error__']])
+                        base.display_error(widget, [widget.draw_data['__error__']], ui_state, base_config)
                     else:
-                        widget.draw(data_copy)
+                        widget.draw(ui_state, base_config, data_copy)
                 elif not widget.updatable():
-                    widget.draw()
+                    widget.draw(ui_state, base_config)
                 else:
                     pass  # Data still loading
 
                 widget.noutrefresh()
             curses.doupdate()
-        except (base.RestartException, base.TerminalTooSmall):
+        except (base.RestartException, base.TerminalTooSmall, base.ConfigError):
             # Clean up threads and re-raise so outer loop restarts
             stop_event.set()
             reloader_thread.join(timeout=1)

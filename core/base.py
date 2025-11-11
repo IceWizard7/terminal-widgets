@@ -3,7 +3,6 @@ from pathlib import Path
 import yaml
 from dotenv import load_dotenv  # type: ignore[import-not-found]
 import os
-import sys
 import curses
 import typing
 import threading
@@ -22,12 +21,12 @@ class Dimensions:
 
 class Widget:
     DrawFunction = typing.Callable[
-                       ['Widget'], None] | typing.Callable[
-        ['Widget', dict[str, typing.Any]], None] | typing.Callable[
-        ['Widget', list[str]], None
+                       ['Widget', 'UIState', 'BaseConfig'], None] | typing.Callable[
+        ['Widget', 'UIState', 'BaseConfig', dict[str, typing.Any]], None] | typing.Callable[
+        ['Widget', 'UIState', 'BaseConfig', list[str]], None
     ]
 
-    UpdateFunction = typing.Callable[['Widget'], dict[str, typing.Any] | list[str]]
+    UpdateFunction = typing.Callable[['Widget', 'ConfigLoader'], dict[str, typing.Any] | list[str]]
 
     def __init__(
             self,
@@ -63,13 +62,13 @@ class Widget:
     def noutrefresh(self) -> None:
         self.win.noutrefresh()
 
-    def draw(self, *args: typing.Any, **kwargs: typing.Any) -> None:
+    def draw(self, ui_state: UIState, base_config: BaseConfig, *args: typing.Any, **kwargs: typing.Any) -> None:
         if self.config.enabled:
-            self._draw_func(self, *args, **kwargs)
+            self._draw_func(self, ui_state, base_config, *args, **kwargs)
 
-    def update(self) -> dict[str, typing.Any] | list[str] | None:
+    def update(self, config_loader: ConfigLoader) -> dict[str, typing.Any] | list[str] | None:
         if self._update_func and self.config.enabled:
-            return self._update_func(self)
+            return self._update_func(self, config_loader)
         return None
 
     def updatable(self) -> bool:
@@ -210,6 +209,8 @@ class BaseConfig:
             reload_key: str | None = None,
             help_key: str | None = None
     ) -> None:
+        base_standard_fallback_config: BaseStandardFallBackConfig = BaseStandardFallBackConfig()
+
         self.background_color: RGBColor = base_standard_fallback_config.background_color
         self.foreground_color: RGBColor = base_standard_fallback_config.foreground_color
         self.primary_color: RGBColor = base_standard_fallback_config.primary_color
@@ -339,7 +340,14 @@ def draw_colored_border(win: typing.Any, color_pair: int) -> None:
     win.attroff(curses.color_pair(color_pair))
 
 
-def draw_widget(widget: Widget, title: str | None = None, loading: bool = False, error: bool = False) -> None:
+def draw_widget(
+        widget: Widget,
+        ui_state: UIState,
+        base_config: BaseConfig,
+        title: str | None = None,
+        loading: bool = False,
+        error: bool = False
+) -> None:
     if not title:
         title = widget.title[:widget.dimensions.width - 4]
     else:
@@ -373,22 +381,22 @@ def safe_addstr(widget: Widget, y: int, x: int, text: str, color: int = 0) -> No
         pass
 
 
-def loading_screen(widgets: list[Widget]) -> None:
+def loading_screen(widgets: list[Widget], ui_state: UIState, base_config: BaseConfig) -> None:
     for widget in widgets:
         if not widget.config.enabled:
             continue
-        draw_widget(widget, loading=True)
+        draw_widget(widget, ui_state, base_config, loading=True)
         add_widget_content(widget, [' Loading... '])
         widget.win.refresh()
     return None
 
 
-def display_error(widget: Widget, content: list[str]) -> None:
-    draw_widget(widget, ' Error ', error=True)
+def display_error(widget: Widget, content: list[str], ui_state: UIState, base_config: BaseConfig) -> None:
+    draw_widget(widget, ui_state, base_config, ' Error ', error=True)
     add_widget_content(widget, content)
 
 
-def init_colors() -> None:
+def init_colors(base_config: BaseConfig) -> None:
     curses.start_color()
     if base_config.use_standard_terminal_background:
         curses.use_default_colors()
@@ -429,13 +437,13 @@ def init_colors() -> None:
         curses.init_pair(i, color, base_config.BACKGROUND_NUMBER)  # type: ignore[arg-type]
 
 
-def init_curses_setup(stdscr: typing.Any) -> None:
+def init_curses_setup(stdscr: typing.Any, base_config: BaseConfig) -> None:
     curses.mousemask(curses.ALL_MOUSE_EVENTS)
     curses.curs_set(0)
     curses.mouseinterval(0)
     stdscr.move(0, 0)
     curses.set_escdelay(25)
-    init_colors()
+    init_colors(base_config)
     stdscr.bkgd(' ', curses.color_pair(1))  # Activate standard color
     stdscr.clear()
     stdscr.refresh()
@@ -565,13 +573,3 @@ class ConfigLoader:
         pure_yaml: dict[str, typing.Any] = self.load_yaml(path)
 
         return Config(**pure_yaml)
-
-
-try:
-    config_loader: ConfigLoader = ConfigLoader()
-    ui_state: UIState = UIState()
-    base_standard_fallback_config: BaseStandardFallBackConfig = BaseStandardFallBackConfig()
-    base_config: BaseConfig = config_loader.load_base_config()
-except Exception as _e:
-    print(_e)
-    sys.exit(1)
