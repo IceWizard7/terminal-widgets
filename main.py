@@ -322,6 +322,7 @@ if __name__ == '__main__':
 # TODO: Autodetect system OS?
 
 # TODO: When config has flaws, this should not only say 1 problem but rather all...
+# TODO: Any more terminal too small changes or sth?? Or config file change??
 
 # Ideas:
 # - quote of the day, etc.
