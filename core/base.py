@@ -128,7 +128,6 @@ class Config:
             width: int | None = None,
             y: int | None = None,
             x: int | None = None,
-            save_path: str | None = None,
             **kwargs: typing.Any
     ) -> None:
         if name is None:
@@ -158,9 +157,6 @@ class Config:
             self.interval = None
         self.last_updated: int = 0
         self.dimensions: Dimensions = Dimensions(height=height, width=width, y=y, x=x)
-
-        if save_path is not None:
-            self.save_path = save_path
 
         for key, value in kwargs.items():
             setattr(self, key, value)
