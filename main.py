@@ -168,16 +168,37 @@ def main_curses(stdscr: typing.Any) -> None:
 
     base.init_curses_setup(stdscr, base_config)
 
-    clock_widget: base.Widget = clock.build(stdscr, config_loader.load_widget_config(log_messages, 'clock'))
-    greetings_widget: base.Widget = greetings.build(stdscr, config_loader.load_widget_config(log_messages, 'greetings'))
-    calendar_widget: base.Widget = calendar.build(stdscr, config_loader.load_widget_config(log_messages, 'calendar'))
-    mode_widget: base.Widget = mode.build(stdscr, config_loader.load_widget_config(log_messages, 'mode'))
-    todo_widget: base.Widget = todo.build(stdscr, config_loader.load_widget_config(log_messages, 'todo'))
-    weather_widget: base.Widget = weather.build(stdscr, config_loader.load_widget_config(log_messages, 'weather'))
-    news_widget: base.Widget = news.build(stdscr, config_loader.load_widget_config(log_messages, 'news'))
-    neofetch_widget: base.Widget = neofetch.build(stdscr, config_loader.load_widget_config(log_messages, 'neofetch'))
-    resources_widget: base.Widget = resources.build(stdscr, config_loader.load_widget_config(log_messages, 'resources'))
-    # Add more widgets here (2)
+    try:
+        clock_widget: base.Widget = clock.build(
+            stdscr, config_loader.load_widget_config(log_messages, 'clock')
+        )
+        greetings_widget: base.Widget = greetings.build(
+            stdscr, config_loader.load_widget_config(log_messages, 'greetings')
+        )
+        calendar_widget: base.Widget = calendar.build(
+            stdscr, config_loader.load_widget_config(log_messages, 'calendar')
+        )
+        mode_widget: base.Widget = mode.build(
+            stdscr, config_loader.load_widget_config(log_messages, 'mode')
+        )
+        todo_widget: base.Widget = todo.build(
+            stdscr, config_loader.load_widget_config(log_messages, 'todo')
+        )
+        weather_widget: base.Widget = weather.build(
+            stdscr, config_loader.load_widget_config(log_messages, 'weather')
+        )
+        news_widget: base.Widget = news.build(
+            stdscr, config_loader.load_widget_config(log_messages, 'news')
+        )
+        neofetch_widget: base.Widget = neofetch.build(
+            stdscr, config_loader.load_widget_config(log_messages, 'neofetch')
+        )
+        resources_widget: base.Widget = resources.build(
+            stdscr, config_loader.load_widget_config(log_messages, 'resources')
+        )
+        # Add more widgets here (2)
+    except Exception as e:
+        raise base.UnknownException(log_messages, str(e))
 
     # Loading order is defined here
     widget_dict: dict[str, base.Widget] = {
@@ -289,10 +310,9 @@ def main_curses(stdscr: typing.Any) -> None:
                 min_width = max(
                     widget.dimensions.width + widget.dimensions.x for widget in widget_list if widget.config.enabled)
                 base.validate_terminal_size(stdscr, min_height, min_width)
-            except Exception:
-                raise  # Raise any error that might have occurred
-                # E.g. the terminal size just changed (split windows, ...)
-            raise base.UnknownException(f'Error: {e}')
+            except base.TerminalTooSmall:
+                raise  # E.g. the terminal size just changed (split windows, ...)
+            raise base.UnknownException(log_messages, str(e))
 
 
 def main_entry_point() -> None:
@@ -309,7 +329,7 @@ def main_entry_point() -> None:
             print(f'⚠️ Config File Not Found Error: {e}')
             break
         except base.StopException as e:
-            e.log_messages.print_log_messages()
+            e.log_messages.print_log_messages(start='⚠️ Warnings:\n', end='')
         except KeyboardInterrupt:
             break
         except base.TerminalTooSmall as e:
@@ -324,8 +344,14 @@ def main_entry_point() -> None:
             )
             break
         except base.UnknownException as e:
-            print(f'Unknown error\n{e.error_message}\n\n')
-            raise
+            e.log_messages.print_log_messages(start='⚠️ Errors:\n', end='\n')
+
+            print(
+                f'-> which results in:\n'
+                f'⚠️ Unknown errors:\n'
+                f'{e.error_message}\n'
+            )
+            # raise
         break  # Exit if the end of the loop is reached (User exit)
 
 

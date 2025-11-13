@@ -118,9 +118,10 @@ class ConfigFileNotFoundError(Exception):
 
 
 class UnknownException(Exception):
-    def __init__(self, error_message: str) -> None:
+    def __init__(self, log_messages: LogMessages, error_message: str) -> None:
+        self.log_messages: LogMessages = log_messages
         self.error_message = error_message
-        super().__init__(error_message)
+        super().__init__(log_messages, error_message)
 
 
 class LogMessages:
@@ -130,11 +131,12 @@ class LogMessages:
     def add_log_message(self, message: str) -> None:
         self.log_messages.append(message)
 
-    def print_log_messages(self) -> None:
+    def print_log_messages(self, start: str, end: str) -> None:
         if self.log_messages:
-            print(f'⚠️ Warnings:')
+            print(start, end='')
             for message in self.log_messages:
                 print(message)
+            print(end, end='')
 
 
 class Config:
@@ -157,19 +159,19 @@ class Config:
         self.name = name
 
         if title is None:
-            log_messages.add_log_message(f'title missing value for "{name}" widget')
+            log_messages.add_log_message(f'Configuration for title is missing ("{name}" widget)')
         if enabled is None:
-            log_messages.add_log_message(f'enabled missing value for "{name}" widget')
+            log_messages.add_log_message(f'Configuration for enabled is missing ("{name}" widget)')
         if interval is None:
-            log_messages.add_log_message(f'interval missing value for "{name}" widget')
+            log_messages.add_log_message(f'Configuration for interval is missing ("{name}" widget)')
         if height is None or not isinstance(height, int):
-            log_messages.add_log_message(f'height missing / incorrect value for "{name}" widget')
+            log_messages.add_log_message(f'Configuration for height is missing / incorrect ("{name}" widget)')
         if width is None or not isinstance(width, int):
-            log_messages.add_log_message(f'width missing / incorrect value for "{name}" widget')
+            log_messages.add_log_message(f'Configuration for width is missing / incorrect ("{name}" widget)')
         if y is None or not isinstance(y, int):
-            log_messages.add_log_message(f'y missing / incorrect value for "{name}" widget')
+            log_messages.add_log_message(f'Configuration for y is missing / incorrect ("{name}" widget)')
         if x is None or not isinstance(x, int):
-            log_messages.add_log_message(f'x missing / incorrect value for "{name}" widget')
+            log_messages.add_log_message(f'Configuration for x is missing / incorrect ("{name}" widget)')
 
         self.title = title
         self.enabled = enabled
@@ -273,7 +275,7 @@ class BaseConfig:
                 log_messages.add_log_message(f'background_color missing value for {e}')
         else:
             log_messages.add_log_message(
-                f'⚠️ Configuration for background_color is missing (base.yaml,'
+                f'Configuration for background_color is missing (base.yaml,'
                 f' falling back to standard config)'
             )
 
@@ -284,7 +286,7 @@ class BaseConfig:
                 log_messages.add_log_message(f'foreground_color missing value for {e}')
         else:
             log_messages.add_log_message(
-                f'⚠️ Configuration for foreground_color is missing (base.yaml,'
+                f'Configuration for foreground_color is missing (base.yaml,'
                 f' falling back to standard config)'
             )
 
@@ -295,7 +297,7 @@ class BaseConfig:
                 log_messages.add_log_message(f'primary_color missing value for {e}')
         else:
             log_messages.add_log_message(
-                f'⚠️ Configuration for primary_color is missing (base.yaml,'
+                f'Configuration for primary_color is missing (base.yaml,'
                 f' falling back to standard config)'
             )
 
@@ -306,7 +308,7 @@ class BaseConfig:
                 log_messages.add_log_message(f'secondary_color missing value for {e}')
         else:
             log_messages.add_log_message(
-                f'⚠️ Configuration for secondary_color is missing (base.yaml,'
+                f'Configuration for secondary_color is missing (base.yaml,'
                 f' falling back to standard config)'
             )
 
@@ -317,7 +319,7 @@ class BaseConfig:
                 log_messages.add_log_message(f'loading_color missing value for {e}')
         else:
             log_messages.add_log_message(
-                f'⚠️ Configuration for loading_color is missing (base.yaml,'
+                f'Configuration for loading_color is missing (base.yaml,'
                 f' falling back to standard config)'
             )
 
@@ -328,7 +330,7 @@ class BaseConfig:
                 log_messages.add_log_message(f'error_color missing value for {e}')
         else:
             log_messages.add_log_message(
-                f'⚠️ Configuration for error_color is missing (base.yaml,'
+                f'Configuration for error_color is missing (base.yaml,'
                 f' falling back to standard config)'
             )
 
@@ -346,7 +348,7 @@ class BaseConfig:
             self.use_standard_terminal_background = use_standard_terminal_background
         else:
             log_messages.add_log_message(
-                f'⚠️ Configuration for use_standard_terminal_background is missing (base.yaml,'
+                f'Configuration for use_standard_terminal_background is missing (base.yaml,'
                 f' falling back to standard config)'
             )
 
@@ -368,7 +370,7 @@ class BaseConfig:
                 log_messages.add_log_message(f'quit_key value not alphabetic or numeric')
             self.quit_key = quit_key
         else:
-            log_messages.add_log_message(f'⚠️ Configuration for quit_key is missing (base.yaml,'
+            log_messages.add_log_message(f'Configuration for quit_key is missing (base.yaml,'
                                          f' falling back to standard config)')
 
         if reload_key is not None:
@@ -378,7 +380,7 @@ class BaseConfig:
                 log_messages.add_log_message(f'reload_key value not alphabetic or numeric')
             self.reload_key = reload_key
         else:
-            log_messages.add_log_message(f'⚠️ Configuration for reload_key is missing (base.yaml,'
+            log_messages.add_log_message(f'Configuration for reload_key is missing (base.yaml,'
                                          f' falling back to standard config)')
 
         if help_key is not None:
@@ -389,12 +391,12 @@ class BaseConfig:
             self.help_key = help_key
         else:
             log_messages.add_log_message(
-                f'⚠️ Configuration for help_key is missing (base.yaml,'
+                f'Configuration for help_key is missing (base.yaml,'
                 f' falling back to standard config)'
             )
 
         for key, value in kwargs.items():
-            log_messages.add_log_message(f'⚠️ Configuration for Key "{key}" is not expected (base.yaml)')
+            log_messages.add_log_message(f'Configuration for key "{key}" is not expected (base.yaml)')
 
 
 def draw_colored_border(win: typing.Any, color_pair: int) -> None:
