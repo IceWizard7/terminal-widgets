@@ -7,5 +7,5 @@ width: 85
 y: 20
 x: 2
 
-save_path: 'widgets/save_file.txt'
-max_rendering: 7  # adapt based on height, else it will cause buggy behaviour, use around height-3
+save_path: 'widgets/todo_save_file.txt'
+max_rendering: 7  # adapt based on height, use around height - 3
