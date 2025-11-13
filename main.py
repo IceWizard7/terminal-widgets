@@ -161,11 +161,25 @@ def main_curses(stdscr: typing.Any) -> None:
     # Logs (e.g. Warnings)
     log_messages: base.LogMessages = base.LogMessages()
 
+    # Config loader (Doesn't load anything yet)
     config_loader: base.ConfigLoader = base.ConfigLoader()
     config_loader.reload_secrets()  # needed to reload secrets.env changes
-    ui_state: base.UIState = base.UIState()
+
+    # Scan configs
+    config_scanner: base.ConfigScanner = base.ConfigScanner(config_loader)
+    config_scan_results: base.LogMessages | bool = config_scanner.scan_config([
+        'clock', 'greetings', 'calendar', 'mode', 'todo', 'weather', 'news', 'neofetch', 'resources']
+    )
+    if config_scan_results is not False:
+        raise base.ConfigScanFoundError(config_scan_results)
+
+    # Initiate base config
     base_config: base.BaseConfig = config_loader.load_base_config(log_messages)
 
+    # Initiate base UI State
+    ui_state: base.UIState = base.UIState()
+
+    # Initiate curses
     base.init_curses_setup(stdscr, base_config)
 
     try:
@@ -294,6 +308,7 @@ def main_curses(stdscr: typing.Any) -> None:
         except (
                 base.RestartException,
                 base.TerminalTooSmall,
+                base.ConfigScanFoundError,
                 base.ConfigError,
                 base.ConfigFileNotFoundError,
                 base.StopException
@@ -323,13 +338,16 @@ def main_entry_point() -> None:
             # wrapper() has already cleaned up curses at this point
             continue  # Restart main
         except base.ConfigError as e:
-            print(f'⚠️ Config Error: {e}')
+            print(f'⚠️ Config error: {e}')
+            break
+        except base.ConfigScanFoundError as e:
+            e.log_messages.print_log_messages(start='\n⚠️ Config errors (found by ConfigScanner):\n\n', end='\n')
             break
         except base.ConfigFileNotFoundError as e:
             print(f'⚠️ Config File Not Found Error: {e}')
             break
         except base.StopException as e:
-            e.log_messages.print_log_messages(start='⚠️ Warnings:\n', end='')
+            e.log_messages.print_log_messages(start='\n⚠️ Config warnings:\n\n', end='')
         except KeyboardInterrupt:
             break
         except base.TerminalTooSmall as e:
@@ -344,7 +362,7 @@ def main_entry_point() -> None:
             )
             break
         except base.UnknownException as e:
-            e.log_messages.print_log_messages(start='⚠️ Errors:\n', end='\n')
+            e.log_messages.print_log_messages(start='\n⚠️ Errors:\n\n', end='\n')
 
             print(
                 f'-> which results in:\n'
@@ -362,7 +380,10 @@ if __name__ == '__main__':
 # TODO: Add examples / images
 # TODO: Autodetect system OS?
 
-# TODO: When config has flaws, this should not only say 1 problem but rather all...
+# TODO: ConfigScanner, if base.yaml
+# e.g.
+# error_color:
+#   r: 25d5
 
 # Ideas:
 # - quote of the day, etc.

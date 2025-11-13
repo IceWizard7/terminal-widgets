@@ -111,6 +111,12 @@ class ConfigError(Exception):
         super().__init__(error_details)
 
 
+class ConfigScanFoundError(Exception):
+    def __init__(self, log_messages: LogMessages) -> None:
+        self.log_messages: LogMessages = log_messages
+        super().__init__(log_messages)
+
+
 class ConfigFileNotFoundError(Exception):
     def __init__(self, error_details: str) -> None:
         self.error_details: str = error_details
@@ -127,6 +133,17 @@ class UnknownException(Exception):
 class LogMessages:
     def __init__(self) -> None:
         self.log_messages: list[str] = []
+
+    def __add__(self, other: LogMessages) -> LogMessages:
+        new_log: LogMessages = LogMessages()
+        new_log.log_messages = self.log_messages + other.log_messages
+        return new_log
+
+    def __eq__(self, other: LogMessages) -> bool:
+        return self.log_messages == other.log_messages
+
+    def __ne__(self, other: LogMessages) -> bool:
+        return self.log_messages != other.log_messages
 
     def add_log_message(self, message: str) -> None:
         self.log_messages.append(message)
@@ -647,3 +664,28 @@ class ConfigLoader:
         pure_yaml: dict[str, typing.Any] = self.load_yaml(path)
 
         return Config(log_messages=log_messages, **pure_yaml)
+
+
+class ConfigScanner:
+    def __init__(self, config_loader: ConfigLoader) -> None:
+        self.config_loader = config_loader
+
+    def scan_config(self, widget_names: list[str]) -> LogMessages | bool:
+        """Scan config, either returns log messages or 'False' representing that no errors were found"""
+        empty_log: LogMessages = LogMessages()
+        final_log: LogMessages = LogMessages()
+
+        current_log: LogMessages = LogMessages()
+        self.config_loader.load_base_config(current_log)
+        if current_log != empty_log:
+            final_log += current_log
+
+        for widget_name in widget_names:
+            current_log: LogMessages = LogMessages()
+            self.config_loader.load_widget_config(current_log, widget_name)
+            if current_log != empty_log:
+                final_log += current_log
+
+        if final_log != empty_log:
+            return final_log
+        return False
