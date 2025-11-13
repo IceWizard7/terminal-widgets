@@ -23,6 +23,7 @@ def remove_todo(widget: Widget, line: int) -> None:
 
 
 def save_todos(widget: Widget) -> None:
+    # If file doesn't exist, this will create it
     with open(widget.config.save_path, 'w') as file:
         if 'todos' in widget.draw_data:
             json.dump(widget.draw_data['todos'], file)
@@ -31,6 +32,7 @@ def save_todos(widget: Widget) -> None:
 
 
 def load_todos(widget: Widget) -> None:
+    # If file doesn't exist, set todos = {}
     try:
         with open(widget.config.save_path, 'r') as file:
             data = json.load(file)
@@ -109,9 +111,11 @@ def render_todos(todos: list[str], highlighted_line: int | None, max_render: int
 def draw(widget: Widget, ui_state: UIState, base_config: BaseConfig) -> None:
     draw_widget(widget, ui_state, base_config, widget.title)
 
-    todos, rel_index = render_todos(list(widget.draw_data.get('todos', {}).values()),
-                                    widget.draw_data.get('selected_line'),
-                                    widget.config.max_rendering)
+    todos, rel_index = render_todos(list(
+        widget.draw_data.get('todos', {}).values()),
+        widget.draw_data.get('selected_line'),
+        widget.config.max_rendering if widget.config.max_rendering else 3
+    )
 
     for i, todo in enumerate(todos):
         if rel_index is not None and i == rel_index:
