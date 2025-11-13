@@ -89,7 +89,25 @@ Example:
 api_key: str = _config_loader.get_secret('WEATHER_API_KEY')
 ```
 
-#### 3.2.6 Building widget
+#### 3.2.6 Adding custom data to config
+
+Example:
+
+Python:
+```python
+custom_attribute: typing.Any = widget.config.custom_attribute
+```
+
+YAML:
+```yaml
+custom_attribute: 'this is a custom attribute!'
+```
+
+> Note that this will not be checked by the ConfigScanner.
+It only checks `base.yaml` for integrity, as well as "name",
+"title", "enabled", "interval", "height", "width", "y" and "x" for every widget.
+
+#### 3.2.7 Building widget
 
 Simple widgets:
 
