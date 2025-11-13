@@ -381,7 +381,6 @@ if __name__ == '__main__':
 # TODO: Add examples / images
 # TODO: Autodetect system OS?
 
-# TODO: ConfigScanner, if base.yaml
 # e.g.
 # error_color:
 #   r: 25d5
