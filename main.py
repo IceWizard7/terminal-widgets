@@ -2,7 +2,6 @@ import curses
 import time
 import typing
 import threading
-import sys
 import os
 
 import core.base as base
@@ -53,8 +52,8 @@ def handle_key_input(
         ui_state: base.UIState,
         base_config: base.BaseConfig,
         key: typing.Any,
-        stop_event: threading.Event,
-        widget_dict: dict[str, base.Widget],
+        log_messages: base.LogMessages,
+        widget_dict: dict[str, base.Widget]
 ) -> None:
     mode_widget: base.Widget = widget_dict['mode']
     todo_widget: base.Widget = widget_dict['todo']
@@ -72,7 +71,7 @@ def handle_key_input(
 
     if highlighted_widget is None:
         if key == ord(base_config.quit_key):
-            stop_event.set()
+            raise base.StopException(log_messages)
         elif key == ord(base_config.help_key):
             pass  # TODO: Help page? Even for each window?
         elif key == ord(base_config.reload_key):  # Reload widgets & config
@@ -159,22 +158,25 @@ def main_curses(stdscr: typing.Any) -> None:
     script_dir = os.path.dirname(os.path.abspath(__file__))
     os.chdir(script_dir)
 
+    # Logs (e.g. Warnings)
+    log_messages: base.LogMessages = base.LogMessages()
+
     config_loader: base.ConfigLoader = base.ConfigLoader()
     config_loader.reload_secrets()  # needed to reload secrets.env changes
     ui_state: base.UIState = base.UIState()
-    base_config: base.BaseConfig = config_loader.load_base_config()
+    base_config: base.BaseConfig = config_loader.load_base_config(log_messages)
 
     base.init_curses_setup(stdscr, base_config)
 
-    clock_widget: base.Widget = clock.build(stdscr, config_loader.load_widget_config('clock'))
-    greetings_widget: base.Widget = greetings.build(stdscr, config_loader.load_widget_config('greetings'))
-    calendar_widget: base.Widget = calendar.build(stdscr, config_loader.load_widget_config('calendar'))
-    mode_widget: base.Widget = mode.build(stdscr, config_loader.load_widget_config('mode'))
-    todo_widget: base.Widget = todo.build(stdscr, config_loader.load_widget_config('todo'))
-    weather_widget: base.Widget = weather.build(stdscr, config_loader.load_widget_config('weather'))
-    news_widget: base.Widget = news.build(stdscr, config_loader.load_widget_config('news'))
-    neofetch_widget: base.Widget = neofetch.build(stdscr, config_loader.load_widget_config('neofetch'))
-    resources_widget: base.Widget = resources.build(stdscr, config_loader.load_widget_config('resources'))
+    clock_widget: base.Widget = clock.build(stdscr, config_loader.load_widget_config(log_messages, 'clock'))
+    greetings_widget: base.Widget = greetings.build(stdscr, config_loader.load_widget_config(log_messages, 'greetings'))
+    calendar_widget: base.Widget = calendar.build(stdscr, config_loader.load_widget_config(log_messages, 'calendar'))
+    mode_widget: base.Widget = mode.build(stdscr, config_loader.load_widget_config(log_messages, 'mode'))
+    todo_widget: base.Widget = todo.build(stdscr, config_loader.load_widget_config(log_messages, 'todo'))
+    weather_widget: base.Widget = weather.build(stdscr, config_loader.load_widget_config(log_messages, 'weather'))
+    news_widget: base.Widget = news.build(stdscr, config_loader.load_widget_config(log_messages, 'news'))
+    neofetch_widget: base.Widget = neofetch.build(stdscr, config_loader.load_widget_config(log_messages, 'neofetch'))
+    resources_widget: base.Widget = resources.build(stdscr, config_loader.load_widget_config(log_messages, 'resources'))
     # Add more widgets here (2)
 
     # Loading order is defined here
@@ -199,8 +201,8 @@ def main_curses(stdscr: typing.Any) -> None:
 
     base.loading_screen(widget_list, ui_state, base_config)
 
-    stop_event = threading.Event()
-    reloader_thread = threading.Thread(target=reload_widget_scheduler, args=(config_loader, widget_dict, stop_event))
+    stop_event: threading.Event = threading.Event()
+    reloader_thread: threading.Thread = threading.Thread(target=reload_widget_scheduler, args=(config_loader, widget_dict, stop_event))
     reloader_thread.daemon = True  # don't block exit if something goes wrong
     reloader_thread.start()
 
@@ -227,7 +229,7 @@ def main_curses(stdscr: typing.Any) -> None:
                     # Ignore invalid mouse events (like scroll in some terminals)
                     continue
 
-            handle_key_input(ui_state, base_config, key, stop_event, widget_dict)
+            handle_key_input(ui_state, base_config, key, log_messages, widget_dict)
 
             if stop_event.is_set():
                 break
@@ -261,14 +263,19 @@ def main_curses(stdscr: typing.Any) -> None:
 
                 widget.noutrefresh()
             curses.doupdate()
-        except (base.RestartException, base.TerminalTooSmall, base.ConfigError, base.ConfigFileNotFoundError):
+        except (
+                base.RestartException,
+                base.TerminalTooSmall,
+                base.ConfigError,
+                base.ConfigFileNotFoundError,
+                base.StopException
+        ):
             # Clean up threads and re-raise so outer loop stops
-            stop_event.set()
-            reloader_thread.join(timeout=1)
+            base.cleanup_curses_setup(stop_event, reloader_thread)
             raise  # re-raise so wrapper(main_curses) exits and outer loop stops
         except Exception as e:
-            stop_event.set()
-            reloader_thread.join(timeout=1)
+            # Clean up threads and re-raise so outer loop stops
+            base.cleanup_curses_setup(stop_event, reloader_thread)
             try:
                 min_height = max(
                     widget.dimensions.height + widget.dimensions.y for widget in widget_list if widget.config.enabled)
@@ -276,7 +283,8 @@ def main_curses(stdscr: typing.Any) -> None:
                     widget.dimensions.width + widget.dimensions.x for widget in widget_list if widget.config.enabled)
                 base.validate_terminal_size(stdscr, min_height, min_width)
             except Exception:
-                raise  # if the terminal size just changed, raise that. needed if e.g. split windows
+                raise  # Raise any error that might have occurred
+                # E.g. the terminal size just changed (split windows, ...)
             raise base.UnknownException(f'Error: {e}')
 
 
@@ -286,8 +294,6 @@ def main_entry_point() -> None:
             curses.wrapper(main_curses)
         except base.RestartException:
             # wrapper() has already cleaned up curses at this point
-            sys.stdout.write('\033[2J\033[3J\033[H')  # clear screen, scrollback, and move cursor home
-            sys.stdout.flush()
             continue  # Restart main
         except base.ConfigError as e:
             print(f'⚠️ Config Error: {e}')
@@ -295,8 +301,10 @@ def main_entry_point() -> None:
         except base.ConfigFileNotFoundError as e:
             print(f'⚠️ Config File Not Found Error: {e}')
             break
+        except base.StopException as e:
+            e.log_messages.print_log_messages()
         except KeyboardInterrupt:
-            pass
+            break
         except base.TerminalTooSmall as e:
             print(
                 f'',
@@ -322,7 +330,6 @@ if __name__ == '__main__':
 # TODO: Autodetect system OS?
 
 # TODO: When config has flaws, this should not only say 1 problem but rather all...
-# TODO: Any more terminal too small changes or sth?? Or config file change??
 
 # Ideas:
 # - quote of the day, etc.

@@ -121,7 +121,7 @@ import widgets.custom as custom
 `# Add more widgets here (2)` — Build your widget instances here
 
 ```python
-custom_widget: base.Widget = custom.build(stdscr, config_loader.load_widget_config('custom'))
+custom_widget: base.Widget = custom.build(stdscr, config_loader.load_widget_config(log_messages, 'custom'))
 ```
 
 `# Add more widgets here (3)` — Add the widget instance to the dashboard widget mapping dictionary
