@@ -202,7 +202,14 @@ def main_curses(stdscr: typing.Any) -> None:
     base.loading_screen(widget_list, ui_state, base_config)
 
     stop_event: threading.Event = threading.Event()
-    reloader_thread: threading.Thread = threading.Thread(target=reload_widget_scheduler, args=(config_loader, widget_dict, stop_event))
+    reloader_thread: threading.Thread = threading.Thread(
+        target=reload_widget_scheduler,
+        args=(
+            config_loader,
+            widget_dict,
+            stop_event
+        )
+    )
     reloader_thread.daemon = True  # don't block exit if something goes wrong
     reloader_thread.start()
 

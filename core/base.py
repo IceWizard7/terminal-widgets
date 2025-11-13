@@ -250,7 +250,8 @@ class BaseConfig:
             error_color: dict[str, typing.Any] | None = None,
             quit_key: str | None = None,
             reload_key: str | None = None,
-            help_key: str | None = None
+            help_key: str | None = None,
+            **kwargs: typing.Any
     ) -> None:
         base_standard_fallback_config: BaseStandardFallBackConfig = BaseStandardFallBackConfig()
 
@@ -271,8 +272,10 @@ class BaseConfig:
             except KeyError as e:
                 log_messages.add_log_message(f'background_color missing value for {e}')
         else:
-            log_messages.add_log_message(f'⚠️ Configuration for background_color is missing (add it in base.yaml)')
-            log_messages.add_log_message('Falling back to standard config.')
+            log_messages.add_log_message(
+                f'⚠️ Configuration for background_color is missing (base.yaml,'
+                f' falling back to standard config)'
+            )
 
         if foreground_color is not None:
             try:
@@ -280,8 +283,10 @@ class BaseConfig:
             except KeyError as e:
                 log_messages.add_log_message(f'foreground_color missing value for {e}')
         else:
-            log_messages.add_log_message(f'⚠️ Configuration for foreground_color is missing (add it in base.yaml)')
-            log_messages.add_log_message('Falling back to standard config.')
+            log_messages.add_log_message(
+                f'⚠️ Configuration for foreground_color is missing (base.yaml,'
+                f' falling back to standard config)'
+            )
 
         if primary_color is not None:
             try:
@@ -289,8 +294,10 @@ class BaseConfig:
             except KeyError as e:
                 log_messages.add_log_message(f'primary_color missing value for {e}')
         else:
-            log_messages.add_log_message(f'⚠️ Configuration for primary_color is missing (add it in base.yaml)')
-            log_messages.add_log_message('Falling back to standard config.')
+            log_messages.add_log_message(
+                f'⚠️ Configuration for primary_color is missing (base.yaml,'
+                f' falling back to standard config)'
+            )
 
         if secondary_color is not None:
             try:
@@ -298,8 +305,10 @@ class BaseConfig:
             except KeyError as e:
                 log_messages.add_log_message(f'secondary_color missing value for {e}')
         else:
-            log_messages.add_log_message(f'⚠️ Configuration for secondary_color is missing (add it in base.yaml)')
-            log_messages.add_log_message('Falling back to standard config.')
+            log_messages.add_log_message(
+                f'⚠️ Configuration for secondary_color is missing (base.yaml,'
+                f' falling back to standard config)'
+            )
 
         if loading_color is not None:
             try:
@@ -307,8 +316,10 @@ class BaseConfig:
             except KeyError as e:
                 log_messages.add_log_message(f'loading_color missing value for {e}')
         else:
-            log_messages.add_log_message(f'⚠️ Configuration for loading_color is missing (add it in base.yaml)')
-            log_messages.add_log_message('Falling back to standard config.')
+            log_messages.add_log_message(
+                f'⚠️ Configuration for loading_color is missing (base.yaml,'
+                f' falling back to standard config)'
+            )
 
         if error_color is not None:
             try:
@@ -316,8 +327,10 @@ class BaseConfig:
             except KeyError as e:
                 log_messages.add_log_message(f'error_color missing value for {e}')
         else:
-            log_messages.add_log_message(f'⚠️ Configuration for error_color is missing (add it in base.yaml)')
-            log_messages.add_log_message('Falling back to standard config.')
+            log_messages.add_log_message(
+                f'⚠️ Configuration for error_color is missing (base.yaml,'
+                f' falling back to standard config)'
+            )
 
         self.base_colors: dict[int, tuple[int, RGBColor | int]] = {
             2: (1, self.foreground_color),
@@ -333,9 +346,9 @@ class BaseConfig:
             self.use_standard_terminal_background = use_standard_terminal_background
         else:
             log_messages.add_log_message(
-                f'⚠️ Configuration for use_standard_terminal_background is missing (add it in base.yaml)'
+                f'⚠️ Configuration for use_standard_terminal_background is missing (base.yaml,'
+                f' falling back to standard config)'
             )
-            log_messages.add_log_message('Falling back to standard config.')
 
         if self.use_standard_terminal_background:
             self.BACKGROUND_NUMBER: int = -1
@@ -355,8 +368,8 @@ class BaseConfig:
                 log_messages.add_log_message(f'quit_key value not alphabetic or numeric')
             self.quit_key = quit_key
         else:
-            log_messages.add_log_message(f'⚠️ Configuration for quit_key is missing (add it in base.yaml)')
-            log_messages.add_log_message('Falling back to standard config.')
+            log_messages.add_log_message(f'⚠️ Configuration for quit_key is missing (base.yaml,'
+                                         f' falling back to standard config)')
 
         if reload_key is not None:
             if len(reload_key) != 1:
@@ -365,8 +378,8 @@ class BaseConfig:
                 log_messages.add_log_message(f'reload_key value not alphabetic or numeric')
             self.reload_key = reload_key
         else:
-            log_messages.add_log_message(f'⚠️ Configuration for reload_key is missing (add it in base.yaml)')
-            log_messages.add_log_message('Falling back to standard config.')
+            log_messages.add_log_message(f'⚠️ Configuration for reload_key is missing (base.yaml,'
+                                         f' falling back to standard config)')
 
         if help_key is not None:
             if len(help_key) != 1:
@@ -375,8 +388,13 @@ class BaseConfig:
                 log_messages.add_log_message(f'help_key value not alphabetic or numeric')
             self.help_key = help_key
         else:
-            log_messages.add_log_message(f'⚠️ Configuration for help_key is missing (add it in base.yaml)')
-            log_messages.add_log_message('Falling back to standard config.')
+            log_messages.add_log_message(
+                f'⚠️ Configuration for help_key is missing (base.yaml,'
+                f' falling back to standard config)'
+            )
+
+        for key, value in kwargs.items():
+            log_messages.add_log_message(f'⚠️ Configuration for Key "{key}" is not expected (base.yaml)')
 
 
 def draw_colored_border(win: typing.Any, color_pair: int) -> None:
