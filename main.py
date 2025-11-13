@@ -168,8 +168,9 @@ def main_curses(stdscr: typing.Any) -> None:
     # Scan configs
     config_scanner: base.ConfigScanner = base.ConfigScanner(config_loader)
     config_scan_results: base.LogMessages | bool = config_scanner.scan_config([
-        'clock', 'greetings', 'calendar', 'mode', 'todo', 'weather', 'news', 'neofetch', 'resources']
-    )
+        'clock', 'greetings', 'calendar', 'mode', 'todo', 'weather', 'news', 'neofetch', 'resources'
+    ])
+    # Add more widgets here (2)
     if config_scan_results is not False:
         raise base.ConfigScanFoundError(config_scan_results)
 
@@ -210,7 +211,7 @@ def main_curses(stdscr: typing.Any) -> None:
         resources_widget: base.Widget = resources.build(
             stdscr, config_loader.load_widget_config(log_messages, 'resources')
         )
-        # Add more widgets here (2)
+        # Add more widgets here (3)
     except Exception as e:
         raise base.UnknownException(log_messages, str(e))
 
@@ -225,7 +226,7 @@ def main_curses(stdscr: typing.Any) -> None:
         'news': news_widget,
         'resources': resources_widget,
         'neofetch': neofetch_widget
-        # Add more widgets here (3)
+        # Add more widgets here (4)
     }
 
     widget_list = list(widget_dict.values())

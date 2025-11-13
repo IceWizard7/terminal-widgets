@@ -112,19 +112,26 @@ def build(stdscr: typing.Any, config: Config) -> Widget:
 ### 3.3 Add it to your widget layout
 In `main.py`, you will see three markers:
 
-`# Add more widgets here (1)` — Place your widget import statements here
+`# Add more widgets here (1)` – Place your widget import statements here
 
 ```python
 import widgets.custom as custom
 ```
 
-`# Add more widgets here (2)` — Build your widget instances here
+`# Add more widgets here (2)` – Add your widget to the ConfigScanner
+```python
+config_scan_results: base.LogMessages | bool = config_scanner.scan_config([
+    '...', '...', '...',  'custom'
+])
+```
+
+`# Add more widgets here (3)` – Build your widget instances here
 
 ```python
 custom_widget: base.Widget = custom.build(stdscr, config_loader.load_widget_config(log_messages, 'custom'))
 ```
 
-`# Add more widgets here (3)` — Add the widget instance to the dashboard widget mapping dictionary
+`# Add more widgets here (4)` – Add the widget instance to the dashboard widget mapping dictionary
 
 ```python
 'custom': custom_widget
