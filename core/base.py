@@ -1,6 +1,7 @@
 from __future__ import annotations  # allows forward references in type hints
 from pathlib import Path
 import yaml
+import yaml.parser
 from dotenv import load_dotenv  # type: ignore[import-not-found]
 import os
 import curses
@@ -95,6 +96,10 @@ class StopException(Exception):
         self.log_messages: LogMessages = log_messages
 
 
+class YAMLParseException(Exception):
+    """Raised to signal that there was an error parsing a YAML file"""
+
+
 class TerminalTooSmall(Exception):
     def __init__(self, height: int, width: int, min_height: int, min_width: int) -> None:
         """Raised to signal that the terminal is too small"""
@@ -131,8 +136,11 @@ class UnknownException(Exception):
 
 
 class LogMessages:
-    def __init__(self) -> None:
-        self.log_messages: list[str] = []
+    def __init__(self, log_messages: list[str] | None = None) -> None:
+        if log_messages is None:
+            self.log_messages: list[str] = []
+        else:
+            self.log_messages: list[str] = log_messages
 
     def __add__(self, other: LogMessages) -> LogMessages:
         new_log: LogMessages = LogMessages()
@@ -220,7 +228,8 @@ class RGBColor:
 
     @staticmethod
     def add_rgb_color_from_dict(color: dict[str, typing.Any]) -> RGBColor:
-        return RGBColor(r=color['r'], g=color['g'], b=color['b'])
+        # make sure every value is an int (else -> error)
+        return RGBColor(r=int(color['r']), g=int(color['g']), b=int(color['b']))
 
 
 class BaseStandardFallBackConfig:
@@ -290,6 +299,8 @@ class BaseConfig:
                 self.background_color = RGBColor.add_rgb_color_from_dict(background_color)
             except KeyError as e:
                 log_messages.add_log_message(f'background_color missing value for {e}')
+            except ValueError as e:
+                log_messages.add_log_message(f'background_color invalid value for {e}')
         else:
             log_messages.add_log_message(
                 f'Configuration for background_color is missing (base.yaml,'
@@ -301,6 +312,8 @@ class BaseConfig:
                 self.foreground_color = RGBColor.add_rgb_color_from_dict(foreground_color)
             except KeyError as e:
                 log_messages.add_log_message(f'foreground_color missing value for {e}')
+            except ValueError as e:
+                log_messages.add_log_message(f'foreground_color invalid value for {e}')
         else:
             log_messages.add_log_message(
                 f'Configuration for foreground_color is missing (base.yaml,'
@@ -312,6 +325,8 @@ class BaseConfig:
                 self.primary_color = RGBColor.add_rgb_color_from_dict(primary_color)
             except KeyError as e:
                 log_messages.add_log_message(f'primary_color missing value for {e}')
+            except ValueError as e:
+                log_messages.add_log_message(f'error_color invalid value for {e}')
         else:
             log_messages.add_log_message(
                 f'Configuration for primary_color is missing (base.yaml,'
@@ -323,6 +338,8 @@ class BaseConfig:
                 self.secondary_color = RGBColor.add_rgb_color_from_dict(secondary_color)
             except KeyError as e:
                 log_messages.add_log_message(f'secondary_color missing value for {e}')
+            except ValueError as e:
+                log_messages.add_log_message(f'error_color invalid value for {e}')
         else:
             log_messages.add_log_message(
                 f'Configuration for secondary_color is missing (base.yaml,'
@@ -334,6 +351,8 @@ class BaseConfig:
                 self.loading_color = RGBColor.add_rgb_color_from_dict(loading_color)
             except KeyError as e:
                 log_messages.add_log_message(f'loading_color missing value for {e}')
+            except ValueError as e:
+                log_messages.add_log_message(f'error_color invalid value for {e}')
         else:
             log_messages.add_log_message(
                 f'Configuration for loading_color is missing (base.yaml,'
@@ -345,6 +364,8 @@ class BaseConfig:
                 self.error_color = RGBColor.add_rgb_color_from_dict(error_color)
             except KeyError as e:
                 log_messages.add_log_message(f'error_color missing value for {e}')
+            except ValueError as e:
+                log_messages.add_log_message(f'error_color invalid value for {e}')
         else:
             log_messages.add_log_message(
                 f'Configuration for error_color is missing (base.yaml,'
@@ -652,16 +673,22 @@ class ConfigLoader:
     def load_base_config(self, log_messages: LogMessages) -> BaseConfig:
         base_path = self.CONFIG_DIR / 'base.yaml'
         if not base_path.exists():
-            raise ConfigFileNotFoundError(f'Base config "{base_path}" not found.')
-        pure_yaml: dict[str, typing.Any] = self.load_yaml(base_path)
+            raise ConfigFileNotFoundError(f'Base config "{base_path}" not found')
+        try:
+            pure_yaml: dict[str, typing.Any] = self.load_yaml(base_path)
+        except yaml.parser.ParserError:
+            raise YAMLParseException(f'Base config "{base_path}" not valid YAML')
 
         return BaseConfig(log_messages=log_messages, **pure_yaml)
 
     def load_widget_config(self, log_messages: LogMessages, widget_name: str) -> Config:
         path = self.WIDGETS_DIR / f'{widget_name}.yaml'
         if not path.exists():
-            raise ConfigFileNotFoundError(f'Config for widget "{widget_name}" not found.')
-        pure_yaml: dict[str, typing.Any] = self.load_yaml(path)
+            raise ConfigFileNotFoundError(f'Config for widget "{widget_name}" not found')
+        try:
+            pure_yaml: dict[str, typing.Any] = self.load_yaml(path)
+        except yaml.parser.ParserError:
+            raise YAMLParseException(f'Config for widget "{widget_name}" not valid YAML')
 
         return Config(log_messages=log_messages, **pure_yaml)
 
@@ -676,15 +703,21 @@ class ConfigScanner:
         final_log: LogMessages = LogMessages()
 
         current_log: LogMessages = LogMessages()
-        self.config_loader.load_base_config(current_log)
-        if current_log != empty_log:
-            final_log += current_log
+        try:
+            self.config_loader.load_base_config(current_log)
+            if current_log != empty_log:
+                final_log += current_log
+        except YAMLParseException as e:
+            final_log += LogMessages([str(e)])
 
         for widget_name in widget_names:
             current_log: LogMessages = LogMessages()
-            self.config_loader.load_widget_config(current_log, widget_name)
-            if current_log != empty_log:
-                final_log += current_log
+            try:
+                self.config_loader.load_widget_config(current_log, widget_name)
+                if current_log != empty_log:
+                    final_log += current_log
+            except YAMLParseException as e:
+                final_log += LogMessages([str(e)])
 
         if final_log != empty_log:
             return final_log
