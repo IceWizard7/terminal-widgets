@@ -15,6 +15,8 @@
   </p>
 </div>
 
+<img src="examples/example_1.png" alt="Example Image of Terminal Widgets">
+
 ---
 
 ### 🚀 **1. Getting started**
