@@ -32,7 +32,7 @@ class Widget:
 
     def __init__(
             self,
-            name: str,
+            name: str | None,
             title: str,
             config: Config,
             draw_func: DrawFunction,
@@ -149,11 +149,11 @@ class LogLevels(Enum):
     ERROR = (4, '⚠️ Errors')  # 🔴️
 
     @property
-    def key(self):
+    def key(self) -> int:
         return self.value[0]
 
     @property
-    def label(self):
+    def label(self) -> str:
         return self.value[1]
 
     @classmethod
@@ -177,7 +177,9 @@ class LogMessage:
         return self.message
 
     def is_error(self) -> bool:
-        return self.level == LogLevels.ERROR.key
+        if self.level == LogLevels.ERROR.key:
+            return True
+        return False
 
 
 class LogMessages:
@@ -192,10 +194,14 @@ class LogMessages:
         new_log.log_messages = self.log_messages + other.log_messages
         return new_log
 
-    def __eq__(self, other: LogMessages) -> bool:
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, LogMessages):
+            return NotImplemented
         return self.log_messages == other.log_messages
 
-    def __ne__(self, other: LogMessages) -> bool:
+    def __ne__(self, other: object) -> bool:
+        if not isinstance(other, LogMessages):
+            return NotImplemented
         return self.log_messages != other.log_messages
 
     def add_log_message(self, message: LogMessage) -> None:
@@ -240,57 +246,62 @@ class Config:
             x: int | None = None,
             **kwargs: typing.Any
     ) -> None:
-        if name is None:
+        if name is None or not isinstance(name, str):
             log_messages.add_log_message(LogMessage(
-                f'Configuration for name is missing (unknown widget)',
+                f'Configuration for name is missing / incorrect (unknown widget)',
                 LogLevels.ERROR.key
             ))
 
-        self.name = name
+        if title is None or not isinstance(title, str):
+            log_messages.add_log_message(LogMessage(
+                f'Configuration for title is missing / incorrect ("{name}" widget)',
+                LogLevels.ERROR.key
+            ))
 
-        if title is None:
+        if enabled is None or not isinstance(enabled, bool):
             log_messages.add_log_message(LogMessage(
-                f'Configuration for title is missing ("{name}" widget)',
+                f'Configuration for enabled is missing / incorrect ("{name}" widget)',
                 LogLevels.ERROR.key
             ))
-        if enabled is None:
+
+        if interval is None or not isinstance(interval, int | float):
             log_messages.add_log_message(LogMessage(
-                f'Configuration for enabled is missing ("{name}" widget)',
+                f'Configuration for interval is missing / incorrect ("{name}" widget)',
                 LogLevels.ERROR.key
             ))
-        if interval is None:
-            log_messages.add_log_message(LogMessage(
-                f'Configuration for interval is missing ("{name}" widget)',
-                LogLevels.ERROR.key
-            ))
+
         if height is None or not isinstance(height, int):
             log_messages.add_log_message(LogMessage(
                 f'Configuration for height is missing / incorrect ("{name}" widget)',
                 LogLevels.ERROR.key
             ))
+
         if width is None or not isinstance(width, int):
             log_messages.add_log_message(LogMessage(
                 f'Configuration for width is missing / incorrect ("{name}" widget)',
                 LogLevels.ERROR.key
             ))
+
         if y is None or not isinstance(y, int):
             log_messages.add_log_message(LogMessage(
                 f'Configuration for y is missing / incorrect ("{name}" widget)',
                 LogLevels.ERROR.key
             ))
+
         if x is None or not isinstance(x, int):
             log_messages.add_log_message(LogMessage(
                 f'Configuration for x is missing / incorrect ("{name}" widget)',
                 LogLevels.ERROR.key
             ))
 
-        self.title = title
-        self.enabled = enabled
-        self.interval = interval
+        self.name: str = typing.cast(str, name)
+        self.title: str = typing.cast(str, title)
+        self.enabled: bool = typing.cast(bool, enabled)
+        self.interval: int | float | None = interval
         if interval == 0:
             self.interval = None
         self.last_updated: int = 0
-        self.dimensions: Dimensions = Dimensions(height=height, width=width, y=y, x=x)
+        self.dimensions: Dimensions = Dimensions(height=height, width=width, y=y, x=x)  # type: ignore[arg-type]
 
         for key, value in kwargs.items():
             setattr(self, key, value)
@@ -857,8 +868,8 @@ class ConfigScanner:
     def __init__(self, config_loader: ConfigLoader) -> None:
         self.config_loader = config_loader
 
-    def scan_config(self, widget_names: list[str]) -> LogMessages | bool:
-        """Scan config, either returns log messages or 'False' representing that no errors were found"""
+    def scan_config(self, widget_names: list[str]) -> LogMessages | typing.Literal[True]:
+        """Scan config, either returns log messages or 'True' representing that no errors were found"""
         final_log: LogMessages = LogMessages()
 
         current_log: LogMessages = LogMessages()
@@ -870,7 +881,7 @@ class ConfigScanner:
             final_log += LogMessages([LogMessage(str(e), LogLevels.ERROR.key)])
 
         for widget_name in widget_names:
-            current_log: LogMessages = LogMessages()
+            current_log = LogMessages()
             try:
                 self.config_loader.load_widget_config(current_log, widget_name)
                 if current_log.contains_error():
@@ -880,4 +891,4 @@ class ConfigScanner:
 
         if final_log.contains_error():
             return final_log
-        return False
+        return True

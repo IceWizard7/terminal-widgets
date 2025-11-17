@@ -171,8 +171,9 @@ def main_curses(stdscr: typing.Any) -> None:
         'clock', 'greetings', 'calendar', 'mode', 'todo', 'weather', 'news', 'neofetch', 'resources'
     ])
     # Add more widgets here (2)
-    if config_scan_results is not False:
-        raise base.ConfigScanFoundError(config_scan_results)
+
+    if config_scan_results is not True:
+        raise base.ConfigScanFoundError(config_scan_results)  # type: ignore[arg-type]
 
     # Initiate base config
     base_config: base.BaseConfig = config_loader.load_base_config(log_messages)
