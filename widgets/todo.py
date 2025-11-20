@@ -1,6 +1,6 @@
 import curses
 import typing
-from core.base import Widget, Config, draw_widget, safe_addstr, UIState, BaseConfig
+from core.base import Widget, Config, draw_widget, safe_addstr, UIState, BaseConfig, prompt_user_input
 import json
 
 
@@ -75,6 +75,47 @@ def mouse_click_action(todo_widget: Widget, _mx: int, _my: int, _b_state: int, u
         todo_widget.draw_data['selected_line'] = None
 
 
+def keyboard_press_action(todo_widget: Widget, key: typing.Any, ui_state: UIState, base_config: BaseConfig) -> None:
+    if 'todos' not in todo_widget.draw_data:
+        return
+    len_todos = len(todo_widget.draw_data['todos'])
+    selected = todo_widget.draw_data.get('selected_line', 0)
+
+    if not isinstance(selected, int):
+        selected = 0
+
+    # Navigation
+    if key == curses.KEY_UP:
+        selected -= 1
+    elif key == curses.KEY_DOWN:
+        selected += 1
+
+    # Wrap around
+    if selected < 0:
+        selected = len_todos - 1
+
+    if selected > (len_todos - 1):  # If you delete the last to-do, this will wrap around to 0
+        selected = 0
+
+    todo_widget.draw_data['selected_line'] = selected
+
+    # Add new to_do
+    if key in (curses.KEY_ENTER, 10, 13):
+        new_todo = prompt_user_input(todo_widget, 'New To-Do: ')
+        if new_todo.strip():
+            add_todo(todo_widget, new_todo.strip())
+
+    # Delete to_do
+    elif key in (curses.KEY_BACKSPACE, 127, 8):  # Backspace
+        if len_todos > 0:
+            confirm = prompt_user_input(todo_widget, 'Confirm deletion (y): ')
+            if confirm.lower().strip() in ['y']:
+                remove_todo(todo_widget, todo_widget.draw_data['selected_line'])
+
+    todo_widget.draw(ui_state, base_config)
+    todo_widget.direct_refresh()
+
+
 def render_todos(todos: list[str], highlighted_line: int | None, max_render: int) -> tuple[list[str], int | None]:
     if len(todos) <= max_render:
         return todos.copy(), highlighted_line  # everything fits, no slicing needed
@@ -133,5 +174,6 @@ def build(stdscr: typing.Any, config: Config) -> Widget:
     return Widget(
         config.name, config.title, config, draw, config.interval, config.dimensions, stdscr,
         update_func=None,
-        mouse_click_func=mouse_click_action
+        mouse_click_func=mouse_click_action,
+        keyboard_func=keyboard_press_action
     )

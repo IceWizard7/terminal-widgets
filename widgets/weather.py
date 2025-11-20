@@ -91,5 +91,6 @@ def build(stdscr: typing.Any, config: Config) -> Widget:
     return Widget(
         config.name, config.title, config, draw, config.interval, config.dimensions, stdscr,
         update_func=update,
-        mouse_click_func=None
+        mouse_click_func=None,
+        keyboard_func=None
     )

@@ -25,14 +25,13 @@ class Dimensions:
 
 class Widget:
     DrawFunction = typing.Callable[
-                       ['Widget', 'UIState', 'BaseConfig'], None] | typing.Callable[
+        ['Widget', 'UIState', 'BaseConfig'], None] | typing.Callable[
         ['Widget', 'UIState', 'BaseConfig', dict[str, typing.Any]], None] | typing.Callable[
         ['Widget', 'UIState', 'BaseConfig', list[str]], None
     ]
-
     UpdateFunction = typing.Callable[['Widget', 'ConfigLoader'], dict[str, typing.Any] | list[str]]
-
     MouseClickUpdateFunction = typing.Callable[['Widget', int, int, int, 'UIState'], None]
+    KeyBoardUpdateFunction = typing.Callable[['Widget', typing.Any, 'UIState', 'BaseConfig'], None]
 
     def __init__(
             self,
@@ -45,6 +44,7 @@ class Widget:
             stdscr: typing.Any,
             update_func: UpdateFunction | None,
             mouse_click_func: MouseClickUpdateFunction | None,
+            keyboard_func: KeyBoardUpdateFunction | None
     ) -> None:
         self.name = name
         self.title = title
@@ -52,6 +52,7 @@ class Widget:
         self.interval = interval
         self._update_func = update_func
         self._mouse_click_func = mouse_click_func
+        self._keyboard_func = keyboard_func
         self._draw_func = draw_func
         self.last_updated: int | float | None = 0
         self.dimensions = dimensions
@@ -84,9 +85,13 @@ class Widget:
             return True
         return False
 
-    def switch_window_update(self, *args: typing.Any, **kwargs: typing.Any) -> None:
+    def mouse_action(self, *args: typing.Any, **kwargs: typing.Any) -> None:
         if self._mouse_click_func:
             self._mouse_click_func(*args, **kwargs)
+
+    def keyboard_action(self, *args: typing.Any, **kwargs: typing.Any) -> None:
+        if self._keyboard_func:
+            self._keyboard_func(*args, **kwargs)
 
     def reinit_window(self, stdscr: typing.Any) -> None:
         self.win = stdscr.subwin(*self.dimensions.formatted())
@@ -934,18 +939,15 @@ def switch_windows(
             break
 
     for widget in widget_list:
-        widget.switch_window_update(widget, mx, my, b_state, ui_state)
+        widget.mouse_action(widget, mx, my, b_state, ui_state)
 
 
 def handle_key_input(
         ui_state: UIState,
         base_config: BaseConfig,
         key: typing.Any,
-        log_messages: LogMessages,
-        todo_module: types.ModuleType,
-        widget_dict: dict[str, Widget]
+        log_messages: LogMessages
 ) -> None:
-    todo_widget: Widget = widget_dict['todo']
     highlighted_widget: Widget | None = ui_state.highlighted
 
     if key == 27:  # ESC key
@@ -962,45 +964,7 @@ def handle_key_input(
             raise RestartException
         return
 
-    if highlighted_widget == todo_widget:
-        if 'todos' not in todo_widget.draw_data:
-            return
-        len_todos = len(todo_widget.draw_data['todos'])
-        selected = todo_widget.draw_data.get('selected_line', 0)
-
-        if not isinstance(selected, int):
-            selected = 0
-
-        # Navigation
-        if key == curses.KEY_UP:
-            selected -= 1
-        elif key == curses.KEY_DOWN:
-            selected += 1
-
-        # Wrap around
-        if selected < 0:
-            selected = len_todos - 1
-
-        if selected > (len_todos - 1):  # If you delete the last to-do, this will wrap around to 0
-            selected = 0
-
-        todo_widget.draw_data['selected_line'] = selected
-
-        # Add new to_do
-        if key in (curses.KEY_ENTER, 10, 13):
-            new_todo = prompt_user_input(todo_widget, 'New To-Do: ')
-            if new_todo.strip():
-                todo_module.add_todo(todo_widget, new_todo.strip())
-
-        # Delete to_do
-        elif key in (curses.KEY_BACKSPACE, 127, 8):  # Backspace
-            if len_todos > 0:
-                confirm = prompt_user_input(todo_widget, 'Confirm deletion (y): ')
-                if confirm.lower().strip() in ['y']:
-                    todo_module.remove_todo(todo_widget, todo_widget.draw_data['selected_line'])
-
-        todo_widget.draw(ui_state, base_config)
-        todo_widget.direct_refresh()
+    highlighted_widget.keyboard_action(highlighted_widget, key, ui_state, base_config)
 
 
 def reload_widget_scheduler(
