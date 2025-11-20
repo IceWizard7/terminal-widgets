@@ -71,7 +71,25 @@ def draw(widget: Widget, ui_state: UIState, base_config: BaseConfig, info: typin
 You can adapt the time, when the `update` function will be called again (reloading the data) by changing
 `interval` in `config/widgets/custom.yaml`
 
-#### 3.2.5 Using secrets
+### 3.2.5 Actions when custom widget is selected
+
+Example:
+
+```python
+def mouse_click_action(custom_widget: Widget, _mx: int, _my: int, _b_state: int, ui_state: UIState) -> None:
+    if ui_state.highlighted != custom_widget:
+        custom_widget.draw_data['selected_line'] = None
+        return
+        
+    # Click relative to widget border
+    local_y: int = _my - custom_widget.dimensions.y - 1  # -1 for top border
+```
+
+This function will get called whenever a mouse click happens, so you can use it to for example make clickable buttons.
+
+> Note that the widget border color will automatically be updated on every mouse click.
+
+#### 3.2.6 Using secrets
 
 Import:
 ```python
@@ -89,7 +107,7 @@ Example:
 api_key: str = _config_loader.get_secret('WEATHER_API_KEY')
 ```
 
-#### 3.2.6 Adding custom data to config
+#### 3.2.7 Adding custom data to config
 
 Example:
 
@@ -107,23 +125,14 @@ custom_attribute: 'this is a custom attribute!'
 It only checks `base.yaml` for integrity, as well as "name",
 "title", "enabled", "interval", "height", "width", "y" and "x" for every widget.
 
-#### 3.2.7 Building widget
-
-Simple widgets:
+#### 3.2.8 Building widget
 
 ```python
 def build(stdscr: typing.Any, config: Config) -> Widget:
     return Widget(
-        config.name, config.title, config, draw, config.interval, config.dimensions, stdscr
-    )
-```
-
-Widgets with heavy loading:
-
-```python
-def build(stdscr: typing.Any, config: Config) -> Widget:
-    return Widget(
-        config.name, config.title, config, draw, config.interval, config.dimensions, stdscr, update
+        config.name, config.title, config, draw, config.interval, config.dimensions, stdscr,
+        update_func=None,  # update_func=update
+        mouse_click_func=None  # mouse_click_func=mouse_click_action
     )
 ```
 
