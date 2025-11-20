@@ -143,6 +143,25 @@ custom_attribute: 'this is a custom attribute!'
 It only checks `base.yaml` for integrity, as well as "name",
 "title", "enabled", "interval", "height", "width", "y" and "x" for every widget.
 
+#### 3.2.7.1 Config specific Errors
+
+Example:
+
+```python
+from core.base import (
+    ConfigSpecificException,
+    LogMessages,
+    LogMessage,
+    LogLevels
+)
+
+raise ConfigSpecificException(LogMessages([LogMessage(
+    f'Configuration for some_value is missing / incorrect ("{widget.name}" widget)',
+    LogLevels.ERROR.key)]))
+```
+
+With this you can add custom error messages for all users to your widget.
+
 #### 3.2.8 Building widget
 
 ```python
