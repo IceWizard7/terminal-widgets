@@ -50,14 +50,14 @@ def remove_highlighted_line(widget: Widget) -> None:
     widget.draw_data['selected_line'] = None
 
 
-def mark_highlighted_line(todo_widget: Widget, my: int, ui_state: UIState) -> None:
+def switch_window_update(todo_widget: Widget, _mx: int, _my: int, _b_state: int, ui_state: UIState) -> None:
     todos = list(todo_widget.draw_data.get('todos', {}).values())
     if not todos or ui_state.highlighted != todo_widget:
         todo_widget.draw_data['selected_line'] = None
         return
 
     # Click relative to widget border
-    local_y = my - todo_widget.dimensions.y - 1  # -1 for top border
+    local_y = _my - todo_widget.dimensions.y - 1  # -1 for top border
     if 0 <= local_y < min(len(todos), todo_widget.dimensions.height - 2):
         # Compute which part of todos is currently visible
         abs_index = todo_widget.draw_data.get('selected_line', 0) or 0
@@ -131,5 +131,7 @@ def draw(widget: Widget, ui_state: UIState, base_config: BaseConfig) -> None:
 
 def build(stdscr: typing.Any, config: Config) -> Widget:
     return Widget(
-        config.name, config.title, config, draw, config.interval, config.dimensions, stdscr
+        config.name, config.title, config, draw, config.interval, config.dimensions, stdscr,
+        update_func=None,
+        switch_window_update_func=switch_window_update
     )

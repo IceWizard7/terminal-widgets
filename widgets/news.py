@@ -61,5 +61,7 @@ def draw(widget: Widget, ui_state: UIState, base_config: BaseConfig, info: list[
 
 def build(stdscr: typing.Any, config: Config) -> Widget:
     return Widget(
-        config.name, config.title, config, draw, config.interval, config.dimensions, stdscr, update
+        config.name, config.title, config, draw, config.interval, config.dimensions, stdscr,
+        update_func=update,
+        switch_window_update_func=None
     )
