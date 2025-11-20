@@ -41,13 +41,19 @@ add_widget_content(widget, content)
 Advanced: For precise text positioning or colors in a terminal widget
 
 ```python
-from core.base import safe_addstr  # Adding content with precise positioning / colors
+from core.base import (
+    safe_addstr,
+    convert_color_number_to_curses_pair,
+    CursesBold
+)  # Adding content with precise positioning / colors
 
 row: int = 3
 col: int = 2
 text: str = 'Example text'
 
-safe_addstr(widget, row, col, text, curses.color_pair(base_config.PRIMARY_PAIR_NUMBER) | curses.A_BOLD)
+safe_addstr(
+    widget, row, col, text,
+    convert_color_number_to_curses_pair(base_config.PRIMARY_PAIR_NUMBER) | CursesBold)
 ```
 
 #### 3.2.4 Widgets with heavy loading
@@ -92,10 +98,10 @@ This function will get called whenever a mouse click happens, so you can use it 
 Example:
 
 ```python
-from core.base import prompt_user_input
+from core.base import prompt_user_input, CursesKeys
 
 def keyboard_press_action(custom_widget: Widget, key: typing.Any, ui_state: UIState, base_config: BaseConfig) -> None:
-    if key in (curses.KEY_ENTER, 10, 13):  # Enter key + enter key codes
+    if key in (CursesKeys.ENTER, 10, 13):  # Enter key + enter key codes
         confirm = prompt_user_input(custom_widget, 'Confirm deletion (y): ')
         if confirm.lower().strip() in ['y']:
             some_func(custom_widget, ...)
