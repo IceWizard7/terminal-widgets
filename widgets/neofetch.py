@@ -13,7 +13,11 @@ from core.base import (
     ConfigLoader,
     UIState,
     BaseConfig,
-    convert_color_number_to_curses_pair
+    convert_color_number_to_curses_pair,
+    ConfigSpecificException,
+    LogMessages,
+    LogMessage,
+    LogLevels,
 )
 
 
@@ -160,7 +164,12 @@ def return_raspi_info() -> list[str]:
 
 
 def update(_widget: Widget, _config_loader: ConfigLoader) -> list[str]:
-    system_type: str = _widget.config.system_type
+    system_type: str | None = _widget.config.system_type
+
+    if not system_type:
+        raise ConfigSpecificException(LogMessages([LogMessage(
+            f'Configuration for system_type is missing / incorrect ("{_widget.name}" widget)',
+            LogLevels.ERROR.key)]))
 
     if system_type == 'macos':
         return return_macos_info()

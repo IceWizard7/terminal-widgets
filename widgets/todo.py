@@ -10,7 +10,11 @@ from core.base import (
     prompt_user_input,
     CursesReverse,
     convert_color_number_to_curses_pair,
-    CursesKeys
+    CursesKeys,
+    ConfigSpecificException,
+    LogMessages,
+    LogMessage,
+    LogLevels
 )
 
 
@@ -34,21 +38,31 @@ def remove_todo(widget: Widget, line: int) -> None:
 
 def save_todos(widget: Widget) -> None:
     # If file doesn't exist, this will create it
-    with open(widget.config.save_path, 'w') as file:
-        if 'todos' in widget.draw_data:
-            json.dump(widget.draw_data['todos'], file)
-        else:
-            json.dump({}, file)
+    if widget.config.save_path:
+        with open(widget.config.save_path, 'w') as file:
+            if 'todos' in widget.draw_data:
+                json.dump(widget.draw_data['todos'], file)
+            else:
+                json.dump({}, file)
+    else:
+        raise ConfigSpecificException(LogMessages([LogMessage(
+            f'Configuration for save_path is missing / incorrect ("{widget.name}" widget)',
+            LogLevels.ERROR.key)]))
 
 
 def load_todos(widget: Widget) -> None:
     # If file doesn't exist, set todos = {}
-    try:
-        with open(widget.config.save_path, 'r') as file:
-            data = json.load(file)
-        data = {int(k): v for k, v in data.items()}
-    except (FileNotFoundError, json.JSONDecodeError):
-        data = {}
+    if widget.config.save_path:
+        try:
+            with open(widget.config.save_path, 'r') as file:
+                data = json.load(file)
+            data = {int(k): v for k, v in data.items()}
+        except (FileNotFoundError, json.JSONDecodeError):
+            data = {}
+    else:
+        raise ConfigSpecificException(LogMessages([LogMessage(
+            f'Configuration for save_path is missing / incorrect ("{widget.name}" widget)',
+            LogLevels.ERROR.key)]))
 
     data = {int(k): v for k, v in data.items()}
 

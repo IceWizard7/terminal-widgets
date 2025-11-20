@@ -5,13 +5,22 @@ from core.base import (
     draw_widget,
     add_widget_content,
     UIState,
-    BaseConfig
+    BaseConfig,
+    ConfigSpecificException,
+    LogMessages,
+    LogMessage,
+    LogLevels,
 )
 
 
 def draw(widget: Widget, ui_state: UIState, base_config: BaseConfig) -> None:
+    if not widget.config.your_name:
+        raise ConfigSpecificException(LogMessages([LogMessage(
+            f'Configuration for your_name is missing / incorrect ("{widget.name}" widget)',
+            LogLevels.ERROR.key)]))
+
     content = [
-        f'Hello, {widget.config.your_name}!' if widget.config.your_name else 'Invalid your_name',
+        f'Hello, {widget.config.your_name}!'
     ]
 
     draw_widget(widget, ui_state, base_config)

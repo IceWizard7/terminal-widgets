@@ -147,6 +147,12 @@ class ConfigFileNotFoundError(Exception):
         super().__init__(error_details)
 
 
+class ConfigSpecificException(Exception):
+    def __init__(self, log_messages: LogMessages) -> None:
+        self.log_messages: LogMessages = log_messages
+        super().__init__(log_messages)
+
+
 class UnknownException(Exception):
     def __init__(self, log_messages: LogMessages, error_message: str) -> None:
         self.log_messages: LogMessages = log_messages
@@ -220,11 +226,11 @@ class LogMessages:
     def add_log_message(self, message: LogMessage) -> None:
         self.log_messages.append(message)
 
-    def print_log_messages(self) -> None:
+    def print_log_messages(self, heading: str) -> None:
         if not self.log_messages:
             return
 
-        print(f'Config errors & warnings (found by ConfigScanner):')
+        print(heading, end='')
         log_messages_by_level: dict[int, list[LogMessage]] = {}
         for message in self.log_messages:
             if message.level in log_messages_by_level.keys():

@@ -6,15 +6,32 @@ from core.base import (
     draw_widget,
     add_widget_content,
     UIState,
-    BaseConfig
+    BaseConfig,
+    ConfigSpecificException,
+    LogMessages,
+    LogMessage,
+    LogLevels,
 )
 
 
 def draw(widget: Widget, ui_state: UIState, base_config: BaseConfig) -> None:
+    if not widget.config.weekday_format:
+        raise ConfigSpecificException(LogMessages([LogMessage(
+            f'Configuration for weekday_format is missing / incorrect ("{widget.name}" widget)',
+            LogLevels.ERROR.key)]))
+    if not widget.config.date_format:
+        raise ConfigSpecificException(LogMessages([LogMessage(
+            f'Configuration for date_format is missing / incorrect ("{widget.name}" widget)',
+            LogLevels.ERROR.key)]))
+    if not widget.config.time_format:
+        raise ConfigSpecificException(LogMessages([LogMessage(
+            f'Configuration for time_format is missing / incorrect ("{widget.name}" widget)',
+            LogLevels.ERROR.key)]))
+
     content = [
-        time.strftime(widget.config.weekday_format) if widget.config.weekday_format else 'Invalid weekday_format',
-        time.strftime(widget.config.date_format) if widget.config.date_format else 'Invalid date_format',
-        time.strftime(widget.config.time_format) if widget.config.time_format else 'Invalid time_format',
+        time.strftime(widget.config.weekday_format),
+        time.strftime(widget.config.date_format),
+        time.strftime(widget.config.time_format),
     ]
     draw_widget(widget, ui_state, base_config)
     add_widget_content(widget, content)
