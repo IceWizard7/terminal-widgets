@@ -65,9 +65,6 @@ class Widget:
 
         self.lock: threading.Lock = threading.Lock()
 
-    def direct_refresh(self) -> None:
-        self.win.refresh()
-
     def noutrefresh(self) -> None:
         self.win.noutrefresh()
 
@@ -938,8 +935,8 @@ def switch_windows(
             ui_state.highlighted = widget
             break
 
-    for widget in widget_list:
-        widget.mouse_action(widget, mx, my, b_state, ui_state)
+    if (highlighted_widget := ui_state.highlighted) is not None:
+        highlighted_widget.mouse_action(highlighted_widget, mx, my, b_state, ui_state)
 
 
 def handle_key_input(
@@ -969,24 +966,18 @@ def handle_key_input(
 
 def reload_widget_scheduler(
         config_loader: ConfigLoader,
-        todo_module: types.ModuleType,
         widget_dict: dict[str, Widget],
         stop_event: threading.Event
 ) -> None:
     widget_list = list(widget_dict.values())
     reloadable_widgets = [w for w in widget_list if w.updatable()]
 
-    todo_widget = widget_dict['todo']
-
     while not stop_event.is_set():
         now = time_module.time()
         # Update widgets if their interval has passed
-        for widget in reloadable_widgets + [todo_widget]:
+        for widget in reloadable_widgets:
             if stop_event.is_set():  # Check on every iteration as well
                 break
-            if widget == todo_widget:
-                todo_module.load_todos(widget)
-                continue
 
             if widget.last_updated is None:
                 continue

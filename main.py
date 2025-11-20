@@ -106,7 +106,6 @@ def main_curses(stdscr: typing.Any) -> None:
         target=base.reload_widget_scheduler,
         args=(
             config_loader,
-            todo,
             widget_dict,
             stop_event
         )
@@ -114,7 +113,7 @@ def main_curses(stdscr: typing.Any) -> None:
     reloader_thread.daemon = True  # don't block exit if something goes wrong
     reloader_thread.start()
 
-    # Load To-Do
+    # Load To-Dos (initially, will get reloaded every mouse / keyboard action)
     todo.load_todos(todo_widget)
 
     while True:
@@ -137,7 +136,7 @@ def main_curses(stdscr: typing.Any) -> None:
                     # Ignore invalid mouse events (like scroll in some terminals)
                     continue
 
-            base.handle_key_input(ui_state, base_config, key, log_messages, todo, widget_dict)
+            base.handle_key_input(ui_state, base_config, key, log_messages)
 
             if stop_event.is_set():
                 break
@@ -147,14 +146,9 @@ def main_curses(stdscr: typing.Any) -> None:
                 if stop_event.is_set():
                     break
 
-                if widget == mode_widget:
+                if not widget.updatable():
                     widget.draw(ui_state, base_config)
-                    widget.direct_refresh()
-                    continue
-
-                if widget == todo_widget:
-                    widget.draw(ui_state, base_config)
-                    widget.direct_refresh()
+                    widget.noutrefresh()
                     continue
 
                 if widget.draw_data:
@@ -164,10 +158,7 @@ def main_curses(stdscr: typing.Any) -> None:
                         base.display_error(widget, [widget.draw_data['__error__']], ui_state, base_config)
                     else:
                         widget.draw(ui_state, base_config, data_copy)
-                elif not widget.updatable():
-                    widget.draw(ui_state, base_config)
-                else:
-                    pass  # Data still loading
+                # else: Data still loading
 
                 widget.noutrefresh()
             curses.doupdate()
