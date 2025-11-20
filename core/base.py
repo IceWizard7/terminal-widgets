@@ -32,7 +32,7 @@ class Widget:
 
     UpdateFunction = typing.Callable[['Widget', 'ConfigLoader'], dict[str, typing.Any] | list[str]]
 
-    SwitchWindowUpdateFunction = typing.Callable[['Widget', int, int, int, 'UIState'], None]
+    MouseClickUpdateFunction = typing.Callable[['Widget', int, int, int, 'UIState'], None]
 
     def __init__(
             self,
@@ -43,15 +43,15 @@ class Widget:
             interval: int | float | None,
             dimensions: Dimensions,
             stdscr: typing.Any,
-            update_func: UpdateFunction | None = None,
-            switch_window_update_func: SwitchWindowUpdateFunction | None = None,
+            update_func: UpdateFunction | None,
+            mouse_click_func: MouseClickUpdateFunction | None,
     ) -> None:
         self.name = name
         self.title = title
         self.config = config
         self.interval = interval
         self._update_func = update_func
-        self._switch_window_update_func = switch_window_update_func
+        self._mouse_click_func = mouse_click_func
         self._draw_func = draw_func
         self.last_updated: int | float | None = 0
         self.dimensions = dimensions
@@ -85,8 +85,8 @@ class Widget:
         return False
 
     def switch_window_update(self, *args: typing.Any, **kwargs: typing.Any) -> None:
-        if self._switch_window_update_func:
-            self._switch_window_update_func(*args, **kwargs)
+        if self._mouse_click_func:
+            self._mouse_click_func(*args, **kwargs)
 
     def reinit_window(self, stdscr: typing.Any) -> None:
         self.win = stdscr.subwin(*self.dimensions.formatted())
@@ -241,6 +241,11 @@ class LogMessages:
             if message.is_error():
                 return True
         return False
+
+    def is_empty(self) -> bool:
+        if self.log_messages:
+            return False
+        return True
 
 
 class Config:
