@@ -955,7 +955,7 @@ def handle_key_input(
 
     if highlighted_widget is None:
         if key == ord(base_config.quit_key):
-            raise StopException(log_messages)
+            raise StopException(_log_messages)
         elif key == ord(base_config.help_key):
             pass  # TODO: Help page? Even for each window?
         elif key == ord(base_config.reload_key):  # Reload widgets & config
