@@ -995,6 +995,14 @@ def reload_widget_scheduler(
         time_module.sleep(0.06667)  # -> ~15 FPS
 
 
+def update_screen() -> None:
+    curses.doupdate()
+
+
+def curses_wrapper(*args: typing.Any, **kwargs: typing.Any) -> None:
+    curses.wrapper(*args, **kwargs)
+
+
 # Constants
 
 CursesWindowType = _curses.window  # Type of stdscr

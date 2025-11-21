@@ -1,4 +1,3 @@
-import curses
 import threading
 import os
 
@@ -152,7 +151,7 @@ def main_curses(stdscr: base.CursesWindowType) -> None:
                 # else: Data still loading
 
                 widget.noutrefresh()
-            curses.doupdate()
+            base.update_screen()
         except (
                 base.TerminalTooSmall,
                 base.ConfigFileNotFoundError,
@@ -180,7 +179,7 @@ def main_curses(stdscr: base.CursesWindowType) -> None:
 def main_entry_point() -> None:
     while True:
         try:
-            curses.wrapper(main_curses)
+            base.curses_wrapper(main_curses)
         except base.RestartException:
             # wrapper() has already cleaned up curses at this point
             continue  # Restart main
