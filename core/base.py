@@ -901,7 +901,7 @@ def switch_windows(
         _base_config: BaseConfig,
         mx: int,
         my: int,
-        b_state: int,
+        _b_state: int,
         widgets: dict[str, Widget]
 ) -> None:
     widget_list = list(widgets.values())
