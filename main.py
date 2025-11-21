@@ -43,7 +43,7 @@ def main_curses(stdscr: base.CursesWindowType) -> None:
     # Initiate base UI State
     ui_state: base.UIState = base.UIState()
 
-    # Initiate curses
+    # Initiate setup
     base.init_curses_setup(stdscr, base_config)
 
     try:
@@ -125,17 +125,9 @@ def main_curses(stdscr: base.CursesWindowType) -> None:
 
             key: int = stdscr.getch()  # Keypresses
 
-            # Switch windows
-            if key == curses.KEY_MOUSE:
-                try:
-                    _, mx, my, _, b_state = curses.getmouse()
-                    if b_state & curses.BUTTON1_PRESSED:
-                        base.switch_windows(ui_state, base_config, mx, my, b_state, widget_dict)
-                except curses.error:
-                    # Ignore invalid mouse events (like scroll in some terminals)
-                    continue
+            base.handle_mouse_input(ui_state, base_config, key, log_messages, widget_dict)
 
-            base.handle_key_input(ui_state, base_config, key, log_messages)
+            base.handle_key_input(ui_state, base_config, key, log_messages, widget_dict)
 
             if stop_event.is_set():
                 break
