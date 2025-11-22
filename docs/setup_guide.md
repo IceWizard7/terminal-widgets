@@ -14,10 +14,16 @@ Run the following command in your project folder:
 ```bash
 pip install -r requirements.txt
 ```
-> ⚠️ Make sure you are using Python Version 3.14+
+> ⚠️ Make sure you are using Python Version 3.13+
+
+### 1.3 Copy configuration to ~/.config/twidgets/
+Run the following command in your project folder:
+```bash
+python -m twidgets init
+```
 
 ### 1.3 Run the dashboard
 Start the application:
 ```bash
-python main.py
+python -m twidgets
 ```

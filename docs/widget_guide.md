@@ -1,19 +1,19 @@
 ## 3. Adding new widgets
 
-### 3.1 Create `config/widgets/custom.yaml`
+### 3.1 Create `twidgets/config/widgets/custom.yaml`
 
 Configure `name`, `title`, `enabled`, `interval`, `height`, `width`, `y` and `x`
 For simple widgets, set `interval = 0` (see [Configuration Guide](configuration_guide.md))
 
 (Make sure to name the `.yaml` and `.py` the same way)
 
-### 3.2 Create `widgets/custom.py`
+### 3.2 Create `twidgets/widgets/custom_widget.py`
 
 #### 3.2.1 Imports
 
 Import:
 ```python
-from core.base import Widget, draw_widget, add_widget_content, Config, UIState, BaseConfig
+from twidgets.core.base import Widget, draw_widget, add_widget_content, Config, UIState, BaseConfig
 ```
 
 #### 3.2.2 Simple widgets
@@ -41,7 +41,7 @@ add_widget_content(widget, content)
 Advanced: For precise text positioning or colors in a terminal widget
 
 ```python
-from core.base import (
+from twidgets.core.base import (
     safe_addstr,
     convert_color_number_to_curses_pair,
     CursesBold
@@ -61,7 +61,7 @@ safe_addstr(
 If your widget requires heavy loading, API calls or the data doesn't need to be reloaded every frame, add: 
 
 ```python
-from core.base import ConfigLoader
+from twidgets.core.base import ConfigLoader
 import typing
 
 def update(_widget: Widget, _config_loader: ConfigLoader) -> typing.Any:
@@ -75,7 +75,7 @@ def draw(widget: Widget, ui_state: UIState, base_config: BaseConfig, info: typin
 ```
 
 You can adapt the time, when the `update` function will be called again (reloading the data) by changing
-`interval` in `config/widgets/custom.yaml`
+`interval` in `twidgets/config/widgets/custom.yaml`
 
 #### 3.2.5 Custom mouse & keyboard actions
 
@@ -98,7 +98,7 @@ This function will get called whenever a mouse click happens, so you can use it 
 Example:
 
 ```python
-from core.base import prompt_user_input, CursesKeys
+from twidgets.core.base import prompt_user_input, CursesKeys
 
 def keyboard_press_action(custom_widget: Widget, key: typing.Any, ui_state: UIState, base_config: BaseConfig) -> None:
     if key in (CursesKeys.ENTER, 10, 13):  # Enter key + enter key codes
@@ -111,7 +111,7 @@ def keyboard_press_action(custom_widget: Widget, key: typing.Any, ui_state: UISt
 
 Import:
 ```python
-from core.base import ConfigLoader  # Loading secrets (secrets.env)
+from twidgets.core.base import ConfigLoader  # Loading secrets (secrets.env)
 import typing
 ```
 
@@ -148,7 +148,7 @@ It only checks `base.yaml` for integrity, as well as "name",
 Example:
 
 ```python
-from core.base import (
+from twidgets.core.base import (
     ConfigSpecificException,
     LogMessages,
     LogMessage,
@@ -175,12 +175,12 @@ def build(stdscr: typing.Any, config: Config) -> Widget:
 ```
 
 ### 3.3 Add it to your widget layout
-In `main.py`, you will see three markers:
+In `twidgets/main.py`, you will see three markers:
 
 `# Add more widgets here (1)` – Place your widget import statements here
 
 ```python
-import widgets.custom as custom
+import twidgets.widgets.custom_widget as custom
 ```
 
 `# Add more widgets here (2)` – Add your widget to the ConfigScanner

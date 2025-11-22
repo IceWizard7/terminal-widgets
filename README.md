@@ -23,9 +23,10 @@
 
 1. Clone this repository
 2. Install dependencies: `pip install -r requirements.txt`
-3. Run the dashboard: `python main.py`
+3. Copy configuration: `python -m twidgets init`
+4. Run the dashboard: `python -m twidgets`
 
-> ⚠️ Make sure you are using Python Version 3.14+
+> ⚠️ Make sure you are using Python Version 3.13+
 
 
 For full documentation see [Setup Guide](docs/setup_guide.md)
@@ -34,7 +35,7 @@ For full documentation see [Setup Guide](docs/setup_guide.md)
 
 ### ✨ **2. Configuration**
 
-2.1 Changing standard colors and configuration in `config/base.yaml`
+2.1 Changing standard colors and configuration in `twidgets/config/base.yaml`
 
 If you remove anything or let anything blank, it will just fall back to the standard configuration. \
 However, you will get warned.
@@ -51,9 +52,9 @@ background_color:
 ...
 ```
 
-2.2 Configure your secrets in: `config/secrets.env`
+2.2 Configure your secrets in: `twidgets/config/secrets.env`
 
-Example:
+Example (Full example provided in `twidgets/config/secrets.env.example`):
 ```dotenv
 WEATHER_API_KEY='your_api_key'
 WEATHER_CITY='Berlin,DE'
@@ -62,7 +63,7 @@ NEWS_FEED_URL='https://feeds.bbci.co.uk/news/rss.xml?edition=uk'
 NEWS_FEED_NAME='BCC'
 ```
 
-2.3 Adjust widgets and layouts in: `config/widgets/*.yaml`
+2.3 Adjust widgets and layouts in: `twidgets/config/widgets/*.yaml`
 
 Example:
 ```yaml

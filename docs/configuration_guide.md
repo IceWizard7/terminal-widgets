@@ -1,7 +1,7 @@
 ## 2. Configuration Guide
 
 ### 2.1 Changing standard colors and configuration
-Edit the `base.yaml` file under `config/base.yaml` to change standard colors and configuration.
+Edit the `base.yaml` file under `twidgets/config/base.yaml` to change standard colors and configuration.
 
 If you remove anything or let anything blank, it will just fall back to the standard configuration. \
 However, you will get warned.
@@ -31,10 +31,10 @@ help_key: 'h'
 ```
 
 ### 2.2 Configure secrets
-Edit / create the `secrets.env` file located at `config/secrets.env` to add your API keys and preferred settings.
+Edit / create the `secrets.env` file located at `twidgets/config/secrets.env` to add your API keys and preferred settings.
 > ⚠️ Make sure to **NEVER** share your secrets with anybody.
 
-Example:
+Example (Full example provided in `twidgets/config/secrets.env.example`):
 ```dotenv
 WEATHER_API_KEY='your_api_key'
 WEATHER_CITY='Berlin,DE'
@@ -45,7 +45,7 @@ NEWS_FEED_NAME='BBC'
 
 ### 2.3 Adjust widgets and layouts
 
-Each widget has its own .yaml file under `config/widgets/`
+Each widget has its own .yaml file under `twidgets/config/widgets/`
 
 You can adjust name, title, enabled status, position, size, and refresh interval
 
