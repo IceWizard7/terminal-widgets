@@ -9,3 +9,4 @@ twidgets/config/secrets.env
 .DS_Store
 dist/
 twidgets.egg-info/
+publish-guide.txt
