@@ -35,14 +35,14 @@ https://pepy.tech/project/twidgets/month
 1. Install: `pip install twidgets`
 2. Initialize: `twidgets init`
 3. Run: `twidgets`
-> ⚠️ Requires Python Version 3.12+
+> ⚠️ Requires Python Version 3.10+
 
 #### Installation from Source
 1. Clone this repository
 2. Install dependencies: `pip install -r requirements.txt`
 3. Initialize configuration: `python -m twidgets init`
 4. Run: `python -m twidgets`
-> ⚠️ Requires Python Version 3.12+
+> ⚠️ Requires Python Version 3.10+
 
 For full documentation see [Setup Guide](docs/setup_guide.md)
 

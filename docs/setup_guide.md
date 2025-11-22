@@ -2,7 +2,7 @@
 
 ## Installation from PyPI
 
-> ⚠️ Requires Python Version 3.12+
+> ⚠️ Requires Python Version 3.10+
 
 ### 1.1 Installation
 
@@ -30,7 +30,7 @@ twidgets
 
 ## Installation from Source
 
-> ⚠️ Requires Python Version 3.12+
+> ⚠️ Requires Python Version 3.10+
 
 ### 1.1 Cloning this repository
 1. Open a terminal and navigate to the folder where you want the project
