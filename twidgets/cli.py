@@ -38,7 +38,7 @@ def init_command(args: typing.Any) -> None:
         print(f'Copying config files to {dest_config_dir}...')
 
         # Define allowed extensions
-        allowed_extensions = {'.yaml', '.yml', '.env', '.txt'}
+        allowed_extensions = {'.yaml', '.yml', '.env', '.env.example', '.txt'}
 
         # Iterate ONCE to find all relevant files
         files_to_copy = [
@@ -47,12 +47,19 @@ def init_command(args: typing.Any) -> None:
         ]
 
         if not files_to_copy:
-            print('Warning: No config files (.yaml, .yml, .env, .txt) found in the package.', file=sys.stderr)
+            print('Warning: No config files (.yaml, .yml, .env, .env.example, .txt) found in the package.',
+                  file=sys.stderr)
             return
 
         for source_file in files_to_copy:
             # Recreate the relative path in the destination
             relative_path = source_file.relative_to(source_config_path)
+
+            # rename .env.example -> .env
+            if source_file.name.endswith('.env.example'):
+                # Replace only the filename, keep the directory
+                relative_path = relative_path.with_name('.env')
+
             dest_file = dest_config_dir / relative_path
 
             # Ensure the file's parent directory exists in the destination
