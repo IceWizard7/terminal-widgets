@@ -2,7 +2,7 @@
 
 ## Installation from PyPI
 
-> ⚠️ Requires Python Version 3.13+
+> ⚠️ Requires Python Version 3.12+
 
 ### 1.1 Installation
 
@@ -30,7 +30,7 @@ twidgets
 
 ## Installation from Source
 
-> ⚠️ Requires Python Version 3.13+
+> ⚠️ Requires Python Version 3.12+
 
 ### 1.1 Cloning this repository
 1. Open a terminal and navigate to the folder where you want the project
@@ -46,7 +46,6 @@ Run the following command in your project folder:
 ```bash
 pip install -r requirements.txt
 ```
-> ⚠️ Requires Python Version 3.13+
 
 ### 1.3 Initialize Configuration
 Run the following command in your project folder:
