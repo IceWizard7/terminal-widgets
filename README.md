@@ -17,6 +17,15 @@
 
 <img src="examples/example_1.png" alt="Example Image of Terminal Widgets">
 
+<img alt="Stats" src="https://img.shields.io/pypi/v/twidgets">
+<img alt="Stats" src="https://img.shields.io/pypi/pyversions/twidgets">
+<img alt="Stats" src="https://img.shields.io/pypi/l/twidgets">
+
+<!--
+https://pepy.tech/project/twidgets
+
+https://pepy.tech/project/twidgets/month
+-->
 ---
 
 ### 🚀 **1. Getting started**
