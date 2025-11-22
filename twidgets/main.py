@@ -188,6 +188,7 @@ def main_entry_point() -> None:
             break
         except base.ConfigFileNotFoundError as e:
             print(f'⚠️ Config File Not Found Error: {e}')
+            print(f'\nPerhaps you haven\'t initialized the configuration. Please run: twidgets init')
             break
         except base.ConfigSpecificException as e:
             e.log_messages.print_log_messages(heading='Config errors & warnings (found at runtime):\n')
