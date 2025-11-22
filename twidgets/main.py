@@ -160,11 +160,17 @@ def main_curses(stdscr: base.CursesWindowType) -> None:
                 base.ConfigScanFoundError
         ):
             # Clean up threads and re-raise so outer loop stops
-            base.cleanup_curses_setup(stop_event, reloader_thread)
+            try:
+                base.cleanup_curses_setup(stop_event, reloader_thread)
+            except base.CursesError:
+                return  # Ignore; Doesn't happen on Py3.13, but does on Py3.12
             raise  # re-raise so wrapper(main_curses) exits and outer loop stops
         except Exception as e:
             # Clean up threads and re-raise so outer loop stops
-            base.cleanup_curses_setup(stop_event, reloader_thread)
+            try:
+                base.cleanup_curses_setup(stop_event, reloader_thread)
+            except base.CursesError:
+                return  # Ignore; Doesn't happen on Py3.13, but does on Py3.12
             try:
                 min_height = max(
                     widget.dimensions.height + widget.dimensions.y for widget in widget_list if widget.config.enabled)
@@ -209,6 +215,8 @@ def main_entry_point() -> None:
                 f'{e.error_message}\n'
             )
             raise
+        except base.CursesError:
+            break  # Ignore; Doesn't happen on Py3.13, but does on Py3.12
         break  # Exit if the end of the loop is reached (User exit)
 
 
