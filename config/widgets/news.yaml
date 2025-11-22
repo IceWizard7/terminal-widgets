@@ -1,8 +1,0 @@
-name: 'news'
-title: ' ▦️ News'
-enabled: True
-interval: 7200
-height: 7
-width: 85
-y: 9
-x: 87
