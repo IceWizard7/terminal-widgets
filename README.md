@@ -159,6 +159,12 @@ For full documentation see [Widget Guide](docs/widget_guide.md)
 
 ---
 
-### 📜 **4. License**
+### 🧩 **4. Contributing**
+
+Help the project grow: create an issue or pull request!
+
+---
+
+### 📜 **5. License**
 
 See [License](LICENSE)
