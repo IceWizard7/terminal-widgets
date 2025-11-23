@@ -900,6 +900,9 @@ class WidgetLoader:
     def load_custom_widget_modules(self) -> dict[str, types.ModuleType]:
         """Load custom widgets dynamically from files"""
         modules: dict[str, types.ModuleType] = {}
+        if not self.PER_WIDGET_PY_DIR.exists():
+            return modules
+
         for file in self.PER_WIDGET_PY_DIR.iterdir():
             if file.is_file() and file.name.endswith('_widget.py'):
                 widget_name = file.stem.replace('_widget', '')
