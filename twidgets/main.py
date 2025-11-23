@@ -1,5 +1,6 @@
 import threading
 import os
+import types
 
 import twidgets.core.base as base
 import twidgets.widgets as widgets_pkg
@@ -17,11 +18,17 @@ def main_curses(stdscr: base.CursesWindowType) -> None:
     config_loader: base.ConfigLoader = base.ConfigLoader()
     config_loader.reload_secrets()  # needed to reload secrets.env changes
 
-    widget_names: list[str] = base.discover_widgets(widgets_pkg)
+    # Widget Loader
+    widget_loader: base.WidgetLoader = base.WidgetLoader()
+
+    builtin_widget_names: list[str] = widget_loader.discover_builtin_widgets(widgets_pkg)
+    custom_widget_names: list[str] = widget_loader.discover_custom_widgets()
 
     # Scan configs
     config_scanner: base.ConfigScanner = base.ConfigScanner(config_loader)
-    config_scan_results: base.LogMessages | bool = config_scanner.scan_config(widget_names)
+    config_scan_results: base.LogMessages | bool = config_scanner.scan_config(
+        builtin_widget_names + custom_widget_names
+    )
 
     if config_scan_results is not True:
         raise base.ConfigScanFoundError(config_scan_results)  # type: ignore[arg-type]
@@ -36,10 +43,14 @@ def main_curses(stdscr: base.CursesWindowType) -> None:
     base.init_curses_setup(stdscr, base_config)
 
     # Import all widget modules
-    widget_modules = base.load_widget_modules(widget_names)
+    builtin_widget_modules: dict[str, types.ModuleType] = widget_loader.load_builtin_widget_modules(builtin_widget_names)
+    custom_widget_modules: dict[str, types.ModuleType] = widget_loader.load_custom_widget_modules()
 
     try:
-        widget_dict = base.build_widgets(stdscr, config_loader, log_messages, widget_modules)
+        widget_dict = widget_loader.build_widgets(
+            stdscr, config_loader, log_messages,
+            builtin_widget_modules | custom_widget_modules
+        )
     except Exception as e:
         raise base.UnknownException(log_messages, str(e))
 
@@ -105,11 +116,12 @@ def main_curses(stdscr: base.CursesWindowType) -> None:
                 widget.noutrefresh()
             base.update_screen()
         except (
-                base.TerminalTooSmall,
-                base.ConfigFileNotFoundError,
-                base.StopException,
                 base.RestartException,
-                base.ConfigScanFoundError
+                base.ConfigScanFoundError,
+                base.ConfigFileNotFoundError,
+                base.ConfigSpecificException,
+                base.StopException,
+                base.TerminalTooSmall
         ):
             # Clean up threads and re-raise so outer loop stops
             try:

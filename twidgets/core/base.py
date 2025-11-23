@@ -13,6 +13,8 @@ import time as time_module
 import pkgutil
 import types
 import importlib
+import importlib.util
+import sys
 
 
 class Dimensions:
@@ -830,12 +832,86 @@ def prompt_user_input(widget: Widget, prompt: str) -> str:
     return input_str
 
 
+class WidgetLoader:
+    def __init__(self) -> None:
+        self.CONFIG_DIR = Path.home() / '.config' / 'twidgets'
+        self.PER_WIDGET_PY_DIR = self.CONFIG_DIR / 'py_widgets'
+
+    @staticmethod
+    def discover_builtin_widgets(widgets_pkg: types.ModuleType) -> list[str]:
+        """Discord built-in widgets in twidgets/widgets/*_widget.py"""
+        widget_names: list[str] = []
+
+        for module in pkgutil.iter_modules(widgets_pkg.__path__):
+            # Only care about modules ending in `_widget`
+            if module.name.endswith('_widget'):
+                widget_name: str = module.name.replace('_widget', '')
+                widget_names.append(widget_name)
+
+        return widget_names
+
+    @staticmethod
+    def load_builtin_widget_modules(widget_names: list[str]) -> dict[str, types.ModuleType]:
+        """Load builtin widgets"""
+        modules: dict[str, types.ModuleType] = {}
+
+        for name in widget_names:
+            module_path = f'twidgets.widgets.{name}_widget'
+            modules[name] = importlib.import_module(module_path)
+
+        return modules
+
+    def discover_custom_widgets(self) -> list[str]:
+        """Discover user-defined widgets in ~/.config/twidgets/py_widgets/*_widget.py"""
+        widget_names: list[str] = []
+        if not self.PER_WIDGET_PY_DIR.exists():
+            return widget_names
+
+        for file in self.PER_WIDGET_PY_DIR.iterdir():
+            if file.is_file() and file.name.endswith('_widget.py'):
+                widget_name = file.stem.replace('_widget', '')
+                widget_names.append(widget_name)
+
+        return widget_names
+
+    def load_custom_widget_modules(self) -> dict[str, types.ModuleType]:
+        """Load custom widgets dynamically from files"""
+        modules: dict[str, types.ModuleType] = {}
+        for file in self.PER_WIDGET_PY_DIR.iterdir():
+            if file.is_file() and file.name.endswith('_widget.py'):
+                widget_name = file.stem.replace('_widget', '')
+
+                spec = importlib.util.spec_from_file_location(widget_name, file)
+                if spec and spec.loader:
+                    module = importlib.util.module_from_spec(spec)
+                    sys.modules[widget_name] = module
+                    spec.loader.exec_module(module)
+                    modules[widget_name] = module
+
+        return modules
+
+    @staticmethod
+    def build_widgets(
+            stdscr: CursesWindowType,
+            config_loader: ConfigLoader,
+            log_messages: LogMessages,
+            modules: dict[str, types.ModuleType]
+    ) -> dict[str, Widget]:
+        widgets: dict[str, Widget] = {}
+
+        for name, module in modules.items():
+            widget_config = config_loader.load_widget_config(log_messages, name)
+            widgets[name] = module.build(stdscr, widget_config)
+
+        return widgets
+
+
 class ConfigLoader:
     def __init__(self) -> None:
         # self.BASE_DIR = Path(__file__).resolve().parent.parent
         # self.CONFIG_DIR = self.BASE_DIR / 'config'
         # self.WIDGETS_DIR = self.CONFIG_DIR / 'widgets'
-        self.CONFIG_DIR = Path.home() / ".config" / "twidgets"
+        self.CONFIG_DIR = Path.home() / '.config' / 'twidgets'
         self.PER_WIDGET_CONFIG_DIR = self.CONFIG_DIR / 'widgets'
         load_dotenv(self.CONFIG_DIR / 'secrets.env')
 
@@ -1009,43 +1085,6 @@ def update_screen() -> None:
 
 def curses_wrapper(func: typing.Callable[[CursesWindowType], None]) -> None:
     curses.wrapper(func)
-
-
-def discover_widgets(widgets_pkg: types.ModuleType) -> list[str]:
-    widget_names: list[str] = []
-
-    for module in pkgutil.iter_modules(widgets_pkg.__path__):
-        # Only care about modules ending in `_widget`
-        if module.name.endswith('_widget'):
-            widget_name: str = module.name.replace('_widget', '')
-            widget_names.append(widget_name)
-
-    return widget_names
-
-
-def load_widget_modules(widget_names: list[str]) -> dict[str, types.ModuleType]:
-    modules: dict[str, types.ModuleType] = {}
-
-    for name in widget_names:
-        module_path = f'twidgets.widgets.{name}_widget'
-        modules[name] = importlib.import_module(module_path)
-
-    return modules
-
-
-def build_widgets(
-        stdscr: CursesWindowType,
-        config_loader: ConfigLoader,
-        log_messages: LogMessages,
-        modules: dict[str, types.ModuleType]
-) -> dict[str, Widget]:
-    widgets: dict[str, Widget] = {}
-
-    for name, module in modules.items():
-        widget_config = config_loader.load_widget_config(log_messages, name)
-        widgets[name] = module.build(stdscr, widget_config)
-
-    return widgets
 
 
 # Constants
