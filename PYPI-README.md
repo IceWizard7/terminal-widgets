@@ -15,7 +15,7 @@
   </p>
 </div>
 
-<img src="examples/example_1.png" alt="Example Image of Terminal Widgets">
+<img src="https://raw.githubusercontent.com/IceWizard7/terminal-widgets/main/examples/example_1.png" alt="Example Image of Terminal Widgets">
 
 <p>
     <img alt="Stats" src="https://img.shields.io/pypi/v/twidgets">
