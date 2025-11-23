@@ -98,22 +98,25 @@ def main_curses(stdscr: base.CursesWindowType) -> None:
 
             # Refresh all widgets
             for widget in widget_list:
-                if stop_event.is_set():
-                    break
+                try:
+                    if stop_event.is_set():
+                        break
 
-                if not widget.updatable():
-                    widget.draw(ui_state, base_config)
-                    widget.noutrefresh()
-                    continue
+                    if not widget.updatable():
+                        widget.draw(ui_state, base_config)
+                        widget.noutrefresh()
+                        continue
 
-                if widget.draw_data:
-                    with widget.lock:
-                        data_copy = widget.draw_data.copy()
-                    if '__error__' in data_copy:
-                        base.display_error(widget, [widget.draw_data['__error__']], ui_state, base_config)
-                    else:
-                        widget.draw(ui_state, base_config, data_copy)
-                # else: Data still loading
+                    if widget.draw_data:
+                        with widget.lock:
+                            data_copy = widget.draw_data.copy()
+                        if '__error__' in data_copy:
+                            base.display_error(widget, [widget.draw_data['__error__']], ui_state, base_config)
+                        else:
+                            widget.draw(ui_state, base_config, data_copy)
+                    # else: Data still loading
+                except Exception as e:
+                    base.display_error(widget, [str(e)], ui_state, base_config)
 
                 widget.noutrefresh()
             base.update_screen()
