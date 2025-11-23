@@ -178,6 +178,10 @@ def render_todos(todos: list[str], highlighted_line: int | None, max_render: int
     return visible_todos, rel_index
 
 
+def init(widget: Widget, _ui_state: UIState, _base_config: BaseConfig) -> None:
+    load_todos(widget)
+
+
 def draw(widget: Widget, ui_state: UIState, base_config: BaseConfig) -> None:
     draw_widget(widget, ui_state, base_config, widget.title)
 
@@ -205,5 +209,6 @@ def build(stdscr: CursesWindowType, config: Config) -> Widget:
         config.name, config.title, config, draw, config.interval, config.dimensions, stdscr,
         update_func=None,
         mouse_click_func=mouse_click_action,
-        keyboard_func=keyboard_press_action
+        keyboard_func=keyboard_press_action,
+        init_func=init
     )

@@ -58,13 +58,14 @@ def main_curses(stdscr: base.CursesWindowType) -> None:
     except Exception as e:
         raise base.UnknownException(log_messages, str(e))
 
-    widget_list = list(widget_dict.values())
+    widget_list: list[base.Widget] = list(widget_dict.values())
 
     min_height = max(widget.dimensions.height + widget.dimensions.y for widget in widget_list if widget.config.enabled)
     min_width = max(widget.dimensions.width + widget.dimensions.x for widget in widget_list if widget.config.enabled)
     base.validate_terminal_size(stdscr, min_height, min_width)
 
     base.loading_screen(widget_list, ui_state, base_config)
+    base.initialize_widgets(widget_list, ui_state, base_config)
 
     stop_event: threading.Event = threading.Event()
     reloader_thread: threading.Thread = threading.Thread(
@@ -77,9 +78,6 @@ def main_curses(stdscr: base.CursesWindowType) -> None:
     )
     reloader_thread.daemon = True  # don't block exit if something goes wrong
     reloader_thread.start()
-
-    # Load To-Dos (initially, will get reloaded every mouse / keyboard action)
-    # todo.load_todos(todo_widget)
 
     while True:
         try:
@@ -177,6 +175,7 @@ def main_entry_point() -> None:
             print(e)
         except base.WidgetSourceFileException as e:
             e.log_messages.print_log_messages(heading='WidgetSource errors & warnings (found at runtime):\n')
+            raise
         except base.CursesError:
             break  # Ignore; Doesn't happen on Py3.13, but does on Py3.12
         except base.UnknownException as e:

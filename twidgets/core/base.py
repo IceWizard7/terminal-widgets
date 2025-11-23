@@ -36,6 +36,7 @@ class Widget:
     UpdateFunction = typing.Callable[['Widget', 'ConfigLoader'], list[str]]
     MouseClickUpdateFunction = typing.Callable[['Widget', int, int, int, 'UIState'], None]
     KeyBoardUpdateFunction = typing.Callable[['Widget', int, 'UIState', 'BaseConfig'], None]
+    InitializeFunction = typing.Callable[['Widget', 'UIState', 'BaseConfig'], None]
 
     def __init__(
             self,
@@ -48,7 +49,8 @@ class Widget:
             stdscr: CursesWindowType,
             update_func: UpdateFunction | None,
             mouse_click_func: MouseClickUpdateFunction | None,
-            keyboard_func: KeyBoardUpdateFunction | None
+            keyboard_func: KeyBoardUpdateFunction | None,
+            init_func: InitializeFunction | None
     ) -> None:
         self.name = name
         self.title = title
@@ -58,6 +60,7 @@ class Widget:
         self._mouse_click_func = mouse_click_func
         self._keyboard_func = keyboard_func
         self._draw_func = draw_func
+        self._init_func = init_func
         self.last_updated: int | float | None = 0
         self.dimensions = dimensions
         try:
@@ -71,6 +74,10 @@ class Widget:
 
     def noutrefresh(self) -> None:
         self.win.noutrefresh()
+
+    def init(self, ui_state: UIState, base_config: BaseConfig, *args: typing.Any, **kwargs: typing.Any) -> None:
+        if self._init_func and self.config.enabled:
+            self._init_func(self, ui_state, base_config, *args, **kwargs)
 
     def draw(self, ui_state: UIState, base_config: BaseConfig, *args: typing.Any, **kwargs: typing.Any) -> None:
         if self.config.enabled:
@@ -671,6 +678,14 @@ def loading_screen(widgets: list[Widget], ui_state: UIState, base_config: BaseCo
         draw_widget(widget, ui_state, base_config, loading=True)
         add_widget_content(widget, [' Loading... '])
         widget.win.refresh()
+    return None
+
+
+def initialize_widgets(widget: list[Widget], ui_state: UIState, base_config: BaseConfig) -> None:
+    for widget in widget:
+        if not widget.config.enabled:
+            continue
+        widget.init(ui_state, base_config)
     return None
 
 

@@ -23,5 +23,6 @@ def build(stdscr: CursesWindowType, config: Config) -> Widget:
         config.name, config.title, config, draw, config.interval, config.dimensions, stdscr,
         update_func=None,
         mouse_click_func=None,
-        keyboard_func=None
+        keyboard_func=None,
+        init_func=None
     )
