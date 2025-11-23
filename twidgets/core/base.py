@@ -414,8 +414,7 @@ class BaseConfig:
             except ValueError as e:
                 log_messages.add_log_message(LogMessage(
                     f'Configuration for background_color is invalid for {e}', LogLevels
-                    .ERROR.key))  # TO
-                # DO
+                    .ERROR.key))
         else:
             log_messages.add_log_message(LogMessage(
                 f'Configuration for background_color is missing (base.yaml,'
@@ -926,11 +925,15 @@ class WidgetLoader:
         widgets: dict[str, Widget] = {}
 
         for name, module in modules.items():
+            widget_config = config_loader.load_widget_config(log_messages, name)
             try:
-                widget_config = config_loader.load_widget_config(log_messages, name)
                 widgets[name] = module.build(stdscr, widget_config)
-            except Exception as e:
-                raise WidgetSourceFileException(LogMessages([LogMessage(str(e), LogLevels.ERROR.key)]))
+            except Exception:
+                raise WidgetSourceFileException(
+                    LogMessages([LogMessage(
+                        f'Configuration for `build` is missing / incorrect ("{name}" widget)', LogLevels.ERROR.key
+                    )])
+                )
 
         return widgets
 
