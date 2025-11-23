@@ -31,12 +31,11 @@ class Dimensions:
 class Widget:
     DrawFunction = typing.Callable[
         ['Widget', 'UIState', 'BaseConfig'], None] | typing.Callable[
-        ['Widget', 'UIState', 'BaseConfig', dict[str, typing.Any]], None] | typing.Callable[
         ['Widget', 'UIState', 'BaseConfig', list[str]], None
     ]
-    UpdateFunction = typing.Callable[['Widget', 'ConfigLoader'], dict[str, typing.Any] | list[str]]
+    UpdateFunction = typing.Callable[['Widget', 'ConfigLoader'], list[str]]
     MouseClickUpdateFunction = typing.Callable[['Widget', int, int, int, 'UIState'], None]
-    KeyBoardUpdateFunction = typing.Callable[['Widget', typing.Any, 'UIState', 'BaseConfig'], None]
+    KeyBoardUpdateFunction = typing.Callable[['Widget', int, 'UIState', 'BaseConfig'], None]
 
     def __init__(
             self,
@@ -77,7 +76,7 @@ class Widget:
         if self.config.enabled:
             self._draw_func(self, ui_state, base_config, *args, **kwargs)
 
-    def update(self, config_loader: ConfigLoader) -> dict[str, typing.Any] | list[str] | None:
+    def update(self, config_loader: ConfigLoader) -> list[str] | None:
         if self._update_func and self.config.enabled:
             return self._update_func(self, config_loader)
         return None
@@ -95,7 +94,7 @@ class Widget:
         if self._keyboard_func:
             self._keyboard_func(*args, **kwargs)
 
-    def reinit_window(self, stdscr: typing.Any) -> None:
+    def reinit_window(self, stdscr: CursesWindowType) -> None:
         self.win = stdscr.subwin(*self.dimensions.formatted())
 
 
@@ -330,7 +329,7 @@ class RGBColor:
         )
 
     @staticmethod
-    def add_rgb_color_from_dict(color: dict[str, typing.Any]) -> RGBColor:
+    def add_rgb_color_from_dict(color: dict[str, int]) -> RGBColor:
         # Make sure every value is an int (else raise an error)
         return RGBColor(r=int(color['r']), g=int(color['g']), b=int(color['b']))
 
@@ -373,12 +372,12 @@ class BaseConfig:
             self,
             log_messages: LogMessages,
             use_standard_terminal_background: bool | None = None,
-            background_color: dict[str, typing.Any] | None = None,
-            foreground_color: dict[str, typing.Any] | None = None,
-            primary_color: dict[str, typing.Any] | None = None,
-            secondary_color: dict[str, typing.Any] | None = None,
-            loading_color: dict[str, typing.Any] | None = None,
-            error_color: dict[str, typing.Any] | None = None,
+            background_color: dict[str, int] | None = None,
+            foreground_color: dict[str, int] | None = None,
+            primary_color: dict[str, int] | None = None,
+            secondary_color: dict[str, int] | None = None,
+            loading_color: dict[str, int] | None = None,
+            error_color: dict[str, int] | None = None,
             quit_key: str | None = None,
             reload_key: str | None = None,
             help_key: str | None = None,
@@ -614,7 +613,7 @@ class BaseConfig:
             ))
 
 
-def draw_colored_border(win: typing.Any, color_pair: int) -> None:
+def draw_colored_border(win: CursesWindowType, color_pair: int) -> None:
     win.attron(curses.color_pair(color_pair))
     win.border()
     win.attroff(curses.color_pair(color_pair))
@@ -746,7 +745,7 @@ def cleanup_curses_setup(
         pass  # Ignore; Doesn't happen on Py3.13, but does on Py3.12
 
 
-def validate_terminal_size(stdscr: typing.Any, min_height: int, min_width: int) -> None:
+def validate_terminal_size(stdscr: CursesWindowType, min_height: int, min_width: int) -> None:
     height, width = stdscr.getmaxyx()
 
     if height < min_height or width < min_width:
