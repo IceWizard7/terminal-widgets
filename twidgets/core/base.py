@@ -10,6 +10,9 @@ import _curses
 import typing
 import threading
 import time as time_module
+import pkgutil
+import types
+import importlib
 
 
 class Dimensions:
@@ -1006,6 +1009,43 @@ def update_screen() -> None:
 
 def curses_wrapper(func: typing.Callable[[CursesWindowType], None]) -> None:
     curses.wrapper(func)
+
+
+def discover_widgets(widgets_pkg: types.ModuleType) -> list[str]:
+    widget_names: list[str] = []
+
+    for module in pkgutil.iter_modules(widgets_pkg.__path__):
+        # Only care about modules ending in `_widget`
+        if module.name.endswith('_widget'):
+            widget_name: str = module.name.replace('_widget', '')
+            widget_names.append(widget_name)
+
+    return widget_names
+
+
+def load_widget_modules(widget_names: list[str]) -> dict[str, types.ModuleType]:
+    modules: dict[str, types.ModuleType] = {}
+
+    for name in widget_names:
+        module_path = f'twidgets.widgets.{name}_widget'
+        modules[name] = importlib.import_module(module_path)
+
+    return modules
+
+
+def build_widgets(
+        stdscr: CursesWindowType,
+        config_loader: ConfigLoader,
+        log_messages: LogMessages,
+        modules: dict[str, types.ModuleType]
+) -> dict[str, Widget]:
+    widgets: dict[str, Widget] = {}
+
+    for name, module in modules.items():
+        widget_config = config_loader.load_widget_config(log_messages, name)
+        widgets[name] = module.build(stdscr, widget_config)
+
+    return widgets
 
 
 # Constants

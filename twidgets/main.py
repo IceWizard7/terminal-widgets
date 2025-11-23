@@ -2,16 +2,7 @@ import threading
 import os
 
 import twidgets.core.base as base
-from twidgets.widgets import clock_widget as clock
-import twidgets.widgets.greetings_widget as greetings
-import twidgets.widgets.calendar_widget as calendar
-import twidgets.widgets.neofetch_widget as neofetch
-import twidgets.widgets.news_widget as news
-import twidgets.widgets.weather_widget as weather
-import twidgets.widgets.todo_widget as todo
-import twidgets.widgets.mode_widget as mode
-import twidgets.widgets.resources_widget as resources
-# Add more widgets here (1)
+import twidgets.widgets as widgets_pkg
 
 
 def main_curses(stdscr: base.CursesWindowType) -> None:
@@ -26,12 +17,11 @@ def main_curses(stdscr: base.CursesWindowType) -> None:
     config_loader: base.ConfigLoader = base.ConfigLoader()
     config_loader.reload_secrets()  # needed to reload secrets.env changes
 
+    widget_names: list[str] = base.discover_widgets(widgets_pkg)
+
     # Scan configs
     config_scanner: base.ConfigScanner = base.ConfigScanner(config_loader)
-    config_scan_results: base.LogMessages | bool = config_scanner.scan_config([
-        'clock', 'greetings', 'calendar', 'mode', 'todo', 'weather', 'news', 'neofetch', 'resources'
-    ])
-    # Add more widgets here (2)
+    config_scan_results: base.LogMessages | bool = config_scanner.scan_config(widget_names)
 
     if config_scan_results is not True:
         raise base.ConfigScanFoundError(config_scan_results)  # type: ignore[arg-type]
@@ -45,51 +35,13 @@ def main_curses(stdscr: base.CursesWindowType) -> None:
     # Initiate setup
     base.init_curses_setup(stdscr, base_config)
 
+    # Import all widget modules
+    widget_modules = base.load_widget_modules(widget_names)
+
     try:
-        clock_widget: base.Widget = clock.build(
-            stdscr, config_loader.load_widget_config(log_messages, 'clock')
-        )
-        greetings_widget: base.Widget = greetings.build(
-            stdscr, config_loader.load_widget_config(log_messages, 'greetings')
-        )
-        calendar_widget: base.Widget = calendar.build(
-            stdscr, config_loader.load_widget_config(log_messages, 'calendar')
-        )
-        mode_widget: base.Widget = mode.build(
-            stdscr, config_loader.load_widget_config(log_messages, 'mode')
-        )
-        todo_widget: base.Widget = todo.build(
-            stdscr, config_loader.load_widget_config(log_messages, 'todo')
-        )
-        weather_widget: base.Widget = weather.build(
-            stdscr, config_loader.load_widget_config(log_messages, 'weather')
-        )
-        news_widget: base.Widget = news.build(
-            stdscr, config_loader.load_widget_config(log_messages, 'news')
-        )
-        neofetch_widget: base.Widget = neofetch.build(
-            stdscr, config_loader.load_widget_config(log_messages, 'neofetch')
-        )
-        resources_widget: base.Widget = resources.build(
-            stdscr, config_loader.load_widget_config(log_messages, 'resources')
-        )
-        # Add more widgets here (3)
+        widget_dict = base.build_widgets(stdscr, config_loader, log_messages, widget_modules)
     except Exception as e:
         raise base.UnknownException(log_messages, str(e))
-
-    # Loading order is defined here
-    widget_dict: dict[str, base.Widget] = {
-        'clock': clock_widget,
-        'greeting': greetings_widget,
-        'calendar': calendar_widget,
-        'mode': mode_widget,
-        'todo': todo_widget,
-        'weather': weather_widget,
-        'news': news_widget,
-        'resources': resources_widget,
-        'neofetch': neofetch_widget
-        # Add more widgets here (4)
-    }
 
     widget_list = list(widget_dict.values())
 
@@ -112,7 +64,7 @@ def main_curses(stdscr: base.CursesWindowType) -> None:
     reloader_thread.start()
 
     # Load To-Dos (initially, will get reloaded every mouse / keyboard action)
-    todo.load_todos(todo_widget)
+    # todo.load_todos(todo_widget)
 
     while True:
         try:
