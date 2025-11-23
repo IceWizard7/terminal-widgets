@@ -175,7 +175,7 @@ def main_entry_point() -> None:
             print(e)
         except base.WidgetSourceFileException as e:
             e.log_messages.print_log_messages(heading='WidgetSource errors & warnings (found at runtime):\n')
-            raise
+            # raise
         except base.CursesError:
             break  # Ignore; Doesn't happen on Py3.13, but does on Py3.12
         except base.UnknownException as e:
