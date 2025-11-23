@@ -15,7 +15,8 @@
   </p>
 </div>
 
-<img src="https://raw.githubusercontent.com/IceWizard7/terminal-widgets/main/examples/example_1.png" alt="Example Image of Terminal Widgets">
+<img src="https://raw.githubusercontent.com/IceWizard7/terminal-widgets/main/examples/example_1.png" alt="
+Example Image of Terminal Widgets">
 
 <p>
     <img alt="Stats" src="https://img.shields.io/pypi/v/twidgets">
@@ -95,7 +96,8 @@ date_format: '%d.%m.%Y'  # us: '%m.%d.%Y', international: '%Y-%m-%d'
 time_format: '%H:%M:%S'  # time
 ```
 
-For full documentation see [Configuration Guide](https://github.com/IceWizard7/terminal-widgets/blob/main/docs/configuration_guide.md)
+For full documentation see [Configuration Guide]
+(https://github.com/IceWizard7/terminal-widgets/blob/main/docs/configuration_guide.md)
 
 ---
 
@@ -145,12 +147,13 @@ def draw(widget: Widget, ui_state: UIState, base_config: BaseConfig) -> None:
     add_widget_content(widget, content)
 
 # 2. Define the build function
-def build(stdscr: typing.Any, config: Config) -> Widget:
+def build(stdscr: CursesWindowType, config: Config) -> Widget:
     return Widget(
         config.name, config.title, config, draw, config.interval, config.dimensions, stdscr,
         update_func=None,
         mouse_click_func=None,
-        keyboard_func=None
+        keyboard_func=None,
+        init_func=None
     )
 ```
 

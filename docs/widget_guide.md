@@ -16,7 +16,7 @@ Create the widget's Python file at `~/.config/twidgets/py_widgets/custom_widget.
 
 Import:
 ```python
-from twidgets.core.base import Widget, draw_widget, add_widget_content, Config, UIState, BaseConfig
+from twidgets.core.base import Widget, draw_widget, add_widget_content, Config, UIState, BaseConfig, CursesWindowType
 ```
 
 #### 3.2.2 Simple widgets
@@ -80,9 +80,9 @@ def draw(widget: Widget, ui_state: UIState, base_config: BaseConfig, info: typin
 You can adapt the time, when the `update` function will be called again (reloading the data) by changing
 `interval` in `~/.config/twidgets/widgets/custom.yaml`
 
-#### 3.2.5 Custom mouse & keyboard actions
+#### 3.2.5 Custom mouse, keyboard actions & initialize functions
 
-Example:
+Mouse actions example:
 
 ```python
 def mouse_click_action(custom_widget: Widget, _mx: int, _my: int, _b_state: int, ui_state: UIState) -> None:
@@ -98,7 +98,7 @@ This function will get called whenever a mouse click happens, so you can use it 
 
 > Note that the widget border color will automatically be updated on every mouse click.
 
-Example:
+Keyboard actions example:
 
 ```python
 from twidgets.core.base import prompt_user_input, CursesKeys
@@ -109,6 +109,17 @@ def keyboard_press_action(custom_widget: Widget, key: typing.Any, ui_state: UISt
         if confirm.lower().strip() in ['y']:
             some_func(custom_widget, ...)
 ```
+
+This function will get called whenever a key is pressed.
+
+Initialize function example:
+
+```python
+def init(widget: Widget, _ui_state: UIState, _base_config: BaseConfig) -> None:
+    load_todos(widget)
+```
+
+This function will get called initially when `twidgets` is starting, or when the user manually reloads.
 
 #### 3.2.6 Using secrets
 
@@ -144,7 +155,8 @@ custom_attribute: 'this is a custom attribute!'
 
 > Note that this will not be checked by the ConfigScanner.
 It only checks `base.yaml` for integrity, as well as "name",
-"title", "enabled", "interval", "height", "width", "y" and "x" for every widget.
+"title", "enabled", "interval", "height", "width", "y" and "x" for every widget. \
+To detect if these attributes are missing, see the next section.
 
 #### 3.2.7.1 Config specific Errors
 
@@ -168,12 +180,13 @@ With this you can add custom error messages for all users to your widget.
 #### 3.2.8 Building widget
 
 ```python
-def build(stdscr: typing.Any, config: Config) -> Widget:
+def build(stdscr: CursesWindowType, config: Config) -> Widget:
     return Widget(
         config.name, config.title, config, draw, config.interval, config.dimensions, stdscr,
         update_func=None,  # update_func=update
         mouse_click_func=None,  # mouse_click_func=mouse_click_action
-        keyboard_func=None  # keyboard_func=keyboard_press_action
+        keyboard_func=None,  # keyboard_func=keyboard_press_action
+        init_func=None  # init_func=init
     )
 ```
 

@@ -145,12 +145,13 @@ def draw(widget: Widget, ui_state: UIState, base_config: BaseConfig) -> None:
     add_widget_content(widget, content)
 
 # 2. Define the build function
-def build(stdscr: typing.Any, config: Config) -> Widget:
+def build(stdscr: CursesWindowType, config: Config) -> Widget:
     return Widget(
         config.name, config.title, config, draw, config.interval, config.dimensions, stdscr,
         update_func=None,
         mouse_click_func=None,
-        keyboard_func=None
+        keyboard_func=None,
+        init_func=None
     )
 ```
 
