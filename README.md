@@ -17,12 +17,13 @@
 
 <img src="examples/example_1.png" alt="Example Image of Terminal Widgets">
 
-<img alt="Stats" src="https://img.shields.io/pypi/v/twidgets">
-<img alt="Stats" src="https://img.shields.io/pypi/pyversions/twidgets">
-<img alt="Stats" src="https://img.shields.io/pypi/l/twidgets">
-
-<img alt="Stats" src="https://static.pepy.tech/badge/twidgets">
-<img alt="Stats" src="https://static.pepy.tech/badge/twidgets/month">
+<p>
+    <img alt="Stats" src="https://img.shields.io/pypi/v/twidgets">
+    <img alt="Stats" src="https://img.shields.io/pypi/pyversions/twidgets">
+    <img alt="Stats" src="https://img.shields.io/pypi/l/twidgets">
+    <img alt="Stats" src="https://static.pepy.tech/badge/twidgets">
+    <img alt="Stats" src="https://static.pepy.tech/badge/twidgets/month">
+</p>
 
 ---
 
