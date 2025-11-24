@@ -681,8 +681,8 @@ def loading_screen(widgets: list[Widget], ui_state: UIState, base_config: BaseCo
     return None
 
 
-def initialize_widgets(widget: list[Widget], ui_state: UIState, base_config: BaseConfig) -> None:
-    for widget in widget:
+def initialize_widgets(widgets: list[Widget], ui_state: UIState, base_config: BaseConfig) -> None:
+    for widget in widgets:
         if not widget.config.enabled:
             continue
         widget.init(ui_state, base_config)
