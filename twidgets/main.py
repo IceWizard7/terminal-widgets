@@ -21,8 +21,6 @@ def main_curses(stdscr: base.CursesWindowType) -> None:
     # Widget Loader
     widget_loader: base.WidgetLoader = base.WidgetLoader()
 
-    # TODO: make tge errrors from widgets -> warnings
-
     builtin_widget_names: list[str] = widget_loader.discover_builtin_widgets(widgets_pkg)
     custom_widget_names: list[str] = widget_loader.discover_custom_widgets()
 
