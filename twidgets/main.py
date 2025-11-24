@@ -135,13 +135,13 @@ def main_curses(stdscr: base.CursesWindowType) -> None:
                             if log_message not in list(log_messages):
                                 log_messages.add_log_message(log_message)
                     else:
-                        log_message: base.LogMessage = base.LogMessage(
+                        new_log_message: base.LogMessage = base.LogMessage(
                             f'{str(e)} (widget "{widget.name}")',
                             base.LogLevels.ERROR.key
                         )
 
-                        if log_message not in list(log_messages):
-                            log_messages.add_log_message(log_message)
+                        if new_log_message not in list(log_messages):
+                            log_messages.add_log_message(new_log_message)
                         # If the widget failed, show the error inside the widget
                         base.display_error(widget, [str(e)], ui_state, base_config)
 
