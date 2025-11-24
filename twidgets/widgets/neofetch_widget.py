@@ -48,15 +48,33 @@ def return_macos_info() -> list[str]:
     terminal: str | None = os.environ.get('TERM_PROGRAM')
 
     brew_packages: str | None = run_cmd('brew list | wc -l')
-    zsh_version: str | None = run_cmd('zsh --version')
+
+    short_shell: str | None = os.environ.get('SHELL')
+    long_shell: str | None = short_shell
+    if short_shell:
+        try:
+            long_shell = run_cmd(f'{short_shell} --version')
+        except Exception:
+            pass
+
+    if not short_shell:
+        short_shell = 'Unknown'
+
+    if not long_shell:
+        long_shell = 'Unknown'
+
     display_info: str | None = run_cmd('/usr/sbin/system_profiler SPDisplaysDataType | grep Resolution')
     if not isinstance(display_info, str):
         display_info = 'Resolution: Unknown'
     terminal_font = run_cmd('defaults read com.apple.Terminal "Default Window Settings"')
-    cpu_info: str = (f'{run_cmd("sysctl -n machdep.cpu.brand_string")}'
-                     f' ({psutil.cpu_count(logical=False)} Cores @ {psutil.cpu_freq().max} MHz)')
+    cpu_info: str = 'Unknown'
+    try:
+        cpu_info = (f'{run_cmd("sysctl -n machdep.cpu.brand_string")}'
+                    f' ({psutil.cpu_count(logical=False)} Cores @ {psutil.cpu_freq().max} MHz)')
+    except Exception:
+        pass
 
-    gpu_info: str | None = None
+    gpu_info: str = 'Unknown'
     try:
         gpu_output: str | None = run_cmd('/usr/sbin/system_profiler SPDisplaysDataType')
         if gpu_output is not None:
@@ -73,7 +91,7 @@ def return_macos_info() -> list[str]:
         f'     .;loddo:\' loolloddol;.      Kernel: {kernel}',
         f'   cKMMMMMMMMMMNWMMMMMMMMMM0:    Uptime: {uptime_string}',
         f' .KMMMMMMMMMMMMMMMMMMMMMMMWd.    Packages: {brew_packages} (brew)',
-        f' XMMMMMMMMMMMMMMMMMMMMMMMX.      Shell: {zsh_version}',
+        f' XMMMMMMMMMMMMMMMMMMMMMMMX.      Shell: {short_shell}',
         f';MMMMMMMMMMMMMMMMMMMMMMMM:       {display_info}',
         f':MMMMMMMMMMMMMMMMMMMMMMMM:       Language: {system_lang}',
         f'.MMMMMMMMMMMMMMMMMMMMMMMMX.      Encoding: {encoding}',
@@ -111,15 +129,16 @@ def return_raspi_info() -> list[str]:
     terminal_font: str = 'N/A'
 
     pkg_packages: str = run_cmd('dpkg --get-selections | wc -l') or 'Unknown'
-    shell_path: str = os.getenv('SHELL', 'bash')
-    try:
-        raw_shell_version: str | None = run_cmd(f'{shell_path} --version | head -n 1')
-        shell_version: str = shell_path
-        if raw_shell_version is not None:
-            shell_version = (raw_shell_version.split('version ')[1].split(' ')[0]
-                             or shell_path)
-    except IndexError:
-        shell_version = 'Unknown'
+
+    shell: str | None = os.environ.get('SHELL')
+    if shell:
+        try:
+            shell = run_cmd(f'{shell} --version')
+        except Exception:
+            pass
+
+    if not shell:
+        shell = 'Unknown'
 
     cpu_info: str = 'Unknown CPU'
     raw_cpu_info: str | None = platform.processor() or run_cmd(
@@ -150,7 +169,7 @@ def return_raspi_info() -> list[str]:
         f'\',$$P       ,ggs.     `$$b:   Kernel: {kernel}',
         f'`d$$\'     ,$P"\'   .    $$$    Uptime: {uptime_string}',
         f' $$P      d$\'     ,    $$P    Packages: {pkg_packages} (dpkg)',
-        f' $$:      $$.   -    ,d$$\'    Shell: {shell_version}',
+        f' $$:      $$.   -    ,d$$\'    Shell: {shell}',
         f' $$;      Y$b._   _,d$P\'      {display_info}',
         f' Y$$.    `.`"Y$$$$P"\'         Language: {system_lang}',
         f' `$$b      "-.__              Encoding: {encoding}',
