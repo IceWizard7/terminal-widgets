@@ -951,7 +951,7 @@ class WidgetLoader:
             except Exception:
                 raise WidgetSourceFileException(
                     LogMessages([LogMessage(
-                        f'Configuration for `build` is missing / incorrect ("{name}" widget)', LogLevels.ERROR.key
+                        f'Code for `build` is missing / incorrect ("{name}" widget)', LogLevels.ERROR.key
                     )])
                 )
 
