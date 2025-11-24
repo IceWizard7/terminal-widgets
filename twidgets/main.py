@@ -115,7 +115,10 @@ def main_curses(stdscr: base.CursesWindowType) -> None:
                         else:
                             widget.draw(ui_state, base_config, data_copy)
                     # else: Data still loading
+                except base.ConfigSpecificException as e:
+                    base.display_error(widget, [str(log) for log in e.log_messages.log_messages], ui_state, base_config)
                 except Exception as e:
+                    # If the widget failed, show the error inside the widget
                     base.display_error(widget, [str(e)], ui_state, base_config)
 
                 widget.noutrefresh()
