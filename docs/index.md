@@ -23,11 +23,12 @@ This dashboard lets you monitor Weather, News, Clock, Calendar, and more in a mo
 .
 ├── LICENSE
 ├── MANIFEST.in
+├── PYPI-README.md
 ├── README.md
 ├── docs
 │    └── *.md
 ├── examples
-│    └── example_1.png
+│    └── example_*.png
 ├── pyproject.toml
 ├── requirements.txt
 ├── setup.cfg
@@ -37,33 +38,17 @@ This dashboard lets you monitor Weather, News, Clock, Calendar, and more in a mo
     ├── __main__.py
     ├── cli.py
     ├── config
+    │   ├── __init__.py
     │   ├── base.yaml
-    │   ├── secrets.env
     │   ├── secrets.env.example
     │   └── widgets
-    │       ├── calendar.yaml
-    │       ├── clock.yaml
-    │       ├── greetings.yaml
-    │       ├── mode.yaml
-    │       ├── neofetch.yaml
-    │       ├── news.yaml
-    │       ├── resources.yaml
-    │       ├── todo.yaml
-    │       ├── todo_save_file.txt
-    │       └── weather.yaml
+    │       ├── *.txt
+    │       └── *.yaml
     ├── core
     │   ├── __init__.py
     │   └── base.py
     ├── main.py
     └── widgets
         ├── __init__.py
-        ├── calendar_widget.py
-        ├── clock_widget.py
-        ├── greetings_widget.py
-        ├── mode_widget.py
-        ├── neofetch_widget.py
-        ├── news_widget.py
-        ├── resources_widget.py
-        ├── todo_widget.py
-        └── weather_widget.py
+        └── *.py
 ```
