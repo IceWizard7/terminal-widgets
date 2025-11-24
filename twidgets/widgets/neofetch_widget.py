@@ -57,11 +57,11 @@ def return_macos_info() -> list[str]:
         except Exception:
             pass
 
-    if not short_shell:
-        short_shell = 'Unknown'
-
-    if not long_shell:
-        long_shell = 'Unknown'
+    final_shell: str = 'Unknown'
+    if short_shell:
+        final_shell = short_shell
+    if long_shell:
+        final_shell = long_shell
 
     display_info: str | None = run_cmd('/usr/sbin/system_profiler SPDisplaysDataType | grep Resolution')
     if not isinstance(display_info, str):
@@ -91,7 +91,7 @@ def return_macos_info() -> list[str]:
         f'     .;loddo:\' loolloddol;.      Kernel: {kernel}',
         f'   cKMMMMMMMMMMNWMMMMMMMMMM0:    Uptime: {uptime_string}',
         f' .KMMMMMMMMMMMMMMMMMMMMMMMWd.    Packages: {brew_packages} (brew)',
-        f' XMMMMMMMMMMMMMMMMMMMMMMMX.      Shell: {short_shell}',
+        f' XMMMMMMMMMMMMMMMMMMMMMMMX.      Shell: {final_shell}',
         f';MMMMMMMMMMMMMMMMMMMMMMMM:       {display_info}',
         f':MMMMMMMMMMMMMMMMMMMMMMMM:       Language: {system_lang}',
         f'.MMMMMMMMMMMMMMMMMMMMMMMMX.      Encoding: {encoding}',
