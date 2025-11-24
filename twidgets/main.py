@@ -11,7 +11,7 @@ def main_curses(stdscr: base.CursesWindowType) -> None:
     script_dir = os.path.dirname(os.path.abspath(__file__))
     os.chdir(script_dir)
 
-    # Logs (e.g. Warnings)
+    # Logs (Warnings, Errors)
     log_messages: base.LogMessages = base.LogMessages()
 
     # Config loader (Doesn't load anything yet)
@@ -20,6 +20,8 @@ def main_curses(stdscr: base.CursesWindowType) -> None:
 
     # Widget Loader
     widget_loader: base.WidgetLoader = base.WidgetLoader()
+
+    # TODO: make tge errrors from widgets -> warnings
 
     builtin_widget_names: list[str] = widget_loader.discover_builtin_widgets(widgets_pkg)
     custom_widget_names: list[str] = widget_loader.discover_custom_widgets()
@@ -116,8 +118,18 @@ def main_curses(stdscr: base.CursesWindowType) -> None:
                             widget.draw(ui_state, base_config, data_copy)
                     # else: Data still loading
                 except base.ConfigSpecificException as e:
-                    base.display_error(widget, [str(log) for log in e.log_messages.log_messages], ui_state, base_config)
+                    for log_message in list(e.log_messages):
+                        base.display_error(widget, [str(log_message)], ui_state, base_config)
+                        if log_message not in list(log_messages):
+                            log_messages.add_log_message(log_message)
                 except Exception as e:
+                    log_message: base.LogMessage = base.LogMessage(
+                        f'{str(e)} (widget "{widget.name}")',
+                        base.LogLevels.ERROR.key
+                    )
+
+                    if log_message not in list(log_messages):
+                        log_messages.add_log_message(log_message)
                     # If the widget failed, show the error inside the widget
                     base.display_error(widget, [str(e)], ui_state, base_config)
 
@@ -173,7 +185,7 @@ def main_entry_point() -> None:
             e.log_messages.print_log_messages(heading='Config errors & warnings (found at runtime):\n')
             break
         except base.StopException as e:
-            e.log_messages.print_log_messages(heading='Config errors & warnings (found by ConfigScanner):\n')
+            e.log_messages.print_log_messages(heading='Config errors & warnings:\n')
             break
         except KeyboardInterrupt:
             break

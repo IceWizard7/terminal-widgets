@@ -9,6 +9,7 @@ import os
 import curses
 import _curses
 import typing
+import collections
 import threading
 import time as time_module
 import pkgutil
@@ -16,6 +17,7 @@ import types
 import importlib
 import importlib.util
 import sys
+import datetime
 
 
 class Dimensions:
@@ -204,14 +206,22 @@ class LogLevels(Enum):
 
 class LogMessage:
     def __init__(self, message: str, level: int) -> None:
+        self.log_time: datetime.datetime = datetime.datetime.now()
         self.message: str = message
         self.level: int = level
 
     def __str__(self) -> str:
-        return self.message
+        return f'{self.log_time.strftime("%H:%M:%S")}: {self.message}'
 
     def __repr__(self) -> str:
         return self.message
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, LogMessage):
+            return NotImplemented
+        if self.message == other.message and self.level == other.level:
+            return True
+        return False
 
     def is_error(self) -> bool:
         if self.level == LogLevels.ERROR.key:
@@ -240,6 +250,15 @@ class LogMessages:
         if not isinstance(other, LogMessages):
             return NotImplemented
         return self.log_messages != other.log_messages
+
+    def __contains__(self, item: LogMessage) -> bool:
+        for log_message in list(self.log_messages):
+            if log_message == item:
+                return True
+        return False
+
+    def __iter__(self) -> collections.abc.Iterator[LogMessage]:
+        return iter(self.log_messages)
 
     def add_log_message(self, message: LogMessage) -> None:
         self.log_messages.append(message)
