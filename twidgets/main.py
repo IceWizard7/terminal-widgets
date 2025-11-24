@@ -113,7 +113,13 @@ def main_curses(stdscr: base.CursesWindowType) -> None:
                         with widget.lock:
                             data_copy = widget.draw_data.copy()
                         if '__error__' in data_copy:
-                            base.display_error(widget, [widget.draw_data['__error__']], ui_state, base_config)
+                            if isinstance(data_copy['__error__'], base.LogMessages):
+                                for log_message in list(data_copy['__error__']):
+                                    base.display_error(widget, [str(log_message)], ui_state, base_config)
+                                    if log_message not in list(log_messages):
+                                        log_messages.add_log_message(log_message)
+                            else:
+                                base.display_error(widget, [widget.draw_data['__error__']], ui_state, base_config)
                         else:
                             widget.draw(ui_state, base_config, data_copy)
                     # else: Data still loading
@@ -123,15 +129,21 @@ def main_curses(stdscr: base.CursesWindowType) -> None:
                         if log_message not in list(log_messages):
                             log_messages.add_log_message(log_message)
                 except Exception as e:
-                    log_message: base.LogMessage = base.LogMessage(
-                        f'{str(e)} (widget "{widget.name}")',
-                        base.LogLevels.ERROR.key
-                    )
+                    if hasattr(e, 'log_messages'):
+                        for log_message in list(e.log_messages):
+                            base.display_error(widget, [str(log_message)], ui_state, base_config)
+                            if log_message not in list(log_messages):
+                                log_messages.add_log_message(log_message)
+                    else:
+                        log_message: base.LogMessage = base.LogMessage(
+                            f'{str(e)} (widget "{widget.name}")',
+                            base.LogLevels.ERROR.key
+                        )
 
-                    if log_message not in list(log_messages):
-                        log_messages.add_log_message(log_message)
-                    # If the widget failed, show the error inside the widget
-                    base.display_error(widget, [str(e)], ui_state, base_config)
+                        if log_message not in list(log_messages):
+                            log_messages.add_log_message(log_message)
+                        # If the widget failed, show the error inside the widget
+                        base.display_error(widget, [str(e)], ui_state, base_config)
 
                 widget.noutrefresh()
             base.update_screen()
