@@ -101,7 +101,8 @@ For full documentation see [Configuration Guide](docs/configuration_guide.md)
 
 ### ⭐ **3. Adding new widgets**
 Adding a new widget to `terminal-widgets` is very easy—just create two files!
-For a simple, static content widget, you only need to define a configuration and a single Python function.
+For a simple widget, that does not require heavy loading (no `update` function)
+you only need to define a configuration and a single Python function.
 
 #### 3.1. ⚙️ Define Configuration (`.yaml`)
 
@@ -111,7 +112,7 @@ Create the configuration file at `~/.config/twidgets/widgets/custom.yaml` and se
 name: custom
 title: My Custom Widget
 enabled: true
-interval: 0 # For static content
+interval: 0 # For simple content
 height: 7
 width: 30
 y: 1
