@@ -1127,6 +1127,8 @@ def reload_widget_scheduler(
                 try:
                     widget.draw_data = widget.update(config_loader)
                     widget.last_updated = now
+                except ConfigSpecificException as e:
+                    widget.draw_data = {'__error__': e.log_messages}
                 except Exception as e:
                     widget.draw_data = {'__error__': str(e)}
 
