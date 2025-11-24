@@ -170,9 +170,10 @@ from twidgets.core.base import (
     LogLevels
 )
 
-raise ConfigSpecificException(LogMessages([LogMessage(
-    f'Configuration for some_value is missing / incorrect ("{widget.name}" widget)',
-    LogLevels.ERROR.key)]))
+if not widget.config.some_value:  # Will be None if no attribute is found
+    raise ConfigSpecificException(LogMessages([LogMessage(
+        f'Configuration for some_value is missing / incorrect ("{widget.name}" widget)',
+        LogLevels.ERROR.key)]))
 ```
 
 With this you can add custom error messages for all users to your widget.
