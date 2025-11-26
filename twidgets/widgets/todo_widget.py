@@ -15,7 +15,8 @@ from twidgets.core.base import (
     ConfigSpecificException,
     LogMessages,
     LogMessage,
-    LogLevels
+    LogLevels,
+    add_widget_content
 )
 
 
@@ -78,40 +79,46 @@ def remove_highlighted_line(widget: Widget) -> None:
     widget.draw_data['selected_line'] = None
 
 
-def mouse_click_action(todo_widget: Widget, _mx: int, _my: int, _b_state: int, ui_state: UIState) -> None:
-    load_todos(todo_widget)
+def mouse_click_action(widget: Widget, _mx: int, _my: int, _b_state: int, ui_state: UIState) -> None:
+    load_todos(widget)
 
-    todos = list(todo_widget.draw_data.get('todos', {}).values())
-    if not todos or ui_state.highlighted != todo_widget:
-        todo_widget.draw_data['selected_line'] = None
+    if widget.help_mode:
+        return
+
+    todos = list(widget.draw_data.get('todos', {}).values())
+    if not todos or ui_state.highlighted != widget:
+        widget.draw_data['selected_line'] = None
         return
 
     # Click relative to widget border
-    local_y: int = _my - todo_widget.dimensions.y - 1  # -1 for top border
-    if 0 <= local_y < min(len(todos), todo_widget.dimensions.height - 2):
+    local_y: int = _my - widget.dimensions.y - 1  # -1 for top border
+    if 0 <= local_y < min(len(todos), widget.dimensions.height - 2):
         # Compute which part of todos is currently visible
-        abs_index = todo_widget.draw_data.get('selected_line', 0) or 0
-        start = max(abs_index - (todo_widget.dimensions.height - 2)//2, 0)
-        if start + (todo_widget.dimensions.height - 2) > len(todos):
-            start = max(len(todos) - (todo_widget.dimensions.height - 2), 0)
+        abs_index = widget.draw_data.get('selected_line', 0) or 0
+        start = max(abs_index - (widget.dimensions.height - 2)//2, 0)
+        if start + (widget.dimensions.height - 2) > len(todos):
+            start = max(len(todos) - (widget.dimensions.height - 2), 0)
 
         # Absolute index of clicked line
         clicked_index = start + local_y
         if clicked_index >= len(todos):
             clicked_index = len(todos) - 1
 
-        todo_widget.draw_data['selected_line'] = clicked_index
+        widget.draw_data['selected_line'] = clicked_index
     else:
-        todo_widget.draw_data['selected_line'] = None
+        widget.draw_data['selected_line'] = None
 
 
-def keyboard_press_action(todo_widget: Widget, key: int, _ui_state: UIState, _base_config: BaseConfig) -> None:
-    load_todos(todo_widget)
+def keyboard_press_action(widget: Widget, key: int, _ui_state: UIState, _base_config: BaseConfig) -> None:
+    load_todos(widget)
 
-    if 'todos' not in todo_widget.draw_data:
+    if widget.help_mode:
         return
-    len_todos = len(todo_widget.draw_data['todos'])
-    selected = todo_widget.draw_data.get('selected_line', 0)
+
+    if 'todos' not in widget.draw_data:
+        return
+    len_todos = len(widget.draw_data['todos'])
+    selected = widget.draw_data.get('selected_line', 0)
 
     if not isinstance(selected, int):
         selected = 0
@@ -129,20 +136,20 @@ def keyboard_press_action(todo_widget: Widget, key: int, _ui_state: UIState, _ba
     if selected > (len_todos - 1):  # If you delete the last to-do, this will wrap around to 0
         selected = 0
 
-    todo_widget.draw_data['selected_line'] = selected
+    widget.draw_data['selected_line'] = selected
 
     # Add new to_do
     if key in (CursesKeys.ENTER, 10, 13):
-        new_todo = prompt_user_input(todo_widget, 'New To-Do: ')
+        new_todo = prompt_user_input(widget, 'New To-Do: ')
         if new_todo.strip():
-            add_todo(todo_widget, new_todo.strip())
+            add_todo(widget, new_todo.strip())
 
     # Delete to_do
     elif key in (CursesKeys.BACKSPACE, 127, 8):  # Backspace
         if len_todos > 0:
-            confirm = prompt_user_input(todo_widget, 'Confirm deletion (y): ')
+            confirm = prompt_user_input(widget, 'Confirm deletion (y): ')
             if confirm.lower().strip() in ['y']:
-                remove_todo(todo_widget, todo_widget.draw_data['selected_line'])
+                remove_todo(widget, widget.draw_data['selected_line'])
 
 
 def render_todos(todos: list[str], highlighted_line: int | None, max_render: int) -> tuple[list[str], int | None]:
@@ -150,7 +157,7 @@ def render_todos(todos: list[str], highlighted_line: int | None, max_render: int
         return todos.copy(), highlighted_line  # everything fits, no slicing needed
 
     if highlighted_line is None:
-        # No highlight → show first items
+        # No highlight -> show first items
         start = 0
     else:
         radius = max_render // 2
@@ -204,11 +211,30 @@ def draw(widget: Widget, ui_state: UIState, base_config: BaseConfig) -> None:
             safe_addstr(widget, 1 + i, 1, todo[:widget.dimensions.width - 2])
 
 
+def draw_help(widget: Widget, ui_state: UIState, base_config: BaseConfig) -> None:
+    draw_widget(widget, ui_state, base_config)
+
+    add_widget_content(
+        widget,
+        [
+            f'Help page ({widget.name} widget)',
+            '',
+            'Keybinds: ',
+            'Enter - New Todo',
+            'Backspace - Delete Todo',
+            'Arrow Keys - Navigation',
+            '',
+            'Displays todos.'
+        ]
+    )
+
+
 def build(stdscr: CursesWindowType, config: Config) -> Widget:
     return Widget(
         config.name, config.title, config, draw, config.interval, config.dimensions, stdscr,
         update_func=None,
         mouse_click_func=mouse_click_action,
         keyboard_func=keyboard_press_action,
-        init_func=init
+        init_func=init,
+        help_func=draw_help
     )

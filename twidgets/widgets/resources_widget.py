@@ -71,11 +71,25 @@ def draw(widget: Widget, ui_state: UIState, base_config: BaseConfig, content: li
     add_widget_content(widget, content)
 
 
+def draw_help(widget: Widget, ui_state: UIState, base_config: BaseConfig) -> None:
+    draw_widget(widget, ui_state, base_config)
+
+    add_widget_content(
+        widget,
+        [
+            f'Help page ({widget.name} widget)',
+            '',
+            'Displays resource usage of your computer.'
+        ]
+    )
+
+
 def build(stdscr: CursesWindowType, config: Config) -> Widget:
     return Widget(
         config.name, config.title, config, draw, config.interval, config.dimensions, stdscr,
         update_func=update,
         mouse_click_func=None,
         keyboard_func=None,
-        init_func=None
+        init_func=None,
+        help_func=draw_help
     )

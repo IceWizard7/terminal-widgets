@@ -18,6 +18,7 @@ from twidgets.core.base import (
     LogMessages,
     LogMessage,
     LogLevels,
+    add_widget_content
 )
 
 
@@ -207,11 +208,28 @@ def update(_widget: Widget, _config_loader: ConfigLoader) -> list[str]:
 def draw(widget: Widget, ui_state: UIState, base_config: BaseConfig, lines: list[str]) -> None:
     draw_widget(widget, ui_state, base_config)
 
+    if ui_state.highlighted == widget and widget.help_mode:
+        draw_help(widget, ui_state, base_config)
+        return
+
     colors = [i for i in range(1, 18)]
 
     for i, line in enumerate(lines):
         safe_addstr(widget, 1 + i, 2, line,
                     convert_color_number_to_curses_pair(colors[i % len(colors)] + 6))
+
+
+def draw_help(widget: Widget, ui_state: UIState, base_config: BaseConfig) -> None:
+    draw_widget(widget, ui_state, base_config)
+
+    add_widget_content(
+        widget,
+        [
+            f'Help page ({widget.name} widget)',
+            '',
+            'Displays information about your computer.'
+        ]
+    )
 
 
 def build(stdscr: CursesWindowType, config: Config) -> Widget:
@@ -220,5 +238,6 @@ def build(stdscr: CursesWindowType, config: Config) -> Widget:
         update_func=update,
         mouse_click_func=None,
         keyboard_func=None,
-        init_func=None
+        init_func=None,
+        help_func=draw_help
     )

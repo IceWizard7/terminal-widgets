@@ -9,7 +9,8 @@ from twidgets.core.base import (
     UIState,
     BaseConfig,
     CursesBold,
-    convert_color_number_to_curses_pair
+    convert_color_number_to_curses_pair,
+    add_widget_content
 )
 
 
@@ -46,11 +47,26 @@ def draw(widget: Widget, ui_state: UIState, base_config: BaseConfig) -> None:
         row += 1
 
 
+def draw_help(widget: Widget, ui_state: UIState, base_config: BaseConfig) -> None:
+    draw_widget(widget, ui_state, base_config)
+
+    add_widget_content(
+        widget,
+        [
+            'Help page ',
+            f'({widget.name} widget)',
+            '',
+            'Displays a calendar.'
+        ]
+    )
+
+
 def build(stdscr: CursesWindowType, config: Config) -> Widget:
     return Widget(
         config.name, config.title, config, draw, config.interval, config.dimensions, stdscr,
         update_func=None,
         mouse_click_func=None,
         keyboard_func=None,
-        init_func=None
+        init_func=None,
+        help_func=draw_help
     )
