@@ -50,10 +50,11 @@ class Widget:
             interval: int | float | None,
             dimensions: Dimensions,
             stdscr: CursesWindowType,
-            update_func: UpdateFunction | None,
-            mouse_click_func: MouseClickUpdateFunction | None,
-            keyboard_func: KeyBoardUpdateFunction | None,
-            init_func: InitializeFunction | None
+            update_func: UpdateFunction | None = None,
+            mouse_click_func: MouseClickUpdateFunction | None = None,
+            keyboard_func: KeyBoardUpdateFunction | None = None,
+            init_func: InitializeFunction | None = None,
+            help_func: HelpFunction | None = None
     ) -> None:
         self.name = name
         self.title = title
