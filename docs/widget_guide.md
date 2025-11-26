@@ -85,13 +85,13 @@ You can adapt the time, when the `update` function will be called again (reloadi
 Mouse actions example:
 
 ```python
-def mouse_click_action(custom_widget: Widget, _mx: int, _my: int, _b_state: int, ui_state: UIState) -> None:
-    if ui_state.highlighted != custom_widget:
-        custom_widget.draw_data['selected_line'] = None
+def mouse_click_action(widget: Widget, _mx: int, _my: int, _b_state: int, ui_state: UIState) -> None:
+    if ui_state.highlighted != widget:
+        widget.draw_data['selected_line'] = None
         return
         
     # Click relative to widget border
-    local_y: int = _my - custom_widget.dimensions.y - 1  # -1 for top border
+    local_y: int = _my - widget.dimensions.y - 1  # -1 for top border
 ```
 
 This function will get called whenever a mouse click happens, so you can use it to for example make clickable buttons.
@@ -103,11 +103,11 @@ Keyboard actions example:
 ```python
 from twidgets.core.base import prompt_user_input, CursesKeys
 
-def keyboard_press_action(custom_widget: Widget, key: typing.Any, ui_state: UIState, base_config: BaseConfig) -> None:
+def keyboard_press_action(widget: Widget, key: typing.Any, ui_state: UIState, base_config: BaseConfig) -> None:
     if key in (CursesKeys.ENTER, 10, 13):  # Enter key + enter key codes
-        confirm = prompt_user_input(custom_widget, 'Confirm deletion (y): ')
+        confirm = prompt_user_input(widget, 'Confirm deletion (y): ')
         if confirm.lower().strip() in ['y']:
-            some_func(custom_widget, ...)
+            some_func(widget, ...)
 ```
 
 This function will get called whenever a key is pressed.
