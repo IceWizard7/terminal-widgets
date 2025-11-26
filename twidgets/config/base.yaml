@@ -33,3 +33,4 @@ error_color:
 quit_key: 'q'
 reload_key: 'r'
 help_key: 'h'
+reset_help_mode_after_escape: True
