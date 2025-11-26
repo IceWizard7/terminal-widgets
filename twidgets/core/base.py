@@ -36,6 +36,9 @@ class Widget:
         ['Widget', 'UIState', 'BaseConfig'], None] | typing.Callable[
         ['Widget', 'UIState', 'BaseConfig', list[str]], None
     ]
+    HelpFunction = typing.Callable[
+        ['Widget', 'UIState', 'BaseConfig'], None
+    ]
     UpdateFunction = typing.Callable[['Widget', 'ConfigLoader'], list[str]]
     MouseClickUpdateFunction = typing.Callable[['Widget', int, int, int, 'UIState'], None]
     KeyBoardUpdateFunction = typing.Callable[['Widget', int, 'UIState', 'BaseConfig'], None]
@@ -65,12 +68,14 @@ class Widget:
         self._keyboard_func = keyboard_func
         self._draw_func = draw_func
         self._init_func = init_func
+        self._help_func = help_func
         self.last_updated: int | float | None = 0
         self.dimensions = dimensions
         try:
             self.win: typing.Any = stdscr.subwin(*self.dimensions.formatted())
         except curses.error:
             self.win = None
+        self.help_mode: bool = False
         self.draw_data: typing.Any = {}  # data used for drawing
         self.internal_data: typing.Any = {}  # internal data stored by widgets
 
@@ -85,7 +90,22 @@ class Widget:
 
     def draw(self, ui_state: UIState, base_config: BaseConfig, *args: typing.Any, **kwargs: typing.Any) -> None:
         if self.config.enabled:
+            if self.help_mode and self._help_func:
+                self._help_func(self, ui_state, base_config)
+                return
             self._draw_func(self, ui_state, base_config, *args, **kwargs)
+
+    def disable_help_mode(self) -> None:
+        self.help_mode = False
+
+    def enable_help_mode(self) -> None:
+        self.help_mode = True
+
+    def toggle_help_mode(self) -> None:
+        if self.help_mode:
+            self.disable_help_mode()
+        else:
+            self.enable_help_mode()
 
     def update(self, config_loader: ConfigLoader) -> list[str] | None:
         if self._update_func and self.config.enabled:
@@ -393,157 +413,83 @@ class BaseStandardFallBackConfig:
         self.quit_key: str = 'q'
         self.reload_key: str = 'r'
         self.help_key: str = 'h'
+        self.reset_help_mode_after_escape: bool = True
 
 
 class BaseConfig:
     def __init__(
-            self,
-            log_messages: LogMessages,
-            use_standard_terminal_background: bool | None = None,
-            background_color: dict[str, int] | None = None,
-            foreground_color: dict[str, int] | None = None,
-            primary_color: dict[str, int] | None = None,
-            secondary_color: dict[str, int] | None = None,
-            loading_color: dict[str, int] | None = None,
-            error_color: dict[str, int] | None = None,
-            quit_key: str | None = None,
-            reload_key: str | None = None,
-            help_key: str | None = None,
-            **kwargs: typing.Any
+        self,
+        log_messages: LogMessages,
+        use_standard_terminal_background: bool | None = None,
+        background_color: dict[str, int] | None = None,
+        foreground_color: dict[str, int] | None = None,
+        primary_color: dict[str, int] | None = None,
+        secondary_color: dict[str, int] | None = None,
+        loading_color: dict[str, int] | None = None,
+        error_color: dict[str, int] | None = None,
+        quit_key: str | None = None,
+        reload_key: str | None = None,
+        help_key: str | None = None,
+        reset_help_mode_after_escape: bool | None = None,
+        **kwargs: typing.Any
     ) -> None:
-        base_standard_fallback_config: BaseStandardFallBackConfig = BaseStandardFallBackConfig()
 
-        self.background_color: RGBColor = base_standard_fallback_config.background_color
-        self.foreground_color: RGBColor = base_standard_fallback_config.foreground_color
-        self.primary_color: RGBColor = base_standard_fallback_config.primary_color
-        self.secondary_color: RGBColor = base_standard_fallback_config.secondary_color
-        self.loading_color: RGBColor = base_standard_fallback_config.loading_color
-        self.error_color: RGBColor = base_standard_fallback_config.error_color
-        self.use_standard_terminal_background: bool = base_standard_fallback_config.use_standard_terminal_background
-        self.quit_key: str = base_standard_fallback_config.quit_key
-        self.reload_key: str = base_standard_fallback_config.reload_key
-        self.help_key: str = base_standard_fallback_config.help_key
+        base_cfg = BaseStandardFallBackConfig()
 
-        if background_color is not None:
+        # Load fallback colors
+        self.background_color = base_cfg.background_color
+        self.foreground_color = base_cfg.foreground_color
+        self.primary_color = base_cfg.primary_color
+        self.secondary_color = base_cfg.secondary_color
+        self.loading_color = base_cfg.loading_color
+        self.error_color = base_cfg.error_color
+
+        self.use_standard_terminal_background = base_cfg.use_standard_terminal_background
+        self.quit_key = base_cfg.quit_key
+        self.reload_key = base_cfg.reload_key
+        self.help_key = base_cfg.help_key
+        self.reset_help_mode_after_escape = base_cfg.reset_help_mode_after_escape
+
+        # ----------------------------------------------------------
+        # Helper: parse a color config entry
+        # ----------------------------------------------------------
+        def apply_color(field_name: str, value: dict | None):
+            if value is None:
+                log_messages.add_log_message(LogMessage(
+                    f"Configuration for {field_name} is missing (base.yaml, falling back to standard config)",
+                    LogLevels.WARNING.key,
+                ))
+                return getattr(self, field_name)
+
             try:
-                self.background_color = RGBColor.add_rgb_color_from_dict(background_color)
+                return RGBColor.add_rgb_color_from_dict(value)
             except KeyError as e:
                 log_messages.add_log_message(LogMessage(
-                    f'Configuration for background_color is missing for {e}',
-                    LogLevels.ERROR.key
+                    f"Configuration for {field_name} is missing for {e}",
+                    LogLevels.ERROR.key,
                 ))
             except ValueError as e:
                 log_messages.add_log_message(LogMessage(
-                    f'Configuration for background_color is invalid for {e}', LogLevels
-                    .ERROR.key))
-        else:
-            log_messages.add_log_message(LogMessage(
-                f'Configuration for background_color is missing (base.yaml,'
-                f' falling back to standard config)',
-                LogLevels.WARNING.key
-            ))
+                    f"Configuration for {field_name} is invalid for {e}",
+                    LogLevels.ERROR.key,
+                ))
+            return getattr(self, field_name)
 
-        if foreground_color is not None:
-            try:
-                self.foreground_color = RGBColor.add_rgb_color_from_dict(foreground_color)
-            except KeyError as e:
-                log_messages.add_log_message(LogMessage(
-                    f'Configuration for foreground_color is missing for {e}',
-                    LogLevels.ERROR.key
-                ))
-            except ValueError as e:
-                log_messages.add_log_message(LogMessage(
-                    f'Configuration for foreground_color is invalid for {e}',
-                    LogLevels.ERROR.key
-                ))
-        else:
-            log_messages.add_log_message(LogMessage(
-                f'Configuration for foreground_color is missing (base.yaml,'
-                f' falling back to standard config)',
-                LogLevels.WARNING.key
-            ))
+        # Apply all colors via loop
+        color_inputs = {
+            "background_color": background_color,
+            "foreground_color": foreground_color,
+            "primary_color": primary_color,
+            "secondary_color": secondary_color,
+            "loading_color": loading_color,
+            "error_color": error_color,
+        }
 
-        if primary_color is not None:
-            try:
-                self.primary_color = RGBColor.add_rgb_color_from_dict(primary_color)
-            except KeyError as e:
-                log_messages.add_log_message(LogMessage(
-                    f'Configuration for primary_color is missing for {e}',
-                    LogLevels.ERROR.key
-                ))
-            except ValueError as e:
-                log_messages.add_log_message(LogMessage(
-                    f'Configuration for error_color is invalid for {e}',
-                    LogLevels.ERROR.key
-                ))
-        else:
-            log_messages.add_log_message(LogMessage(
-                f'Configuration for primary_color is missing (base.yaml,'
-                f' falling back to standard config)',
-                LogLevels.WARNING.key
-            ))
+        for name, val in color_inputs.items():
+            setattr(self, name, apply_color(name, val))
 
-        if secondary_color is not None:
-            try:
-                self.secondary_color = RGBColor.add_rgb_color_from_dict(secondary_color)
-            except KeyError as e:
-                log_messages.add_log_message(LogMessage(
-                    f'Configuration for secondary_color is missing for {e}',
-                    LogLevels.ERROR.key
-                ))
-            except ValueError as e:
-                log_messages.add_log_message(LogMessage(
-                    f'Configuration for error_color is invalid for {e}',
-                    LogLevels.ERROR.key
-                ))
-        else:
-            log_messages.add_log_message(LogMessage(
-                f'Configuration for secondary_color is missing (base.yaml,'
-                f' falling back to standard config)',
-                LogLevels.WARNING.key
-            ))
-
-        if loading_color is not None:
-            try:
-                self.loading_color = RGBColor.add_rgb_color_from_dict(loading_color)
-            except KeyError as e:
-                log_messages.add_log_message(LogMessage(
-                    f'Configuration for loading_color is missing for {e}',
-                    LogLevels.ERROR.key
-                ))
-            except ValueError as e:
-                log_messages.add_log_message(LogMessage(
-                    f'Configuration for error_color is invalid for {e}',
-                    LogLevels.ERROR.key
-                ))
-        else:
-            log_messages.add_log_message(LogMessage(
-                f'Configuration for loading_color is missing (base.yaml,'
-                f' falling back to standard config)',
-                LogLevels.WARNING.key
-            ))
-
-        if error_color is not None:
-            try:
-                self.error_color = RGBColor.add_rgb_color_from_dict(error_color)
-            except KeyError as e:
-                log_messages.add_log_message(LogMessage(
-                    f'Configuration for error_color is missing for {e}',
-                    LogLevels.ERROR.key
-                ))
-            except ValueError as e:
-                log_messages.add_log_message(LogMessage(
-                    f'Configuration for error_color is invalid for {e}',
-                    LogLevels.ERROR.key
-                ))
-        else:
-            log_messages.add_log_message(LogMessage(
-                f'Configuration for error_color is missing (base.yaml,'
-                f' falling back to standard config)',
-                LogLevels.WARNING.key
-            ))
-
-        self.base_colors: dict[int, tuple[int, RGBColor | int]] = {
+        # Mapping used later
+        self.base_colors = {
             2: (1, self.foreground_color),
             15: (2, self.primary_color),
             13: (3, self.secondary_color),
@@ -551,92 +497,79 @@ class BaseConfig:
             10: (5, self.error_color),
         }
 
-        if use_standard_terminal_background is not None:
-            if not isinstance(use_standard_terminal_background, bool):
+        # ----------------------------------------------------------
+        # Helper: validate boolean config
+        # ----------------------------------------------------------
+        def apply_bool(field: str, value: bool | None):
+            if value is None:
                 log_messages.add_log_message(LogMessage(
-                    f'Configuration for use_standard_terminal_background is invalid (not True / False)',
-                    LogLevels.ERROR.key
+                    f"Configuration for {field} is missing (base.yaml, falling back to standard config)",
+                    LogLevels.WARNING.key,
                 ))
-            self.use_standard_terminal_background = use_standard_terminal_background
-        else:
-            log_messages.add_log_message(LogMessage(
-                f'Configuration for use_standard_terminal_background is missing (base.yaml,'
-                f' falling back to standard config)',
-                LogLevels.WARNING.key
-            ))
+                return getattr(self, field)
 
-        if self.use_standard_terminal_background:
-            self.BACKGROUND_NUMBER: int = -1
-        else:
-            self.BACKGROUND_NUMBER = 1
+            if not isinstance(value, bool):
+                log_messages.add_log_message(LogMessage(
+                    f"Configuration for {field} is invalid (not True / False)",
+                    LogLevels.ERROR.key,
+                ))
+                return getattr(self, field)
 
-        self.BACKGROUND_FOREGROUND_PAIR_NUMBER: int = 1
-        self.PRIMARY_PAIR_NUMBER: int = 2
-        self.SECONDARY_PAIR_NUMBER: int = 3
-        self.LOADING_PAIR_NUMBER: int = 4
-        self.ERROR_PAIR_NUMBER: int = 5
+            return value
 
-        if quit_key is not None:
-            if len(quit_key) != 1:
-                log_messages.add_log_message(LogMessage(
-                    f'Configuration for quit_key value wrong length (not 1)',
-                    LogLevels.ERROR.key
-                ))
-            if not (quit_key.isalpha() or quit_key.isdigit()):
-                log_messages.add_log_message(LogMessage(
-                    f'Configuration for quit_key value not alphabetic or numeric',
-                    LogLevels.ERROR.key
-                ))
-            self.quit_key = quit_key
-        else:
-            log_messages.add_log_message(LogMessage(
-                f'Configuration for quit_key is missing (base.yaml,'
-                f' falling back to standard config)',
-                LogLevels.WARNING.key
-            ))
+        self.use_standard_terminal_background = apply_bool(
+            "use_standard_terminal_background",
+            use_standard_terminal_background
+        )
+        self.reset_help_mode_after_escape = apply_bool(
+            "reset_help_mode_after_escape",
+            reset_help_mode_after_escape
+        )
 
-        if reload_key is not None:
-            if len(reload_key) != 1:
-                log_messages.add_log_message(LogMessage(
-                    f'Configuration for reload_key value wrong length (not 1)',
-                    LogLevels.ERROR.key
-                ))
-            if not (reload_key.isalpha() or reload_key.isdigit()):
-                log_messages.add_log_message(LogMessage(
-                    f'Configuration for reload_key value not alphabetic or numeric',
-                    LogLevels.ERROR.key
-                ))
-            self.reload_key = reload_key
-        else:
-            log_messages.add_log_message(LogMessage(
-                f'Configuration for reload_key is missing (base.yaml,'
-                f' falling back to standard config)',
-                LogLevels.WARNING.key
-            ))
+        self.BACKGROUND_NUMBER = -1 if self.use_standard_terminal_background else 1
 
-        if help_key is not None:
-            if len(help_key) != 1:
-                log_messages.add_log_message(LogMessage(
-                    f'Configuration for help_key value wrong length (not 1)',
-                    LogLevels.ERROR.key
-                ))
-            if not (help_key.isalpha() or help_key.isdigit()):
-                log_messages.add_log_message(LogMessage(
-                    f'Configuration for help_key value not alphabetic or numeric',
-                    LogLevels.ERROR.key
-                ))
-            self.help_key = help_key
-        else:
-            log_messages.add_log_message(LogMessage(
-                f'Configuration for help_key is missing (base.yaml,'
-                f' falling back to standard config)',
-                LogLevels.WARNING.key
-            ))
+        self.BACKGROUND_FOREGROUND_PAIR_NUMBER = 1
+        self.PRIMARY_PAIR_NUMBER = 2
+        self.SECONDARY_PAIR_NUMBER = 3
+        self.LOADING_PAIR_NUMBER = 4
+        self.ERROR_PAIR_NUMBER = 5
 
-        for key, value in kwargs.items():
+        # ----------------------------------------------------------
+        # Helper: validate key (quit/help/reload)
+        # ----------------------------------------------------------
+        def apply_key(field: str, value: str | None):
+            if value is None:
+                log_messages.add_log_message(LogMessage(
+                    f"Configuration for {field} is missing (base.yaml, falling back to standard config)",
+                    LogLevels.WARNING.key,
+                ))
+                return getattr(self, field)
+
+            if len(value) != 1:
+                log_messages.add_log_message(LogMessage(
+                    f"Configuration for {field} value wrong length (not 1)",
+                    LogLevels.ERROR.key,
+                ))
+                return getattr(self, field)
+
+            if not (value.isalpha() or value.isdigit()):
+                log_messages.add_log_message(LogMessage(
+                    f"Configuration for {field} value not alphabetic or numeric",
+                    LogLevels.ERROR.key,
+                ))
+                return getattr(self, field)
+
+            return value
+
+        self.quit_key = apply_key("quit_key", quit_key)
+        self.reload_key = apply_key("reload_key", reload_key)
+        self.help_key = apply_key("help_key", help_key)
+
+        # Unknown config keys
+        for key in kwargs:
             log_messages.add_log_message(LogMessage(
                 f'Configuration for key "{key}" is not expected (base.yaml)',
-                LogLevels.WARNING.key
+                LogLevels.WARNING.key,
             ))
 
 
@@ -1038,7 +971,7 @@ class ConfigScanner:
 
 def switch_windows(
         ui_state: UIState,
-        _base_config: BaseConfig,
+        base_config: BaseConfig,
         mx: int,
         my: int,
         _b_state: int,
@@ -1057,7 +990,9 @@ def switch_windows(
 
         if y1 <= my <= y2 and x1 <= mx <= x2:
             ui_state.highlighted = widget
-            break
+        else:
+            if base_config.reset_help_mode_after_escape:
+                widget.disable_help_mode()
 
 
 def handle_mouse_input(
@@ -1089,6 +1024,9 @@ def handle_key_input(
     highlighted_widget: Widget | None = ui_state.highlighted
 
     if key == CursesKeys.ESCAPE:
+        if highlighted_widget is not None:
+            if base_config.reset_help_mode_after_escape:
+                highlighted_widget.disable_help_mode()
         ui_state.previously_highlighted = ui_state.highlighted
         ui_state.highlighted = None
         return
@@ -1101,6 +1039,9 @@ def handle_key_input(
         elif key == ord(base_config.reload_key):  # Reload widgets & config
             raise RestartException
         return
+    else:
+        if key == ord(base_config.help_key):
+            highlighted_widget.toggle_help_mode()
 
     highlighted_widget.keyboard_action(highlighted_widget, key, ui_state, base_config)
 
