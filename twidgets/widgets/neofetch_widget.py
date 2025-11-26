@@ -130,15 +130,19 @@ def return_raspi_info() -> list[str]:
 
     pkg_packages: str = run_cmd('dpkg --get-selections | wc -l') or 'Unknown'
 
-    shell: str | None = os.environ.get('SHELL')
-    if shell:
+    short_shell: str | None = os.environ.get('SHELL')
+    long_shell: str | None = short_shell
+    if short_shell:
         try:
-            shell = run_cmd(f'{shell} --version')
+            long_shell = run_cmd(f'{short_shell} --version')
         except Exception:
             pass
 
-    if not shell:
-        shell = 'Unknown'
+    final_shell: str = 'Unknown'
+    if short_shell:
+        final_shell = short_shell
+    if long_shell:
+        final_shell = long_shell
 
     cpu_info: str = 'Unknown CPU'
     raw_cpu_info: str | None = platform.processor() or run_cmd(
@@ -169,7 +173,7 @@ def return_raspi_info() -> list[str]:
         f'\',$$P       ,ggs.     `$$b:   Kernel: {kernel}',
         f'`d$$\'     ,$P"\'   .    $$$    Uptime: {uptime_string}',
         f' $$P      d$\'     ,    $$P    Packages: {pkg_packages} (dpkg)',
-        f' $$:      $$.   -    ,d$$\'    Shell: {shell}',
+        f' $$:      $$.   -    ,d$$\'    Shell: {final_shell}',
         f' $$;      Y$b._   _,d$P\'      {display_info}',
         f' Y$$.    `.`"Y$$$$P"\'         Language: {system_lang}',
         f' `$$b      "-.__              Encoding: {encoding}',
