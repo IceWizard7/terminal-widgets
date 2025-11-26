@@ -437,59 +437,56 @@ class BaseConfig:
         base_cfg = BaseStandardFallBackConfig()
 
         # Load fallback colors
-        self.background_color = base_cfg.background_color
-        self.foreground_color = base_cfg.foreground_color
-        self.primary_color = base_cfg.primary_color
-        self.secondary_color = base_cfg.secondary_color
-        self.loading_color = base_cfg.loading_color
-        self.error_color = base_cfg.error_color
+        self.background_color: RGBColor = base_cfg.background_color
+        self.foreground_color: RGBColor = base_cfg.foreground_color
+        self.primary_color: RGBColor = base_cfg.primary_color
+        self.secondary_color: RGBColor = base_cfg.secondary_color
+        self.loading_color: RGBColor = base_cfg.loading_color
+        self.error_color: RGBColor = base_cfg.error_color
 
-        self.use_standard_terminal_background = base_cfg.use_standard_terminal_background
-        self.quit_key = base_cfg.quit_key
-        self.reload_key = base_cfg.reload_key
-        self.help_key = base_cfg.help_key
-        self.reset_help_mode_after_escape = base_cfg.reset_help_mode_after_escape
+        self.use_standard_terminal_background: bool = base_cfg.use_standard_terminal_background
+        self.quit_key: str = base_cfg.quit_key
+        self.reload_key: str = base_cfg.reload_key
+        self.help_key: str = base_cfg.help_key
+        self.reset_help_mode_after_escape: bool = base_cfg.reset_help_mode_after_escape
 
-        # ----------------------------------------------------------
-        # Helper: parse a color config entry
-        # ----------------------------------------------------------
-        def apply_color(field_name: str, value: dict | None):
+        def apply_color(field_name: str, value: dict[str, int] | None) -> RGBColor:
             if value is None:
                 log_messages.add_log_message(LogMessage(
-                    f"Configuration for {field_name} is missing (base.yaml, falling back to standard config)",
+                    f'Configuration for {field_name} is missing (base.yaml, falling back to standard config)',
                     LogLevels.WARNING.key,
                 ))
-                return getattr(self, field_name)
+                return getattr(self, field_name)  # type: ignore[no-any-return]
 
             try:
                 return RGBColor.add_rgb_color_from_dict(value)
             except KeyError as e:
                 log_messages.add_log_message(LogMessage(
-                    f"Configuration for {field_name} is missing for {e}",
+                    f'Configuration for {field_name} is missing for {e}',
                     LogLevels.ERROR.key,
                 ))
             except ValueError as e:
                 log_messages.add_log_message(LogMessage(
-                    f"Configuration for {field_name} is invalid for {e}",
+                    f'Configuration for {field_name} is invalid for {e}',
                     LogLevels.ERROR.key,
                 ))
-            return getattr(self, field_name)
+            return getattr(self, field_name)  # type: ignore[no-any-return]
 
         # Apply all colors via loop
         color_inputs = {
-            "background_color": background_color,
-            "foreground_color": foreground_color,
-            "primary_color": primary_color,
-            "secondary_color": secondary_color,
-            "loading_color": loading_color,
-            "error_color": error_color,
+            'background_color': background_color,
+            'foreground_color': foreground_color,
+            'primary_color': primary_color,
+            'secondary_color': secondary_color,
+            'loading_color': loading_color,
+            'error_color': error_color,
         }
 
         for name, val in color_inputs.items():
             setattr(self, name, apply_color(name, val))
 
         # Mapping used later
-        self.base_colors = {
+        self.base_colors: dict[int, tuple[int, RGBColor] | tuple[int, int]] = {
             2: (1, self.foreground_color),
             15: (2, self.primary_color),
             13: (3, self.secondary_color),
@@ -497,20 +494,17 @@ class BaseConfig:
             10: (5, self.error_color),
         }
 
-        # ----------------------------------------------------------
-        # Helper: validate boolean config
-        # ----------------------------------------------------------
-        def apply_bool(field: str, value: bool | None):
+        def apply_bool(field: str, value: bool | None) -> bool:
             if value is None:
                 log_messages.add_log_message(LogMessage(
-                    f"Configuration for {field} is missing (base.yaml, falling back to standard config)",
+                    f'Configuration for {field} is missing (base.yaml, falling back to standard config)',
                     LogLevels.WARNING.key,
                 ))
-                return getattr(self, field)
+                return getattr(self, field)  # type: ignore[no-any-return]
 
             if not isinstance(value, bool):
                 log_messages.add_log_message(LogMessage(
-                    f"Configuration for {field} is invalid (not True / False)",
+                    f'Configuration for {field} is invalid (not True / False)',
                     LogLevels.ERROR.key,
                 ))
                 return getattr(self, field)
@@ -518,52 +512,49 @@ class BaseConfig:
             return value
 
         self.use_standard_terminal_background = apply_bool(
-            "use_standard_terminal_background",
+            'use_standard_terminal_background',
             use_standard_terminal_background
         )
         self.reset_help_mode_after_escape = apply_bool(
-            "reset_help_mode_after_escape",
+            'reset_help_mode_after_escape',
             reset_help_mode_after_escape
         )
 
-        self.BACKGROUND_NUMBER = -1 if self.use_standard_terminal_background else 1
+        self.BACKGROUND_NUMBER: int = -1 if self.use_standard_terminal_background else 1
 
-        self.BACKGROUND_FOREGROUND_PAIR_NUMBER = 1
-        self.PRIMARY_PAIR_NUMBER = 2
-        self.SECONDARY_PAIR_NUMBER = 3
-        self.LOADING_PAIR_NUMBER = 4
-        self.ERROR_PAIR_NUMBER = 5
+        self.BACKGROUND_FOREGROUND_PAIR_NUMBER: int = 1
+        self.PRIMARY_PAIR_NUMBER: int = 2
+        self.SECONDARY_PAIR_NUMBER: int = 3
+        self.LOADING_PAIR_NUMBER: int = 4
+        self.ERROR_PAIR_NUMBER: int = 5
 
-        # ----------------------------------------------------------
-        # Helper: validate key (quit/help/reload)
-        # ----------------------------------------------------------
-        def apply_key(field: str, value: str | None):
+        def apply_key(field: str, value: str | None) -> str:
             if value is None:
                 log_messages.add_log_message(LogMessage(
-                    f"Configuration for {field} is missing (base.yaml, falling back to standard config)",
+                    f'Configuration for {field} is missing (base.yaml, falling back to standard config)',
                     LogLevels.WARNING.key,
                 ))
-                return getattr(self, field)
+                return getattr(self, field)  # type: ignore[no-any-return]
 
             if len(value) != 1:
                 log_messages.add_log_message(LogMessage(
-                    f"Configuration for {field} value wrong length (not 1)",
+                    f'Configuration for {field} value wrong length (not 1)',
                     LogLevels.ERROR.key,
                 ))
-                return getattr(self, field)
+                return getattr(self, field)  # type: ignore[no-any-return]
 
             if not (value.isalpha() or value.isdigit()):
                 log_messages.add_log_message(LogMessage(
-                    f"Configuration for {field} value not alphabetic or numeric",
+                    f'Configuration for {field} value not alphabetic or numeric',
                     LogLevels.ERROR.key,
                 ))
-                return getattr(self, field)
+                return getattr(self, field)  # type: ignore[no-any-return]
 
             return value
 
-        self.quit_key = apply_key("quit_key", quit_key)
-        self.reload_key = apply_key("reload_key", reload_key)
-        self.help_key = apply_key("help_key", help_key)
+        self.quit_key = apply_key('quit_key', quit_key)
+        self.reload_key = apply_key('reload_key', reload_key)
+        self.help_key = apply_key('help_key', help_key)
 
         # Unknown config keys
         for key in kwargs:
