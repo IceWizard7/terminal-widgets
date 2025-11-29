@@ -33,7 +33,9 @@ class Dimensions:
 
 class Widget:
     DrawFunction = typing.Callable[
-        ['Widget', 'UIState', 'BaseConfig'], None] | typing.Callable[
+        ['Widget', 'UIState', 'BaseConfig'], None
+    ]
+    DrawFunctionWithDrawData = typing.Callable[
         ['Widget', 'UIState', 'BaseConfig', list[str]], None
     ]
     HelpFunction = typing.Callable[
@@ -49,7 +51,7 @@ class Widget:
             name: str | None,
             title: str,
             config: Config,
-            draw_func: DrawFunction,
+            draw_func: DrawFunction | DrawFunctionWithDrawData,
             interval: int | float | None,
             dimensions: Dimensions,
             stdscr: CursesWindowType,
@@ -86,16 +88,22 @@ class Widget:
             return
         self.win.noutrefresh()
 
-    def init(self, ui_state: UIState, base_config: BaseConfig, *args: typing.Any, **kwargs: typing.Any) -> None:
+    def init(self, ui_state: UIState, base_config: BaseConfig) -> None:
         if self._init_func and self.config.enabled:
-            self._init_func(self, ui_state, base_config, *args, **kwargs)
+            self._init_func(self, ui_state, base_config)
 
-    def draw(self, ui_state: UIState, base_config: BaseConfig, *args: typing.Any, **kwargs: typing.Any) -> None:
-        if self.config.enabled:
-            if self.help_mode and self._help_func:
-                self._help_func(self, ui_state, base_config)
-                return
-            self._draw_func(self, ui_state, base_config, *args, **kwargs)
+    def draw(self, ui_state: UIState, base_config: BaseConfig, draw_data: typing.Any | None = None) -> None:
+        if not self.config.enabled:
+            return
+
+        if self.help_mode and self._help_func:
+            self._help_func(self, ui_state, base_config)
+            return
+
+        if draw_data is not None:
+            typing.cast(Widget.DrawFunctionWithDrawData, self._draw_func)(self, ui_state, base_config, draw_data)
+        else:
+            typing.cast(Widget.DrawFunction, self._draw_func)(self, ui_state, base_config)
 
     def disable_help_mode(self) -> None:
         self.help_mode = False
@@ -119,13 +127,13 @@ class Widget:
             return True
         return False
 
-    def mouse_action(self, *args: typing.Any, **kwargs: typing.Any) -> None:
+    def mouse_action(self, mx: int, my: int, b_state: int, ui_state: UIState) -> None:
         if self._mouse_click_func:
-            self._mouse_click_func(*args, **kwargs)
+            self._mouse_click_func(self, mx, my, b_state, ui_state)
 
-    def keyboard_action(self, *args: typing.Any, **kwargs: typing.Any) -> None:
+    def keyboard_action(self, key: int, ui_state: UIState, base_config: BaseConfig) -> None:
         if self._keyboard_func:
-            self._keyboard_func(*args, **kwargs)
+            self._keyboard_func(self, key, ui_state, base_config)
 
     def reinit_window(self, stdscr: CursesWindowType) -> None:
         try:
@@ -336,7 +344,7 @@ class Config:
             width: int | None = None,
             y: int | None = None,
             x: int | None = None,
-            **kwargs: typing.Any
+            **kwargs: typing.Any  # Used for extra arguments, e.g. 'time_format' in clock_widget
     ) -> None:
         fields: list[tuple[str, object, type | tuple[type, ...]]] = [
             ('name', name, str),
@@ -368,7 +376,7 @@ class Config:
         for key, value in kwargs.items():
             setattr(self, key, value)
 
-    def __getattr__(self, name: str) -> None:  # only gets called if key is not found
+    def __getattr__(self, name: str) -> typing.Any:  # only gets called if key is not found
         return None  # signal to code editor that any key may exist
 
 
@@ -1017,8 +1025,8 @@ def handle_mouse_input(
             _, mx, my, _, b_state = curses.getmouse()
             if b_state & CursesKeys.BUTTON1_PRESSED:
                 switch_windows(ui_state, base_config, mx, my, b_state, _widgets)
-                if (highlighted_widget := ui_state.highlighted) is not None:
-                    highlighted_widget.mouse_action(highlighted_widget, mx, my, b_state, ui_state)
+                if ui_state.highlighted is not None:
+                    ui_state.highlighted.mouse_action(mx, my, b_state, ui_state)
         except CursesError:
             # Ignore invalid mouse events (like scroll in some terminals)
             return
@@ -1053,7 +1061,7 @@ def handle_key_input(
         if key == ord(base_config.help_key):
             highlighted_widget.toggle_help_mode()
 
-    highlighted_widget.keyboard_action(highlighted_widget, key, ui_state, base_config)
+    highlighted_widget.keyboard_action(key, ui_state, base_config)
 
 
 def reload_widget_scheduler(

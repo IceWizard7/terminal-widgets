@@ -1,6 +1,7 @@
 import threading
 import os
 import types
+import typing
 
 import twidgets.core.base as base
 import twidgets.widgets as widgets_pkg
@@ -109,7 +110,7 @@ def main_curses(stdscr: base.CursesWindowType) -> None:
 
                     if widget.draw_data:
                         with widget.lock:
-                            data_copy = widget.draw_data.copy()
+                            data_copy: typing.Any = widget.draw_data.copy()
                         if '__error__' in data_copy:
                             if isinstance(data_copy['__error__'], base.LogMessages):
                                 for log_message in list(data_copy['__error__']):
