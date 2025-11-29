@@ -80,21 +80,20 @@ def draw(widget: Widget, ui_state: UIState, base_config: BaseConfig, info: typin
 You can adapt the time, when the `update` function will be called again (reloading the data) by changing
 `interval` in `~/.config/twidgets/widgets/custom.yaml`
 
+> To integrate this, see [building widget](#328-building-widget).
+
 #### 3.2.5 Custom mouse, keyboard actions & initialize functions
 
 Mouse actions example:
 
 ```python
 def mouse_click_action(widget: Widget, _mx: int, _my: int, _b_state: int, ui_state: UIState) -> None:
-    if ui_state.highlighted != widget:
-        widget.draw_data['selected_line'] = None
-        return
-        
     # Click relative to widget border
     local_y: int = _my - widget.dimensions.y - 1  # -1 for top border
 ```
 
-This function will get called whenever a mouse click happens, so you can use it to for example make clickable buttons.
+This function will get called whenever a mouse click happens (in your widget), so you can use it to for example make
+clickable buttons.
 
 > Note that the widget border color will automatically be updated on every mouse click.
 
@@ -110,7 +109,7 @@ def keyboard_press_action(widget: Widget, key: typing.Any, ui_state: UIState, ba
             some_func(widget, ...)
 ```
 
-This function will get called whenever a key is pressed.
+This function will get called whenever a key is pressed in your widget.
 
 Initialize function example:
 
@@ -120,6 +119,8 @@ def init(widget: Widget, _ui_state: UIState, _base_config: BaseConfig) -> None:
 ```
 
 This function will get called initially when `twidgets` is starting, or when the user manually reloads.
+
+> To integrate this, see [building widget](#328-building-widget).
 
 #### 3.2.6 Using secrets
 
@@ -138,6 +139,9 @@ Example:
 ```python
 api_key: str = _config_loader.get_secret('WEATHER_API_KEY')
 ```
+
+> Note that this shouldn't be used in the `draw` function, but rather in the `update` function, so the secrets don't get
+> loaded every frame.
 
 #### 3.2.7 Adding custom data to config
 
@@ -180,10 +184,13 @@ With this you can add custom error messages for all users to your widget.
 
 #### 3.2.8 Building widget
 
+If your widget has an `update`, `mouse_click_action`, `keyboard_press_action` or an `init` function,
+specify them here. (See the comments for examples)
+
 ```python
 def build(stdscr: CursesWindowType, config: Config) -> Widget:
     return Widget(
-        config.name, config.title, config, draw, config.interval, config.dimensions, stdscr,
+        config.name, config.title, config, draw, config.interval, config.dimensions, stdscr,  # exactly this order!
         update_func=None,  # update_func=update
         mouse_click_func=None,  # mouse_click_func=mouse_click_action
         keyboard_func=None,  # keyboard_func=keyboard_press_action
