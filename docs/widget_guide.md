@@ -82,9 +82,11 @@ You can adapt the time, when the `update` function will be called again (reloadi
 
 > To integrate this, see [building widget](#328-building-widget).
 
-#### 3.2.5 Custom mouse, keyboard actions & initialize functions
+#### 3.2.5 Custom mouse, keyboard, initialize & help functions
 
-Mouse actions example:
+#### 3.2.5.1 Mouse actions
+
+Example:
 
 ```python
 def mouse_click_action(widget: Widget, _mx: int, _my: int, _b_state: int, ui_state: UIState) -> None:
@@ -97,7 +99,9 @@ clickable buttons.
 
 > Note that the widget border color will automatically be updated on every mouse click.
 
-Keyboard actions example:
+#### 3.2.5.2 Keyboard actions
+
+Example:
 
 ```python
 from twidgets.core.base import prompt_user_input, CursesKeys
@@ -111,7 +115,9 @@ def keyboard_press_action(widget: Widget, key: typing.Any, ui_state: UIState, ba
 
 This function will get called whenever a key is pressed in your widget.
 
-Initialize function example:
+#### 3.2.5.3 Initialize functions
+
+Example:
 
 ```python
 def init(widget: Widget, _ui_state: UIState, _base_config: BaseConfig) -> None:
@@ -119,6 +125,28 @@ def init(widget: Widget, _ui_state: UIState, _base_config: BaseConfig) -> None:
 ```
 
 This function will get called initially when `twidgets` is starting, or when the user manually reloads.
+
+#### 3.2.5.4 Help functions
+
+Example:
+
+```python
+def draw_help(widget: Widget, ui_state: UIState, base_config: BaseConfig) -> None:
+    draw_widget(widget, ui_state, base_config)
+
+    add_widget_content(
+        widget,
+        [
+            f'Help page ({widget.name} widget)',
+            '',
+            'Displays information about something.'
+        ]
+    )
+```
+
+This function will get called whenever the help key (Default: `h`) is getting pressed on your widget.
+
+#### 3.2.5.5 Integrating custom functions
 
 > To integrate this, see [building widget](#328-building-widget).
 
@@ -194,7 +222,8 @@ def build(stdscr: CursesWindowType, config: Config) -> Widget:
         update_func=None,  # update_func=update
         mouse_click_func=None,  # mouse_click_func=mouse_click_action
         keyboard_func=None,  # keyboard_func=keyboard_press_action
-        init_func=None  # init_func=init
+        init_func=None,  # init_func=init
+        help_func=draw_help
     )
 ```
 
