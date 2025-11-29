@@ -72,8 +72,8 @@ class Widget:
         self.last_updated: int | float | None = 0
         self.dimensions = dimensions
         try:
-            self.win: typing.Any = stdscr.subwin(*self.dimensions.formatted())
-        except curses.error:
+            self.win: CursesWindowType | None = stdscr.subwin(*self.dimensions.formatted())
+        except CursesError:
             self.win = None
         self.help_mode: bool = False
         self.draw_data: typing.Any = {}  # data used for drawing
@@ -82,6 +82,8 @@ class Widget:
         self.lock: threading.Lock = threading.Lock()
 
     def noutrefresh(self) -> None:
+        if not self.win:
+            return
         self.win.noutrefresh()
 
     def init(self, ui_state: UIState, base_config: BaseConfig, *args: typing.Any, **kwargs: typing.Any) -> None:
@@ -126,7 +128,10 @@ class Widget:
             self._keyboard_func(*args, **kwargs)
 
     def reinit_window(self, stdscr: CursesWindowType) -> None:
-        self.win = stdscr.subwin(*self.dimensions.formatted())
+        try:
+            self.win = stdscr.subwin(*self.dimensions.formatted())
+        except CursesError:
+            self.win = None
 
 
 class UIState:
@@ -192,6 +197,10 @@ class WidgetSourceFileException(Exception):
     def __init__(self, log_messages: LogMessages) -> None:
         self.log_messages: LogMessages = log_messages
         super().__init__(log_messages)
+
+
+class WidgetWinNotInitializedException(Exception):
+    """Raised to signal that there was an error initiating a Widget Window"""
 
 
 class UnknownException(Exception):
@@ -329,7 +338,7 @@ class Config:
             x: int | None = None,
             **kwargs: typing.Any
     ) -> None:
-        fields: list[tuple[str, typing.Any, type | tuple[type, ...]]] = [
+        fields: list[tuple[str, object, type | tuple[type, ...]]] = [
             ('name', name, str),
             ('title', title, str),
             ('enabled', enabled, bool),
@@ -359,7 +368,7 @@ class Config:
         for key, value in kwargs.items():
             setattr(self, key, value)
 
-    def __getattr__(self, name: str) -> typing.Any:  # only gets called if key is not found
+    def __getattr__(self, name: str) -> None:  # only gets called if key is not found
         return None  # signal to code editor that any key may exist
 
 
@@ -578,6 +587,8 @@ def draw_widget(
         loading: bool = False,
         error: bool = False
 ) -> None:
+    if not widget.win:
+        raise WidgetWinNotInitializedException
     if not title:
         title = widget.title[:widget.dimensions.width - 4]
     else:
@@ -595,6 +606,9 @@ def draw_widget(
 
 
 def add_widget_content(widget: Widget, content: list[str]) -> None:
+    if not widget.win:
+        raise WidgetWinNotInitializedException
+
     for i, line in enumerate(content):
         if i < widget.dimensions.height - 2:  # Keep inside border
             widget.win.addstr(1 + i, 1, line[:widget.dimensions.width - 2])
@@ -605,13 +619,16 @@ def convert_color_number_to_curses_pair(color_number: int) -> int:
 
 
 def safe_addstr(widget: Widget, y: int, x: int, text: str, color: int = 0) -> None:
+    if not widget.win:
+        raise WidgetWinNotInitializedException
+
     max_y, max_x = widget.win.getmaxyx()
     if y < 0 or y >= max_y:
         return
     safe_text = text[:max_x - x - 1]
     try:
         widget.win.addstr(y, x, safe_text, color)
-    except curses.error:
+    except CursesError:
         pass
 
 
@@ -619,6 +636,8 @@ def loading_screen(widgets: list[Widget], ui_state: UIState, base_config: BaseCo
     for widget in widgets:
         if not widget.config.enabled:
             continue
+        if not widget.win:
+            raise WidgetWinNotInitializedException
         draw_widget(widget, ui_state, base_config, loading=True)
         add_widget_content(widget, [' Loading... '])
         widget.win.refresh()
@@ -748,7 +767,7 @@ def prompt_user_input(widget: Widget, prompt: str) -> str:
 
     try:
         redraw_input()
-    except curses.error:
+    except CursesError:
         return ''
 
     while True:
@@ -765,7 +784,7 @@ def prompt_user_input(widget: Widget, prompt: str) -> str:
                 cursor_pos -= 1
                 try:
                     redraw_input()
-                except curses.error:
+                except CursesError:
                     return ''
         elif ch == curses.KEY_LEFT:  # LEFT
             if cursor_pos > 0:
@@ -782,7 +801,7 @@ def prompt_user_input(widget: Widget, prompt: str) -> str:
                 input_str = input_str[:cursor_pos] + input_str[cursor_pos + 1:]
                 try:
                     redraw_input()
-                except curses.error:
+                except CursesError:
                     return ''
         elif isinstance(ch, int):  # Ignore other special keys
             continue
@@ -792,7 +811,7 @@ def prompt_user_input(widget: Widget, prompt: str) -> str:
                 cursor_pos += 1
                 try:
                     redraw_input()
-                except curses.error:
+                except CursesError:
                     return ''
 
     curses.curs_set(0)
@@ -896,11 +915,11 @@ class ConfigLoader:
         load_dotenv(self.CONFIG_DIR / 'secrets.env', override=True)
 
     @staticmethod
-    def get_secret(name: str, default: typing.Any | None = None) -> str | None:
+    def get_secret(name: str, default: typing.Any = None) -> str | None:
         return os.getenv(name, default)
 
     @staticmethod
-    def load_yaml(path: Path) -> dict[str, typing.Any]:
+    def load_yaml(path: Path) -> dict[typing.Any, typing.Any]:
         try:
             with open(path, 'r', encoding='utf-8') as f:
                 return yaml.safe_load(f) or {}
@@ -912,7 +931,7 @@ class ConfigLoader:
         if not base_path.exists():
             raise ConfigFileNotFoundError(f'Base config "{base_path}" not found')
         try:
-            pure_yaml: dict[str, typing.Any] = self.load_yaml(base_path)
+            pure_yaml: dict[typing.Any, typing.Any] = self.load_yaml(base_path)
         except yaml.parser.ParserError:
             raise YAMLParseException(f'Base config "{base_path}" not valid YAML')
 
@@ -923,7 +942,7 @@ class ConfigLoader:
         if not path.exists():
             raise ConfigFileNotFoundError(f'Config for widget "{widget_name}" not found')
         try:
-            pure_yaml: dict[str, typing.Any] = self.load_yaml(path)
+            pure_yaml: dict[typing.Any, typing.Any] = self.load_yaml(path)
         except yaml.parser.ParserError:
             raise YAMLParseException(f'Config for widget "{widget_name}" not valid YAML')
 
@@ -1000,7 +1019,7 @@ def handle_mouse_input(
                 switch_windows(ui_state, base_config, mx, my, b_state, _widgets)
                 if (highlighted_widget := ui_state.highlighted) is not None:
                     highlighted_widget.mouse_action(highlighted_widget, mx, my, b_state, ui_state)
-        except curses.error:
+        except CursesError:
             # Ignore invalid mouse events (like scroll in some terminals)
             return
 

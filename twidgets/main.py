@@ -162,6 +162,7 @@ def main_curses(stdscr: base.CursesWindowType) -> None:
             raise  # re-raise so wrapper(main_curses) exits and outer loop stops
         except Exception as e:
             # Clean up threads and re-raise so outer loop stops
+            # This also catches base.WidgetWinNotInitializedException
             try:
                 base.cleanup_curses_setup(stop_event, reloader_thread)
             except base.CursesError:
