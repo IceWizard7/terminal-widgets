@@ -16,8 +16,7 @@
   </p>
 </div>
 
-<img src="https://raw.githubusercontent.com/IceWizard7/terminal-widgets/main/examples/example_1.png" alt="
-Example Image of Terminal Widgets">
+<img src="https://raw.githubusercontent.com/IceWizard7/terminal-widgets/main/examples/example_1.png" alt="Example Image of Terminal Widgets">
 
 <p>
     <img alt="Stats" src="https://img.shields.io/pypi/v/twidgets">
@@ -97,8 +96,7 @@ date_format: '%d.%m.%Y'  # us: '%m.%d.%Y', international: '%Y-%m-%d'
 time_format: '%H:%M:%S'  # time
 ```
 
-For full documentation see [Configuration Guide]
-(https://github.com/IceWizard7/terminal-widgets/blob/main/docs/configuration_guide.md)
+For full documentation see [Configuration Guide](https://github.com/IceWizard7/terminal-widgets/blob/main/docs/configuration_guide.md)
 
 ---
 
@@ -165,7 +163,7 @@ For full documentation see [Widget Guide](https://github.com/IceWizard7/terminal
 
 ### 🧩 **4. Contributing**
 
-Help the project grow: create an issue or pull request!
+Help the project grow: create an issue or pull request (on github)!
 
 ---
 
