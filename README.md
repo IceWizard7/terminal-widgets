@@ -11,7 +11,8 @@
     <a href="#-1-getting-started">Getting started</a> •
     <a href="#-2-configuration">Configuration</a> •
     <a href="#-3-adding-new-widgets">Adding new widgets</a> •
-    <a href="#-4-license">License</a>
+    <a href="#-4-contributing">Contributing</a> •
+    <a href="#-5-license">License</a>
   </p>
 </div>
 
