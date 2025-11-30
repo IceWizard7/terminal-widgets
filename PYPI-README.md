@@ -11,7 +11,8 @@
     <a href="https://www.github.com/IceWizard7/terminal-widgets/#-1-getting-started">Getting started</a> •
     <a href="https://www.github.com/IceWizard7/terminal-widgets#-2-configuration">Configuration</a> •
     <a href="https://www.github.com/IceWizard7/terminal-widgets#-3-adding-new-widgets">Adding new widgets</a> •
-    <a href="https://www.github.com/IceWizard7/terminal-widgets#-4-license">License</a>
+    <a href="https://www.github.com/IceWizard7/terminal-widgets#-4-adding-new-widgets">Contributing</a> •
+    <a href="https://www.github.com/IceWizard7/terminal-widgets#-5-license">License</a>
   </p>
 </div>
 
