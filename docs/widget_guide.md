@@ -231,12 +231,12 @@ def build(stdscr: CursesWindowType, config: Config) -> Widget:
 While integration is automatic, your files must still follow a specific naming convention for the system
 to recognize them as a valid widget:
 
-* **YAML Configuration File (`~/.config/twidgets/widgets/`):**
+* **YAML Configuration File** (`~/.config/twidgets/widgets/`):
     * Must end with: **`.yaml`**
     * *Examples:*
     * `hello123.yaml`, `mycoolwidget.yaml`, `weather.yaml`
 
-* **Python Widget File (`~/.config/twidgets/py_widgets/`):**
+* **Python Widget File** (`~/.config/twidgets/py_widgets/`):
     * Must end with: **`_widget.py`**
     * *Examples:*
     * `hello123_widget.py`, `mycoolwidget_widget.py`, `weather_widget.py`
