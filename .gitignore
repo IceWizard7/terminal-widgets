@@ -1,9 +1,13 @@
 twidgets/config/widgets/todo_save_file.txt
 .idea/*
 __pycache__/*
+__pycache__.nosync/*
 twidgets/__pycache__/*
+twidgets/__pycache__.nosync/*
 twidgets/widgets/__pycache__/*
+twidgets/widgets/__pycache__.nosync/*
 twidgets/core/__pycache__/*
+twidgets/core/__pycache__.nosync/*
 .idea/workspace.xml
 twidgets/config/secrets.env
 .DS_Store

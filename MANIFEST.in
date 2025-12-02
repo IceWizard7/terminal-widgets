@@ -7,5 +7,6 @@ exclude twidgets/config/widgets/todo_save_file.txt
 
 # Prune common build garbage
 prune **/__pycache__
+prune **/__pycache__.nosync
 prune .idea
 global-exclude .DS_Store
