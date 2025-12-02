@@ -50,11 +50,19 @@ def update(_widget: Widget, _config_loader: ConfigLoader) -> list[str]:
 
     swap_used_mib: float = round(swap.used / (1024 ** 2), 2)
     swap_total_mib: float = round(swap.total / (1024 ** 2), 2)
-    swap_percent: float = round(swap_used_mib * 100 / swap_total_mib, 2)
+
+    try:
+        swap_percent: float = round(swap_used_mib * 100 / swap_total_mib, 2)
+    except ZeroDivisionError:
+        swap_percent = 0.0
 
     disk_used_gib: float = round(disk_usage.used / (1024 ** 3), 2)
     disk_total_gib: float = round(disk_usage.total / (1024 ** 3), 2)
-    disk_percent: float = round(disk_used_gib * 100 / disk_total_gib, 2)
+
+    try:
+        disk_percent: float = round(disk_used_gib * 100 / disk_total_gib, 2)
+    except ZeroDivisionError:
+        disk_percent = 0.0
 
     return [
         f'CPU: {cpu:04.1f}% ({cpu_cores} Cores @ {cpu_freq.max} MHz)',
