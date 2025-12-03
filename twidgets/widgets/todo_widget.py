@@ -91,13 +91,13 @@ def mouse_click_action(widget: Widget, _mx: int, _my: int, _b_state: int, ui_sta
         return
 
     # Click relative to widget border
-    local_y: int = _my - widget.dimensions.y - 1  # -1 for top border
-    if 0 <= local_y < min(len(todos), widget.dimensions.height - 2):
+    local_y: int = _my - widget.dimensions.current_y - 1  # -1 for top border
+    if 0 <= local_y < min(len(todos), widget.dimensions.current_height - 2):
         # Compute which part of todos is currently visible
         abs_index = widget.draw_data.get('selected_line', 0) or 0
-        start = max(abs_index - (widget.dimensions.height - 2)//2, 0)
-        if start + (widget.dimensions.height - 2) > len(todos):
-            start = max(len(todos) - (widget.dimensions.height - 2), 0)
+        start = max(abs_index - (widget.dimensions.current_height - 2)//2, 0)
+        if start + (widget.dimensions.current_height - 2) > len(todos):
+            start = max(len(todos) - (widget.dimensions.current_height - 2), 0)
 
         # Absolute index of clicked line
         clicked_index = start + local_y
@@ -205,10 +205,10 @@ def draw(widget: Widget, ui_state: UIState, base_config: BaseConfig) -> None:
     for i, todo in enumerate(todos):
         if rel_index is not None and i == rel_index:
             safe_addstr(
-                widget, 1 + i, 1, todo[:widget.dimensions.width - 2],
+                widget, 1 + i, 1, todo[:widget.dimensions.current_width - 2],
                 CursesReverse | convert_color_number_to_curses_pair(base_config.SECONDARY_PAIR_NUMBER))
         else:
-            safe_addstr(widget, 1 + i, 1, todo[:widget.dimensions.width - 2])
+            safe_addstr(widget, 1 + i, 1, todo[:widget.dimensions.current_width - 2])
 
 
 def draw_help(widget: Widget, ui_state: UIState, base_config: BaseConfig) -> None:
