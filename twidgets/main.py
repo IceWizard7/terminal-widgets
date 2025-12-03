@@ -60,20 +60,22 @@ def main_curses(stdscr: base.CursesWindowType) -> None:
         raise base.UnknownException(log_messages, str(e))
 
     widget_list: list[base.Widget] = list(widget_dict.values())
+    enabled_widget_list: list[base.Widget] = [widget for widget in widget_list if widget.config.enabled]
 
-    min_height = max(widget.dimensions.height + widget.dimensions.y for widget in widget_list if widget.config.enabled)
-    min_width = max(widget.dimensions.width + widget.dimensions.x for widget in widget_list if widget.config.enabled)
+    min_height = max(widget.dimensions.current_height + widget.dimensions.current_y for widget in enabled_widget_list)
+    min_width = max(widget.dimensions.current_width + widget.dimensions.current_x for widget in enabled_widget_list)
     base.validate_terminal_size(stdscr, min_height, min_width)
+    # base.move_widgets_terminal_too_small(stdscr, enabled_widget_list, min_height, min_width)
 
-    base.loading_screen(widget_list, ui_state, base_config)
-    base.initialize_widgets(widget_list, ui_state, base_config)
+    base.loading_screen(enabled_widget_list, ui_state, base_config)
+    base.initialize_widgets(enabled_widget_list, ui_state, base_config)
 
     stop_event: threading.Event = threading.Event()
     reloader_thread: threading.Thread = threading.Thread(
         target=base.reload_widget_scheduler,
         args=(
             config_loader,
-            widget_dict,
+            enabled_widget_list,
             stop_event
         )
     )
@@ -83,22 +85,24 @@ def main_curses(stdscr: base.CursesWindowType) -> None:
     while True:
         try:
             min_height = max(
-                widget.dimensions.height + widget.dimensions.y for widget in widget_list if widget.config.enabled)
+                widget.dimensions.base_height + widget.dimensions.base_y for widget in enabled_widget_list)
             min_width = max(
-                widget.dimensions.width + widget.dimensions.x for widget in widget_list if widget.config.enabled)
+                widget.dimensions.base_width + widget.dimensions.base_x for widget in enabled_widget_list)
             base.validate_terminal_size(stdscr, min_height, min_width)
 
             key: int = stdscr.getch()  # Keypresses
 
-            base.handle_mouse_input(ui_state, base_config, key, log_messages, widget_dict)
+            base.handle_mouse_input(ui_state, base_config, key, log_messages, enabled_widget_list)
 
-            base.handle_key_input(ui_state, base_config, key, log_messages, widget_dict)
+            base.handle_key_input(
+                stdscr, ui_state, base_config, key, log_messages, enabled_widget_list, min_height, min_width
+            )
 
             if stop_event.is_set():
                 break
 
             # Refresh all widgets
-            for widget in widget_list:
+            for widget in enabled_widget_list:
                 try:
                     if stop_event.is_set():
                         break
@@ -170,9 +174,9 @@ def main_curses(stdscr: base.CursesWindowType) -> None:
                 return  # Ignore; Doesn't happen on Py3.13, but does on Py3.12
             try:
                 min_height = max(
-                    widget.dimensions.height + widget.dimensions.y for widget in widget_list if widget.config.enabled)
+                    widget.dimensions.current_height + widget.dimensions.current_y for widget in enabled_widget_list)
                 min_width = max(
-                    widget.dimensions.width + widget.dimensions.x for widget in widget_list if widget.config.enabled)
+                    widget.dimensions.current_width + widget.dimensions.current_x for widget in enabled_widget_list)
                 base.validate_terminal_size(stdscr, min_height, min_width)
             except base.TerminalTooSmall:
                 raise  # E.g. the terminal size just changed (split windows, ...)
@@ -228,3 +232,11 @@ if __name__ == '__main__':
 
 # Ideas:
 # - quote of the day, etc.
+
+# TODO: Do what FRoith said, so like flex widgets and stuff. Idea:
+# Get all widgets that need to be moved when terminal is too small, just a for, and then add like width + x or sth.
+# Then see which widgets can stay. (Not those who need to move)
+# Then go through these widgets that stay, and every widget that has to move, which has a higher Y
+# (or Y + height, idk yet)
+# Moves UNDER that widget.
+# For that to work, start looping from the TOP MOST widget
