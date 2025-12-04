@@ -34,11 +34,19 @@ class Dimensions:
     def formatted(self) -> list[int]:
         return [self.current_height, self.current_width, self.current_y, self.current_x]
 
-    def reset_dimensions(self) -> None:
-        self.current_height = self.base_height
-        self.current_width = self.base_width
-        self.current_y = self.base_y
-        self.current_x = self.base_x
+    # def reset_dimensions(self) -> None:
+    #     self.current_height = self.base_height
+    #     self.current_width = self.base_width
+    #     self.current_y = self.base_y
+    #     self.current_x = self.base_x
+
+    def within_borders(self, min_height: int, min_width: int) -> bool:
+        return (
+                self.current_y >= 0 and
+                self.current_x >= 0 and
+                (self.current_y + self.current_height) < min_height and
+                (self.current_x + self.current_width) < min_width
+        )
 
 
 class Widget:
@@ -107,13 +115,19 @@ class Widget:
             return
 
         if self.help_mode and self._help_func:
-            self._help_func(self, ui_state, base_config)
+            try:
+                self._help_func(self, ui_state, base_config)
+            except Exception:
+                pass
             return
 
-        if draw_data is not None:
-            typing.cast(Widget.DrawFunctionWithDrawData, self._draw_func)(self, ui_state, base_config, draw_data)
-        else:
-            typing.cast(Widget.DrawFunction, self._draw_func)(self, ui_state, base_config)
+        try:
+            if draw_data is not None:
+                typing.cast(Widget.DrawFunctionWithDrawData, self._draw_func)(self, ui_state, base_config, draw_data)
+            else:
+                typing.cast(Widget.DrawFunction, self._draw_func)(self, ui_state, base_config)
+        except Exception:
+            pass
 
     def disable_help_mode(self) -> None:
         self.help_mode = False
@@ -145,11 +159,61 @@ class Widget:
         if self._keyboard_func:
             self._keyboard_func(self, key, ui_state, base_config)
 
-    def reinit_window(self, stdscr: CursesWindowType) -> None:
+    def reinit_window(self, widget_container: WidgetContainer) -> None:
         try:
-            self.win = stdscr.subwin(*self.dimensions.formatted())
+            self.win = widget_container.stdscr.subwin(*self.dimensions.formatted())
         except CursesError:
             self.win = None
+
+
+class WidgetContainer:
+    def __init__(self, stdscr: CursesWindowType) -> None:
+        self.stdscr = stdscr
+        self._base_widgets: list[Widget] = []
+        self._widgets: list[Widget] = []
+
+    def add_widget(self, widget: Widget) -> None:
+        if widget not in self._base_widgets:
+            self._base_widgets.append(widget)
+        if widget not in self._widgets:
+            self._widgets.append(widget)
+
+    @staticmethod
+    def remove_widget_content(widget: Widget) -> None:
+        if widget.win:
+            widget.win.erase()
+            widget.win.noutrefresh()
+
+    def deactivate_widget(self, widget: Widget) -> None:
+        self._widgets.remove(widget)
+
+    def reactivate_all_widgets(self) -> None:
+        for widget in self._base_widgets:
+            self.add_widget(widget)
+
+    def reinit_all_widget_windows(self) -> None:
+        for widget in self._widgets:
+            widget.reinit_window(self)
+
+    def add_widget_list(self, widget_list: list[Widget]) -> None:
+        for widget in widget_list:
+            self.add_widget(widget)
+
+    def return_enabled_widgets(self) -> list[Widget]:
+        return [widget for widget in self._widgets if widget.config.enabled]
+
+    def get_max_height_width(self) -> tuple[int, int]:
+        if not self.return_enabled_widgets():
+            return 0, 0
+
+        min_height: int = max(
+            widget.dimensions.base_height + widget.dimensions.base_y for widget in self.return_enabled_widgets()
+        )
+        min_width: int = max(
+            widget.dimensions.base_width + widget.dimensions.base_x for widget in self.return_enabled_widgets()
+        )
+
+        return min_height, min_width
 
 
 class UIState:
@@ -659,8 +723,8 @@ def safe_addstr(widget: Widget, y: int, x: int, text: str, color: int = 0) -> No
         pass
 
 
-def loading_screen(widgets: list[Widget], ui_state: UIState, base_config: BaseConfig) -> None:
-    for widget in widgets:
+def loading_screen(widget_container: WidgetContainer, ui_state: UIState, base_config: BaseConfig) -> None:
+    for widget in widget_container.return_enabled_widgets():
         if not widget.win:
             raise WidgetWinNotInitializedException
         draw_widget(widget, ui_state, base_config, loading=True)
@@ -669,8 +733,8 @@ def loading_screen(widgets: list[Widget], ui_state: UIState, base_config: BaseCo
     return None
 
 
-def initialize_widgets(widgets: list[Widget], ui_state: UIState, base_config: BaseConfig) -> None:
-    for widget in widgets:
+def initialize_widgets(widget_container: WidgetContainer, ui_state: UIState, base_config: BaseConfig) -> None:
+    for widget in widget_container.return_enabled_widgets():
         widget.init(ui_state, base_config)
     return None
 
@@ -689,13 +753,15 @@ def init_colors(base_config: BaseConfig) -> None:
             curses.init_color(
                 base_config.BACKGROUND_NUMBER,  # type: ignore[call-arg, unused-ignore]
                 *base_config.background_color.rgb_to_0_1000()  # type: ignore[call-arg, unused-ignore]
-            )
+            )  # type: ignore[unused-ignore]
+            # (PyCharm sees this as an error -> unused-ignore)
 
         for color_number, color in base_config.base_colors.items():
             curses.init_color(
                 color_number,  # type: ignore[call-arg, unused-ignore]
                 *color[1].rgb_to_0_1000()  # type: ignore[union-attr]
-            )
+            )  # type: ignore[unused-ignore]
+            # (PyCharm sees this as an error -> unused-ignore)
     else:
         base_config.base_colors = {
             2: (1, curses.COLOR_WHITE),
@@ -721,17 +787,17 @@ def init_colors(base_config: BaseConfig) -> None:
         curses.init_pair(i, color, base_config.BACKGROUND_NUMBER)  # type: ignore[arg-type]
 
 
-def init_curses_setup(stdscr: CursesWindowType, base_config: BaseConfig) -> None:
+def init_curses_setup(widget_container: WidgetContainer, base_config: BaseConfig) -> None:
     curses.mousemask(curses.ALL_MOUSE_EVENTS)
     curses.curs_set(0)
     curses.mouseinterval(0)
-    stdscr.move(0, 0)
+    widget_container.stdscr.move(0, 0)
     curses.set_escdelay(25)
     init_colors(base_config)
-    stdscr.bkgd(' ', curses.color_pair(1))  # Activate standard color
-    stdscr.clear()
-    stdscr.refresh()
-    stdscr.timeout(100)
+    widget_container.stdscr.bkgd(' ', curses.color_pair(1))  # Activate standard color
+    widget_container.stdscr.clear()
+    widget_container.stdscr.refresh()
+    widget_container.stdscr.timeout(100)
 
 
 def cleanup_curses_setup(
@@ -746,20 +812,37 @@ def cleanup_curses_setup(
         pass  # Ignore; Doesn't happen on Py3.13, but does on Py3.12
 
 
-def validate_terminal_size(stdscr: CursesWindowType, min_height: int, min_width: int) -> None:
-    height, width = stdscr.getmaxyx()
+def validate_terminal_size(
+        widget_container: WidgetContainer,
+        min_height: int,
+        min_width: int
+) -> bool:
+    height, width = widget_container.stdscr.getmaxyx()
 
     if height < min_height or width < min_width:
-        raise TerminalTooSmall(height, width, min_height, min_width)
+        return True
+        # raise TerminalTooSmall(height, width, min_height, min_width)
+    return False
 
 
-def move_widgets_terminal_too_small(
-    stdscr: CursesWindowType,
-    enabled_widget_list: list[Widget],
+def move_widgets_resize(
+    widget_container: WidgetContainer,
     _min_height_current_layout: int,
     _min_width_current_layout: int
 ) -> None:
-    """Placeholder"""
+    current_terminal_height: int
+    current_terminal_width: int
+
+    current_terminal_height, current_terminal_width = widget_container.stdscr.getmaxyx()
+
+    widget_container.reactivate_all_widgets()
+
+    for widget in widget_container.return_enabled_widgets():
+        if not widget.dimensions.within_borders(current_terminal_height, current_terminal_width):
+            widget_container.remove_widget_content(widget)
+            widget_container.deactivate_widget(widget)
+
+    widget_container.reinit_all_widget_windows()
 
 
 def prompt_user_input(widget: Widget, prompt: str) -> str:
@@ -913,7 +996,7 @@ class WidgetLoader:
 
     @staticmethod
     def build_widgets(
-            stdscr: CursesWindowType,
+            widget_container: WidgetContainer,
             config_loader: ConfigLoader,
             log_messages: LogMessages,
             modules: dict[str, types.ModuleType]
@@ -923,7 +1006,7 @@ class WidgetLoader:
         for name, module in modules.items():
             widget_config = config_loader.load_widget_config(log_messages, name)
             try:
-                widgets[name] = module.build(stdscr, widget_config)
+                widgets[name] = module.build(widget_container.stdscr, widget_config)
             except Exception:
                 raise WidgetSourceFileException(
                     LogMessages([LogMessage(
@@ -1017,12 +1100,12 @@ def switch_windows(
         mx: int,
         my: int,
         _b_state: int,
-        enabled_widget_list: list[Widget]
+        widget_container: WidgetContainer
 ) -> None:
     # Find which widget was clicked
     ui_state.previously_highlighted = ui_state.highlighted
     ui_state.highlighted = None
-    for widget in enabled_widget_list:
+    for widget in widget_container.return_enabled_widgets():
         y1 = widget.dimensions.current_y
         y2 = y1 + widget.dimensions.current_height
         x1 = widget.dimensions.current_x
@@ -1040,13 +1123,13 @@ def handle_mouse_input(
         base_config: BaseConfig,
         key: int,
         _log_messages: LogMessages,
-        enabled_widget_list: list[Widget]
+        widget_container: WidgetContainer
 ) -> None:
     if key == CursesKeys.MOUSE:
         try:
             _, mx, my, _, b_state = curses.getmouse()
             if b_state & CursesKeys.BUTTON1_PRESSED:
-                switch_windows(ui_state, base_config, mx, my, b_state, enabled_widget_list)
+                switch_windows(ui_state, base_config, mx, my, b_state, widget_container)
                 if ui_state.highlighted is not None:
                     ui_state.highlighted.mouse_action(mx, my, b_state, ui_state)
         except CursesError:
@@ -1055,12 +1138,11 @@ def handle_mouse_input(
 
 
 def handle_key_input(
-        stdscr: CursesWindowType,
         ui_state: UIState,
         base_config: BaseConfig,
         key: int,
         _log_messages: LogMessages,
-        enabled_widget_list: list[Widget],
+        widget_container: WidgetContainer,
         min_height_current_layout: int,
         min_width_current_layout: int
 ) -> None:
@@ -1072,18 +1154,18 @@ def handle_key_input(
                 highlighted_widget.disable_help_mode()
         ui_state.previously_highlighted = ui_state.highlighted
         ui_state.highlighted = None
-        return
 
     if key == curses.KEY_RESIZE:
-        move_widgets_terminal_too_small(
-            stdscr, enabled_widget_list, min_height_current_layout, min_width_current_layout
+        move_widgets_resize(
+            widget_container, min_height_current_layout, min_width_current_layout
         )
+        return
 
     if highlighted_widget is None:
         if key == ord(base_config.quit_key):
             raise StopException(_log_messages)
         elif key == ord(base_config.help_key):
-            pass  # TODO: Help page? Even for each window?
+            pass  # TODO: General help page
         elif key == ord(base_config.reload_key):  # Reload widgets & config
             raise RestartException
         return
@@ -1096,13 +1178,14 @@ def handle_key_input(
 
 def reload_widget_scheduler(
         config_loader: ConfigLoader,
-        enabled_widget_list: list[Widget],
+        widget_container: WidgetContainer,
         stop_event: threading.Event
 ) -> None:
-    reloadable_widgets = [w for w in enabled_widget_list if w.updatable()]
-
     while not stop_event.is_set():
         now = time_module.time()
+
+        # Calculate reloadable widgets every time every widget has reloaded
+        reloadable_widgets = [w for w in widget_container.return_enabled_widgets() if w.updatable()]
         # Update widgets if their interval has passed
         for widget in reloadable_widgets:
             if stop_event.is_set():  # Check on every iteration as well
@@ -1135,7 +1218,7 @@ def curses_wrapper(func: typing.Callable[[CursesWindowType], None]) -> None:
 
 # Constants
 
-CursesWindowType = _curses.window  # Type of stdscr
+CursesWindowType = _curses.window  # Type of stdscr, widget.win
 
 CursesBold = curses.A_BOLD
 CursesReverse = curses.A_REVERSE
