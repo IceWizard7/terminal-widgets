@@ -227,6 +227,5 @@ if __name__ == '__main__':
 # Ideas:
 # - quote of the day, etc.
 
-# TODO: Do what FRoith said:
 # TODO: Display in the center the exact warning with TerminalTooSmall
-# TODO: Flackering?
+# TODO: Flickering? Should be fixed.
