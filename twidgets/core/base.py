@@ -309,7 +309,9 @@ class TerminalTooSmall(Exception):
             f'⚠️ Terminal too small. Minimum size: {self.min_width}x{self.min_height}\n' \
             f'(Width x Height)\n' \
             f'Current size: {self.width}x{self.height}\n' \
-            f'Either decrease your font size, increase the size of the terminal, or remove widgets.\n'
+            f'Either decrease your font size,\n' \
+            f'increase the size of the terminal,\n' \
+            f'or remove widgets.\n'
 
 
 class ConfigScanFoundError(Exception):
