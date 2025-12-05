@@ -774,6 +774,15 @@ def add_widget_content(widget: Widget, content: list[str]) -> None:
             widget.win.addstr(1 + i, 1, line[:widget.dimensions.current_width - 2])
 
 
+def add_warning_widget_content(warning_widget: WarningWidget, content: list[str]) -> None:
+    if not warning_widget.win:
+        return
+
+    for i, line in enumerate(content):
+        if i < warning_widget.dimensions.current_height - 2:  # Keep inside border
+            warning_widget.win.addstr(1 + i, 1, line[:warning_widget.dimensions.current_width - 2])
+
+
 def convert_color_number_to_curses_pair(color_number: int) -> int:
     return curses.color_pair(color_number)
 
