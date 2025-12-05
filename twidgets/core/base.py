@@ -753,6 +753,18 @@ def draw_widget(
     widget.win.addstr(0, 2, f'{title}')
 
 
+def draw_warning_widget(warning_widget: WarningWidget, title: str) -> None:
+    if not warning_widget.win:
+        return
+    if not title:
+        title = warning_widget.title[:warning_widget.dimensions.current_width - 4]
+    else:
+        title = title[:warning_widget.dimensions.current_width - 4]
+    warning_widget.win.erase()  # Instead of clear(), prevents flickering
+    warning_widget.win.border()
+    warning_widget.win.addstr(0, 2, f'{title}')
+
+
 def add_widget_content(widget: Widget, content: list[str]) -> None:
     if not widget.win:
         return
