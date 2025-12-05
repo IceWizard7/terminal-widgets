@@ -182,7 +182,6 @@ class WidgetContainer:
     def remove_widget_content(widget: Widget) -> None:
         if widget.win:
             widget.win.erase()
-            widget.win.noutrefresh()
 
     def deactivate_widget(self, widget: Widget) -> None:
         self._widgets.remove(widget)
@@ -663,7 +662,7 @@ class BaseConfig:
 
 def draw_colored_border(widget: Widget, color_pair: int) -> None:
     if not widget.win:
-        raise WidgetWinNotInitializedException
+        return
 
     widget.win.attron(curses.color_pair(color_pair))
     widget.win.border()
@@ -679,7 +678,7 @@ def draw_widget(
         error: bool = False
 ) -> None:
     if not widget.win:
-        raise WidgetWinNotInitializedException
+        return
     if not title:
         title = widget.title[:widget.dimensions.current_width - 4]
     else:
@@ -698,7 +697,7 @@ def draw_widget(
 
 def add_widget_content(widget: Widget, content: list[str]) -> None:
     if not widget.win:
-        raise WidgetWinNotInitializedException
+        return
 
     for i, line in enumerate(content):
         if i < widget.dimensions.current_height - 2:  # Keep inside border
@@ -711,7 +710,7 @@ def convert_color_number_to_curses_pair(color_number: int) -> int:
 
 def safe_addstr(widget: Widget, y: int, x: int, text: str, color: int = 0) -> None:
     if not widget.win:
-        raise WidgetWinNotInitializedException
+        return
 
     max_y, max_x = widget.win.getmaxyx()
     if y < 0 or y >= max_y:
@@ -726,7 +725,7 @@ def safe_addstr(widget: Widget, y: int, x: int, text: str, color: int = 0) -> No
 def loading_screen(widget_container: WidgetContainer, ui_state: UIState, base_config: BaseConfig) -> None:
     for widget in widget_container.return_enabled_widgets():
         if not widget.win:
-            raise WidgetWinNotInitializedException
+            continue
         draw_widget(widget, ui_state, base_config, loading=True)
         add_widget_content(widget, [' Loading... '])
         widget.win.refresh()
@@ -841,8 +840,10 @@ def move_widgets_resize(
         if not widget.dimensions.within_borders(current_terminal_height, current_terminal_width):
             widget_container.remove_widget_content(widget)
             widget_container.deactivate_widget(widget)
+            widget.noutrefresh()
 
-    widget_container.reinit_all_widget_windows()
+    widget_container.reinit_all_widget_windows()  # Allows for making the terminal bigger
+    update_screen()
 
 
 def prompt_user_input(widget: Widget, prompt: str) -> str:
