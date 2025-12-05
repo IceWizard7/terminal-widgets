@@ -152,8 +152,9 @@ def main_curses(stdscr: base.CursesWindowType) -> None:
                 widget.noutrefresh()
 
             # Refresh all warnings
+            # Draw LAST, so they show on top
             for warning in widget_container.return_all_warnings():
-                warning.draw()
+                warning.draw(ui_state, base_config)
                 if warning.win:
                     warning.win.noutrefresh()
             base.update_screen()

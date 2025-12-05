@@ -192,13 +192,13 @@ class WarningWidget:
         except CursesError:
             self.win = None
 
-    def draw(self) -> None:
+    def draw(self, ui_state: UIState, base_config: BaseConfig) -> None:
         if not self.win:
             return
 
         self.erase_content()
         content = self.description
-        draw_warning_widget(self, self.title)
+        draw_warning_widget(self, ui_state, base_config)
         add_warning_widget_content(self, content)
 
     def erase_content(self) -> None:
@@ -784,6 +784,15 @@ def draw_colored_border(widget: Widget, color_pair: int) -> None:
     widget.win.attroff(curses.color_pair(color_pair))
 
 
+def draw_colored_border_warning_widget(warning_widget: WarningWidget, color_pair: int) -> None:
+    if not warning_widget.win:
+        return
+
+    warning_widget.win.attron(curses.color_pair(color_pair))
+    warning_widget.win.border()
+    warning_widget.win.attroff(curses.color_pair(color_pair))
+
+
 def draw_widget(
         widget: Widget,
         ui_state: UIState,
@@ -810,15 +819,12 @@ def draw_widget(
     widget.win.addstr(0, 2, f'{title}')
 
 
-def draw_warning_widget(warning_widget: WarningWidget, title: str) -> None:
+def draw_warning_widget(warning_widget: WarningWidget, _ui_state: UIState, base_config: BaseConfig) -> None:
     if not warning_widget.win:
         return
-    if not title:
-        title = warning_widget.title[:warning_widget.dimensions.current_width - 4]
-    else:
-        title = title[:warning_widget.dimensions.current_width - 4]
+    title = warning_widget.title[:warning_widget.dimensions.current_width - 4]
     warning_widget.win.erase()  # Instead of clear(), prevents flickering
-    warning_widget.win.border()
+    draw_colored_border_warning_widget(warning_widget, base_config.ERROR_PAIR_NUMBER)
     warning_widget.win.addstr(0, 2, f'{title}')
 
 
