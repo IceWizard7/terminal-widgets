@@ -214,6 +214,62 @@ class WidgetContainer:
 
         return min_height, min_width
 
+    def get_max_height_width_widgets(self) -> tuple[int, int]:
+        if not self.return_widgets():
+            return 0, 0
+
+        min_height: int = max(
+            widget.dimensions.current_height + widget.dimensions.current_y for widget in self.return_widgets()
+        )
+        min_width: int = max(
+            widget.dimensions.current_width + widget.dimensions.current_x for widget in self.return_widgets()
+        )
+
+        return min_height, min_width
+
+    def return_similar_warnings(self, warning_widget: WarningWidget) -> list[WarningWidget]:
+        similar_warnings: list[WarningWidget] = []
+
+        for warning in self._warnings:
+            if (
+                    warning.name == warning_widget.name and
+                    warning.title == warning_widget.title
+            ):
+                similar_warnings.append(warning)
+        return similar_warnings
+
+    def return_similar_warnings_by_name_title(self, name: str, title: str) -> list[WarningWidget]:
+        similar_warnings: list[WarningWidget] = []
+
+        for warning in self._warnings:
+            if (
+                    warning.name == name and
+                    warning.title == title
+            ):
+                similar_warnings.append(warning)
+        return similar_warnings
+
+    def add_warning(
+            self,
+            warning_widget: WarningWidget,
+    ) -> None:
+        if len(self._warnings) > 1:
+            raise DebugException(str(self._warnings))
+
+        similar_warnings: list[WarningWidget] = self.return_similar_warnings(warning_widget)
+
+        for similar_warning in similar_warnings:
+            self.remove_warning(similar_warning)
+
+        if not self.return_similar_warnings(warning_widget):
+            self._warnings.append(warning_widget)
+
+    def remove_warning(self, warning_widget: WarningWidget) -> None:
+        if warning_widget in self._warnings:
+            self._warnings.remove(warning_widget)
+            if warning_widget.win:
+                warning_widget.win.erase()
+
 
 class UIState:
     def __init__(self) -> None:
