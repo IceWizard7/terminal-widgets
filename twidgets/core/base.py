@@ -315,9 +315,6 @@ class WidgetContainer:
             self,
             warning_widget: WarningWidget,
     ) -> None:
-        if len(self._warnings) > 1:
-            raise DebugException(str(self._warnings))
-
         similar_warnings: list[WarningWidget] = self.return_similar_warnings(warning_widget)
 
         for similar_warning in similar_warnings:
