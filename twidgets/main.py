@@ -5,6 +5,7 @@ import typing
 
 import twidgets.core.base as base
 import twidgets.widgets as widgets_pkg
+from twidgets.core.base import TerminalTooSmall
 
 
 def main_curses(stdscr: base.CursesWindowType) -> None:
@@ -59,6 +60,8 @@ def main_curses(stdscr: base.CursesWindowType) -> None:
         )
     except base.WidgetSourceFileException:
         raise
+    except TerminalTooSmall:
+        raise
     except Exception as e:
         raise base.UnknownException(log_messages, str(e))
 
@@ -66,11 +69,11 @@ def main_curses(stdscr: base.CursesWindowType) -> None:
 
     min_height: int
     min_width: int
-    min_height, min_width = widget_container.get_max_height_width()
-    base.validate_terminal_size(widget_container, min_height, min_width)
+    min_height, min_width = widget_container.get_max_height_width_widgets()
 
     base.loading_screen(widget_container, ui_state, base_config)
     base.initialize_widgets(widget_container, ui_state, base_config)
+    base.move_widgets_resize(widget_container, min_height, min_width)
 
     stop_event: threading.Event = threading.Event()
     reloader_thread: threading.Thread = threading.Thread(
@@ -86,8 +89,7 @@ def main_curses(stdscr: base.CursesWindowType) -> None:
 
     while True:
         try:
-            min_height, min_width = widget_container.get_max_height_width()
-            base.validate_terminal_size(widget_container, min_height, min_width)
+            min_height, min_width = widget_container.get_max_height_width_widgets()
 
             key: int = widget_container.stdscr.getch()  # Keypresses
 
@@ -101,7 +103,7 @@ def main_curses(stdscr: base.CursesWindowType) -> None:
                 break
 
             # Refresh all widgets
-            for widget in widget_container.return_enabled_widgets():
+            for widget in widget_container.return_widgets():
                 try:
                     if stop_event.is_set():
                         break
@@ -148,6 +150,12 @@ def main_curses(stdscr: base.CursesWindowType) -> None:
                         base.display_error(widget, [str(e)], ui_state, base_config)
 
                 widget.noutrefresh()
+
+            # Refresh all warnings
+            for warning in widget_container.return_all_warnings():
+                warning.draw()
+                if warning.win:
+                    warning.win.noutrefresh()
             base.update_screen()
         except (
                 base.RestartException,
@@ -166,16 +174,11 @@ def main_curses(stdscr: base.CursesWindowType) -> None:
             raise  # re-raise so wrapper(main_curses) exits and outer loop stops
         except Exception as e:
             # Clean up threads and re-raise so outer loop stops
-            # This also catches base.WidgetWinNotInitializedException
             try:
                 base.cleanup_curses_setup(stop_event, reloader_thread)
             except base.CursesError:
                 return  # Ignore; Doesn't happen on Py3.13, but does on Py3.12
-            try:
-                min_height, min_width = widget_container.get_max_height_width()
-                base.validate_terminal_size(widget_container, min_height, min_width)
-            except base.TerminalTooSmall:
-                raise  # E.g. the terminal size just changed (split windows, ...)
+
             raise base.UnknownException(log_messages, str(e))
 
 
@@ -227,5 +230,3 @@ if __name__ == '__main__':
 # Ideas:
 # - quote of the day, etc.
 
-# TODO: Display in the center the exact warning with TerminalTooSmall
-# TODO: Flickering? Should be fixed.

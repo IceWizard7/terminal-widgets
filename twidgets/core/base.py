@@ -166,15 +166,60 @@ class Widget:
             self.win = None
 
 
+class WarningWidget:
+    def __init__(
+            self,
+            name: str,
+            title: str,
+            warning_error: Exception,  # Instance, not a class
+            description: list[str],
+            dimensions: Dimensions,
+            stdscr: CursesWindowType
+    ) -> None:
+        self.name = name
+        self.title = title
+        self.warning_error = warning_error
+        self.description = description
+        self.dimensions = dimensions
+        try:
+            self.win: CursesWindowType | None = stdscr.subwin(*self.dimensions.formatted())
+        except CursesError:
+            self.win = None
+
+    def reinit_window(self, widget_container: WidgetContainer) -> None:
+        try:
+            self.win = widget_container.stdscr.subwin(*self.dimensions.formatted())
+        except CursesError:
+            self.win = None
+
+    def draw(self) -> None:
+        if not self.win:
+            return
+
+        self.erase_content()
+        content = self.description
+        draw_warning_widget(self, self.title)
+        add_warning_widget_content(self, content)
+
+    def erase_content(self) -> None:
+        if not self.win:
+            return
+
+        self.win.erase()
+
+
 class WidgetContainer:
     def __init__(self, stdscr: CursesWindowType) -> None:
         self.stdscr = stdscr
-        self._base_widgets: list[Widget] = []
+        self._warnings: list[WarningWidget] = []
+        self._all_widgets: list[Widget] = []
         self._widgets: list[Widget] = []
 
     def add_widget(self, widget: Widget) -> None:
-        if widget not in self._base_widgets:
-            self._base_widgets.append(widget)
+        if not widget.config.enabled:
+            return
+        if widget not in self._all_widgets:
+            self._all_widgets.append(widget)
         if widget not in self._widgets:
             self._widgets.append(widget)
 
@@ -184,32 +229,49 @@ class WidgetContainer:
             widget.win.erase()
 
     def deactivate_widget(self, widget: Widget) -> None:
+        if not widget not in self._widgets:
+            return
         self._widgets.remove(widget)
+        if widget.win:
+            widget.win.erase()
 
     def reactivate_all_widgets(self) -> None:
-        for widget in self._base_widgets:
+        for widget in self._all_widgets:
             self.add_widget(widget)
 
     def reinit_all_widget_windows(self) -> None:
         for widget in self._widgets:
             widget.reinit_window(self)
 
+    def reinit_all_warning_windows(self) -> None:
+        for warning in self._warnings:
+            warning.reinit_window(self)
+            if warning.win:
+                warning.win.noutrefresh()
+
     def add_widget_list(self, widget_list: list[Widget]) -> None:
         for widget in widget_list:
             self.add_widget(widget)
 
-    def return_enabled_widgets(self) -> list[Widget]:
-        return [widget for widget in self._widgets if widget.config.enabled]
+    def return_widgets(self) -> list[Widget]:
+        return self._widgets
 
-    def get_max_height_width(self) -> tuple[int, int]:
-        if not self.return_enabled_widgets():
+    def return_all_widgets(self) -> list[Widget]:
+        return self._all_widgets
+
+    def return_all_warnings(self) -> list[WarningWidget]:
+        return self._warnings
+
+    def get_max_height_width_all_widgets(self) -> tuple[int, int]:
+        """Get max height, width for all widgets, not just activated ones."""
+        if not self.return_all_widgets():
             return 0, 0
 
         min_height: int = max(
-            widget.dimensions.base_height + widget.dimensions.base_y for widget in self.return_enabled_widgets()
+            widget.dimensions.current_height + widget.dimensions.current_y for widget in self.return_all_widgets()
         )
         min_width: int = max(
-            widget.dimensions.base_width + widget.dimensions.base_x for widget in self.return_enabled_widgets()
+            widget.dimensions.current_width + widget.dimensions.current_x for widget in self.return_all_widgets()
         )
 
         return min_height, min_width
@@ -338,8 +400,8 @@ class WidgetSourceFileException(Exception):
         super().__init__(log_messages)
 
 
-class WidgetWinNotInitializedException(Exception):
-    """Raised to signal that there was an error initialising a Widget Window"""
+# class WidgetWinNotInitializedException(Exception):
+#     """Raised to signal that there was an error initialising a Widget Window"""
 
 
 class UnknownException(Exception):
@@ -802,7 +864,7 @@ def safe_addstr(widget: Widget, y: int, x: int, text: str, color: int = 0) -> No
 
 
 def loading_screen(widget_container: WidgetContainer, ui_state: UIState, base_config: BaseConfig) -> None:
-    for widget in widget_container.return_enabled_widgets():
+    for widget in widget_container.return_widgets():
         if not widget.win:
             continue
         draw_widget(widget, ui_state, base_config, loading=True)
@@ -812,7 +874,7 @@ def loading_screen(widget_container: WidgetContainer, ui_state: UIState, base_co
 
 
 def initialize_widgets(widget_container: WidgetContainer, ui_state: UIState, base_config: BaseConfig) -> None:
-    for widget in widget_container.return_enabled_widgets():
+    for widget in widget_container.return_widgets():
         widget.init(ui_state, base_config)
     return None
 
@@ -890,7 +952,7 @@ def cleanup_curses_setup(
         pass  # Ignore; Doesn't happen on Py3.13, but does on Py3.12
 
 
-def validate_terminal_size(
+def validate_terminal_too_small(
         widget_container: WidgetContainer,
         min_height: int,
         min_width: int
@@ -899,14 +961,13 @@ def validate_terminal_size(
 
     if height < min_height or width < min_width:
         return True
-        # raise TerminalTooSmall(height, width, min_height, min_width)
     return False
 
 
 def move_widgets_resize(
     widget_container: WidgetContainer,
-    _min_height_current_layout: int,
-    _min_width_current_layout: int
+    min_height_current_layout: int,
+    min_width_current_layout: int
 ) -> None:
     current_terminal_height: int
     current_terminal_width: int
@@ -915,13 +976,22 @@ def move_widgets_resize(
 
     widget_container.reactivate_all_widgets()
 
-    for widget in widget_container.return_enabled_widgets():
+    for widget in widget_container.return_widgets():
         if not widget.dimensions.within_borders(current_terminal_height, current_terminal_width):
-            widget_container.remove_widget_content(widget)
             widget_container.deactivate_widget(widget)
             widget.noutrefresh()
 
     widget_container.reinit_all_widget_windows()  # Allows for making the terminal bigger
+    widget_container.reinit_all_warning_windows()  # Allows for making the terminal bigger
+    if validate_terminal_too_small(widget_container, min_height_current_layout, min_width_current_layout):
+        display_error_message_screen_too_small(widget_container, min_height_current_layout, min_width_current_layout)
+    else:
+        similar_warnings: list[WarningWidget] = widget_container.return_similar_warnings_by_name_title(
+            'terminal_too_small',
+            ' Terminal Too Small '
+        )
+        for similar_warning in similar_warnings:
+            widget_container.remove_warning(similar_warning)
     update_screen()
 
 
@@ -1230,7 +1300,7 @@ def switch_windows(
     # Find which widget was clicked
     ui_state.previously_highlighted = ui_state.highlighted
     ui_state.highlighted = None
-    for widget in widget_container.return_enabled_widgets():
+    for widget in widget_container.return_widgets():
         y1 = widget.dimensions.current_y
         y2 = y1 + widget.dimensions.current_height
         x1 = widget.dimensions.current_x
@@ -1310,7 +1380,7 @@ def reload_widget_scheduler(
         now = time_module.time()
 
         # Calculate reloadable widgets every time every widget has reloaded
-        reloadable_widgets = [w for w in widget_container.return_enabled_widgets() if w.updatable()]
+        reloadable_widgets = [w for w in widget_container.return_widgets() if w.updatable()]
         # Update widgets if their interval has passed
         for widget in reloadable_widgets:
             if stop_event.is_set():  # Check on every iteration as well
