@@ -232,8 +232,6 @@ class WidgetContainer:
         if not widget not in self._widgets:
             return
         self._widgets.remove(widget)
-        if widget.win:
-            widget.win.erase()
 
     def reactivate_all_widgets(self) -> None:
         for widget in self._all_widgets:
@@ -975,6 +973,7 @@ def move_widgets_resize(
 
     for widget in widget_container.return_widgets():
         if not widget.dimensions.within_borders(current_terminal_height, current_terminal_width):
+            widget_container.remove_widget_content(widget)
             widget_container.deactivate_widget(widget)
             widget.noutrefresh()
 
@@ -1034,7 +1033,6 @@ def display_error_message_screen_too_small(
     widget_container.add_warning(
         warning
     )
-    # TODO: KRUX!!! THIS WILL NOT DELETE THE THING BEFORE !!!!!
 
 
 def prompt_user_input(widget: Widget, prompt: str) -> str:
