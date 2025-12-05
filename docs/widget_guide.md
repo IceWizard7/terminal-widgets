@@ -223,7 +223,7 @@ def build(stdscr: CursesWindowType, config: Config) -> Widget:
         mouse_click_func=None,  # mouse_click_func=mouse_click_action
         keyboard_func=None,  # keyboard_func=keyboard_press_action
         init_func=None,  # init_func=init
-        help_func=draw_help
+        help_func=None  # help_func=draw_help
     )
 ```
 
