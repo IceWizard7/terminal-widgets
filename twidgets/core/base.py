@@ -925,6 +925,51 @@ def move_widgets_resize(
     update_screen()
 
 
+def display_error_message_screen_too_small(
+        widget_container: WidgetContainer,
+        min_height_current_layout: int,
+        min_width_current_layout: int
+) -> None:
+    current_terminal_height, current_terminal_width = widget_container.stdscr.getmaxyx()
+
+    warning_message_height: int = 10
+    warning_message_width: int = 50
+
+    warning_message_y = (current_terminal_height - warning_message_height) // 2
+    warning_message_x = (current_terminal_width - warning_message_width) // 2
+
+    warning_error: TerminalTooSmall = TerminalTooSmall(
+        current_terminal_height,
+        current_terminal_width,
+        min_height_current_layout,
+        min_width_current_layout
+    )
+
+    warning_dimensions: Dimensions = Dimensions(
+        warning_message_height,
+        warning_message_width,
+        warning_message_y,
+        warning_message_x
+    )
+
+    if not warning_dimensions.within_borders(current_terminal_height, current_terminal_width):
+        raise warning_error
+
+    warning: WarningWidget = WarningWidget(
+        'terminal_too_small',
+        ' Terminal Too Small ',
+        warning_error,
+        str(warning_error).split('\n'),
+        warning_dimensions,
+        widget_container.stdscr
+    )
+
+    widget_container.add_warning(
+        warning
+    )
+    # TODO: KRUX!!! THIS WILL NOT DELETE THE THING BEFORE !!!!!
+
+
 def prompt_user_input(widget: Widget, prompt: str) -> str:
     if not widget.win:
         return ''
