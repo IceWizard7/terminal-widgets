@@ -228,5 +228,4 @@ if __name__ == '__main__':
 
 
 # Ideas:
-# - quote of the day, etc.
-
+# - Quote of the day, ... of the day
