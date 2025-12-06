@@ -227,5 +227,3 @@ if __name__ == '__main__':
 
 # Ideas:
 # - Quote of the day, ... of the day
-
-# TODO: Reset UIState to None if widget is out of border

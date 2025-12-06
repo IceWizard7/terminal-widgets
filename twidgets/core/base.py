@@ -235,6 +235,8 @@ class WidgetContainer:
             widget.win.erase()
 
     def deactivate_widget(self, widget: Widget) -> None:
+        if self.ui_state.highlighted == widget:
+            self.ui_state.highlighted = None
         if not widget not in self._widgets:
             return
         self._widgets.remove(widget)
