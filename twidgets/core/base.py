@@ -106,26 +106,30 @@ class Widget:
             return
         self.win.noutrefresh()
 
-    def init(self, ui_state: UIState, base_config: BaseConfig) -> None:
+    def init(self, widget_container: WidgetContainer) -> None:
         if self._init_func and self.config.enabled:
-            self._init_func(self, ui_state, base_config)
+            self._init_func(self, widget_container.ui_state, widget_container.base_config)
 
-    def draw(self, ui_state: UIState, base_config: BaseConfig, draw_data: typing.Any | None = None) -> None:
+    def draw(self, widget_container: WidgetContainer, draw_data: typing.Any | None = None) -> None:
         if not self.config.enabled:
             return
 
         if self.help_mode and self._help_func:
             try:
-                self._help_func(self, ui_state, base_config)
+                self._help_func(self, widget_container.ui_state, widget_container.base_config)
             except Exception:
                 pass
             return
 
         try:
             if draw_data is not None:
-                typing.cast(Widget.DrawFunctionWithDrawData, self._draw_func)(self, ui_state, base_config, draw_data)
+                typing.cast(Widget.DrawFunctionWithDrawData, self._draw_func)(
+                    self, widget_container.ui_state, widget_container.base_config, draw_data
+                )
             else:
-                typing.cast(Widget.DrawFunction, self._draw_func)(self, ui_state, base_config)
+                typing.cast(Widget.DrawFunction, self._draw_func)(
+                    self, widget_container.ui_state, widget_container.base_config
+                )
         except Exception:
             pass
 
@@ -151,13 +155,13 @@ class Widget:
             return True
         return False
 
-    def mouse_action(self, mx: int, my: int, b_state: int, ui_state: UIState) -> None:
+    def mouse_action(self, mx: int, my: int, b_state: int, widget_container: WidgetContainer) -> None:
         if self._mouse_click_func:
-            self._mouse_click_func(self, mx, my, b_state, ui_state)
+            self._mouse_click_func(self, mx, my, b_state, widget_container.ui_state)
 
-    def keyboard_action(self, key: int, ui_state: UIState, base_config: BaseConfig) -> None:
+    def keyboard_action(self, key: int, widget_container: WidgetContainer) -> None:
         if self._keyboard_func:
-            self._keyboard_func(self, key, ui_state, base_config)
+            self._keyboard_func(self, key, widget_container.ui_state, widget_container.base_config)
 
     def reinit_window(self, widget_container: WidgetContainer) -> None:
         try:
@@ -192,13 +196,13 @@ class WarningWidget:
         except CursesError:
             self.win = None
 
-    def draw(self, ui_state: UIState, base_config: BaseConfig) -> None:
+    def draw(self, widget_container: WidgetContainer) -> None:
         if not self.win:
             return
 
         self.erase_content()
         content = self.description
-        draw_warning_widget(self, ui_state, base_config)
+        draw_warning_widget(self, widget_container)
         add_warning_widget_content(self, content)
 
     def erase_content(self) -> None:
@@ -209,8 +213,10 @@ class WarningWidget:
 
 
 class WidgetContainer:
-    def __init__(self, stdscr: CursesWindowType) -> None:
+    def __init__(self, stdscr: CursesWindowType, base_config: BaseConfig) -> None:
         self.stdscr = stdscr
+        self.ui_state: UIState = UIState()
+        self.base_config = base_config  # TODO: Change this? Directly get from func? idk?
         self._warnings: list[WarningWidget] = []
         self._all_widgets: list[Widget] = []
         self._widgets: list[Widget] = []
@@ -819,12 +825,12 @@ def draw_widget(
     widget.win.addstr(0, 2, f'{title}')
 
 
-def draw_warning_widget(warning_widget: WarningWidget, _ui_state: UIState, base_config: BaseConfig) -> None:
+def draw_warning_widget(warning_widget: WarningWidget, widget_container: WidgetContainer) -> None:
     if not warning_widget.win:
         return
     title = warning_widget.title[:warning_widget.dimensions.current_width - 4]
     warning_widget.win.erase()  # Instead of clear(), prevents flickering
-    draw_colored_border_warning_widget(warning_widget, base_config.ERROR_PAIR_NUMBER)
+    draw_colored_border_warning_widget(warning_widget, widget_container.base_config.ERROR_PAIR_NUMBER)
     warning_widget.win.addstr(0, 2, f'{title}')
 
 
@@ -864,47 +870,47 @@ def safe_addstr(widget: Widget, y: int, x: int, text: str, color: int = 0) -> No
         pass
 
 
-def loading_screen(widget_container: WidgetContainer, ui_state: UIState, base_config: BaseConfig) -> None:
+def loading_screen(widget_container: WidgetContainer) -> None:
     for widget in widget_container.return_widgets():
         if not widget.win:
             continue
-        draw_widget(widget, ui_state, base_config, loading=True)
+        draw_widget(widget, widget_container.ui_state, widget_container.base_config, loading=True)
         add_widget_content(widget, [' Loading... '])
         widget.win.refresh()
     return None
 
 
-def initialize_widgets(widget_container: WidgetContainer, ui_state: UIState, base_config: BaseConfig) -> None:
+def initialize_widgets(widget_container: WidgetContainer) -> None:
     for widget in widget_container.return_widgets():
-        widget.init(ui_state, base_config)
+        widget.init(widget_container)
     return None
 
 
-def display_error(widget: Widget, content: list[str], ui_state: UIState, base_config: BaseConfig) -> None:
-    draw_widget(widget, ui_state, base_config, ' Error ', error=True)
+def display_error(widget: Widget, content: list[str], widget_container: WidgetContainer) -> None:
+    draw_widget(widget, widget_container.ui_state, widget_container.base_config, ' Error ', error=True)
     add_widget_content(widget, content)
 
 
-def init_colors(base_config: BaseConfig) -> None:
+def init_colors(widget_container: WidgetContainer) -> None:
     curses.start_color()
-    if base_config.use_standard_terminal_background:
+    if widget_container.base_config.use_standard_terminal_background:
         curses.use_default_colors()
     if curses.can_change_color():
-        if not base_config.use_standard_terminal_background:
+        if not widget_container.base_config.use_standard_terminal_background:
             curses.init_color(
-                base_config.BACKGROUND_NUMBER,  # type: ignore[call-arg, unused-ignore]
-                *base_config.background_color.rgb_to_0_1000()  # type: ignore[call-arg, unused-ignore]
+                widget_container.base_config.BACKGROUND_NUMBER,  # type: ignore[call-arg, unused-ignore]
+                *widget_container.base_config.background_color.rgb_to_0_1000()  # type: ignore[call-arg, unused-ignore]
             )  # type: ignore[unused-ignore]
             # (PyCharm sees this as an error -> unused-ignore)
 
-        for color_number, color in base_config.base_colors.items():
+        for color_number, color in widget_container.base_config.base_colors.items():
             curses.init_color(
                 color_number,  # type: ignore[call-arg, unused-ignore]
                 *color[1].rgb_to_0_1000()  # type: ignore[union-attr]
             )  # type: ignore[unused-ignore]
             # (PyCharm sees this as an error -> unused-ignore)
     else:
-        base_config.base_colors = {
+        widget_container.base_config.base_colors = {
             2: (1, curses.COLOR_WHITE),
             15: (2, curses.COLOR_BLUE),
             13: (3, curses.COLOR_CYAN),
@@ -912,11 +918,11 @@ def init_colors(base_config: BaseConfig) -> None:
             10: (5, curses.COLOR_RED)
         }
 
-    for color_number, color in base_config.base_colors.items():
+    for color_number, color in widget_container.base_config.base_colors.items():
         curses.init_pair(
             color[0],
             color_number,
-            base_config.BACKGROUND_NUMBER
+            widget_container.base_config.BACKGROUND_NUMBER
         )
 
     gradient_color: list[int] = [
@@ -925,16 +931,16 @@ def init_colors(base_config: BaseConfig) -> None:
     ]
 
     for i, color in enumerate(gradient_color, start=6):  # type: ignore
-        curses.init_pair(i, color, base_config.BACKGROUND_NUMBER)  # type: ignore[arg-type]
+        curses.init_pair(i, color, widget_container.base_config.BACKGROUND_NUMBER)  # type: ignore[arg-type]
 
 
-def init_curses_setup(widget_container: WidgetContainer, base_config: BaseConfig) -> None:
+def init_curses_setup(widget_container: WidgetContainer) -> None:
     curses.mousemask(curses.ALL_MOUSE_EVENTS)
     curses.curs_set(0)
     curses.mouseinterval(0)
     widget_container.stdscr.move(0, 0)
     curses.set_escdelay(25)
-    init_colors(base_config)
+    init_colors(widget_container)
     widget_container.stdscr.bkgd(' ', curses.color_pair(1))  # Activate standard color
     widget_container.stdscr.clear()
     widget_container.stdscr.refresh()
@@ -1291,16 +1297,14 @@ class ConfigScanner:
 
 
 def switch_windows(
-        ui_state: UIState,
-        base_config: BaseConfig,
+        widget_container: WidgetContainer,
         mx: int,
         my: int,
-        _b_state: int,
-        widget_container: WidgetContainer
+        _b_state: int
 ) -> None:
     # Find which widget was clicked
-    ui_state.previously_highlighted = ui_state.highlighted
-    ui_state.highlighted = None
+    widget_container.ui_state.previously_highlighted = widget_container.ui_state.highlighted
+    widget_container.ui_state.highlighted = None
     for widget in widget_container.return_widgets():
         y1 = widget.dimensions.current_y
         y2 = y1 + widget.dimensions.current_height
@@ -1308,48 +1312,44 @@ def switch_windows(
         x2 = x1 + widget.dimensions.current_width
 
         if y1 <= my <= y2 and x1 <= mx <= x2:
-            ui_state.highlighted = widget
+            widget_container.ui_state.highlighted = widget
         else:
-            if base_config.reset_help_mode_after_escape:
+            if widget_container.base_config.reset_help_mode_after_escape:
                 widget.disable_help_mode()
 
 
 def handle_mouse_input(
-        ui_state: UIState,
-        base_config: BaseConfig,
+        widget_container: WidgetContainer,
         key: int,
-        _log_messages: LogMessages,
-        widget_container: WidgetContainer
+        _log_messages: LogMessages
 ) -> None:
     if key == CursesKeys.MOUSE:
         try:
             _, mx, my, _, b_state = curses.getmouse()
             if b_state & CursesKeys.BUTTON1_PRESSED:
-                switch_windows(ui_state, base_config, mx, my, b_state, widget_container)
-                if ui_state.highlighted is not None:
-                    ui_state.highlighted.mouse_action(mx, my, b_state, ui_state)
+                switch_windows(widget_container, mx, my, b_state)
+                if widget_container.ui_state.highlighted is not None:
+                    widget_container.ui_state.highlighted.mouse_action(mx, my, b_state, widget_container)
         except CursesError:
             # Ignore invalid mouse events (like scroll in some terminals)
             return
 
 
 def handle_key_input(
-        ui_state: UIState,
-        base_config: BaseConfig,
-        key: int,
-        _log_messages: LogMessages,
         widget_container: WidgetContainer,
+        key: int,
+        log_messages: LogMessages,
         min_height_current_layout: int,
         min_width_current_layout: int
 ) -> None:
-    highlighted_widget: Widget | None = ui_state.highlighted
+    highlighted_widget: Widget | None = widget_container.ui_state.highlighted
 
     if key == CursesKeys.ESCAPE:
         if highlighted_widget is not None:
-            if base_config.reset_help_mode_after_escape:
+            if widget_container.base_config.reset_help_mode_after_escape:
                 highlighted_widget.disable_help_mode()
-        ui_state.previously_highlighted = ui_state.highlighted
-        ui_state.highlighted = None
+        widget_container.ui_state.previously_highlighted = widget_container.ui_state.highlighted
+        widget_container.ui_state.highlighted = None
 
     if key == curses.KEY_RESIZE:
         move_widgets_resize(
@@ -1358,18 +1358,18 @@ def handle_key_input(
         return
 
     if highlighted_widget is None:
-        if key == ord(base_config.quit_key):
-            raise StopException(_log_messages)
-        elif key == ord(base_config.help_key):
+        if key == ord(widget_container.base_config.quit_key):
+            raise StopException(log_messages)
+        elif key == ord(widget_container.base_config.help_key):
             pass  # TODO: General help page
-        elif key == ord(base_config.reload_key):  # Reload widgets & config
+        elif key == ord(widget_container.base_config.reload_key):  # Reload widgets & config
             raise RestartException
         return
     else:
-        if key == ord(base_config.help_key):
+        if key == ord(widget_container.base_config.help_key):
             highlighted_widget.toggle_help_mode()
 
-    highlighted_widget.keyboard_action(key, ui_state, base_config)
+    highlighted_widget.keyboard_action(key, widget_container)
 
 
 def reload_widget_scheduler(

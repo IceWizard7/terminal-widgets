@@ -38,14 +38,11 @@ def main_curses(stdscr: base.CursesWindowType) -> None:
     # Initiate base config
     base_config: base.BaseConfig = config_loader.load_base_config(log_messages)
 
-    # Initiate base UI State
-    ui_state: base.UIState = base.UIState()
-
     # Holds all widgets (Allows communication between scheduler thread & renderer, without exiting)
-    widget_container: base.WidgetContainer = base.WidgetContainer(stdscr)
+    widget_container: base.WidgetContainer = base.WidgetContainer(stdscr, base_config)
 
     # Initiate setup
-    base.init_curses_setup(widget_container, base_config)
+    base.init_curses_setup(widget_container)
 
     # Import all widget modules
     builtin_widget_modules: dict[str, types.ModuleType] = widget_loader.load_builtin_widget_modules(
@@ -71,8 +68,8 @@ def main_curses(stdscr: base.CursesWindowType) -> None:
     min_width: int
     min_height, min_width = widget_container.get_max_height_width_widgets()
 
-    base.loading_screen(widget_container, ui_state, base_config)
-    base.initialize_widgets(widget_container, ui_state, base_config)
+    base.loading_screen(widget_container)
+    base.initialize_widgets(widget_container)
     base.move_widgets_resize(widget_container, min_height, min_width)
 
     stop_event: threading.Event = threading.Event()
@@ -93,10 +90,10 @@ def main_curses(stdscr: base.CursesWindowType) -> None:
 
             key: int = widget_container.stdscr.getch()  # Keypresses
 
-            base.handle_mouse_input(ui_state, base_config, key, log_messages, widget_container)
+            base.handle_mouse_input(widget_container, key, log_messages)
 
             base.handle_key_input(
-                ui_state, base_config, key, log_messages, widget_container, min_height, min_width
+                widget_container, key, log_messages, min_height, min_width
             )
 
             if stop_event.is_set():
@@ -109,7 +106,7 @@ def main_curses(stdscr: base.CursesWindowType) -> None:
                         break
 
                     if not widget.updatable():
-                        widget.draw(ui_state, base_config)
+                        widget.draw(widget_container)
                         widget.noutrefresh()
                         continue
 
@@ -119,23 +116,23 @@ def main_curses(stdscr: base.CursesWindowType) -> None:
                         if '__error__' in data_copy:
                             if isinstance(data_copy['__error__'], base.LogMessages):
                                 for log_message in list(data_copy['__error__']):
-                                    base.display_error(widget, [str(log_message)], ui_state, base_config)
+                                    base.display_error(widget, [str(log_message)], widget_container)
                                     if log_message not in list(log_messages):
                                         log_messages.add_log_message(log_message)
                             else:
-                                base.display_error(widget, [widget.draw_data['__error__']], ui_state, base_config)
+                                base.display_error(widget, [widget.draw_data['__error__']], widget_container)
                         else:
-                            widget.draw(ui_state, base_config, data_copy)
+                            widget.draw(widget_container, data_copy)
                     # else: Data still loading
                 except base.ConfigSpecificException as e:
                     for log_message in list(e.log_messages):
-                        base.display_error(widget, [str(log_message)], ui_state, base_config)
+                        base.display_error(widget, [str(log_message)], widget_container)
                         if log_message not in list(log_messages):
                             log_messages.add_log_message(log_message)
                 except Exception as e:
                     if hasattr(e, 'log_messages'):
                         for log_message in list(e.log_messages):
-                            base.display_error(widget, [str(log_message)], ui_state, base_config)
+                            base.display_error(widget, [str(log_message)], widget_container)
                             if log_message not in list(log_messages):
                                 log_messages.add_log_message(log_message)
                     else:
@@ -147,14 +144,14 @@ def main_curses(stdscr: base.CursesWindowType) -> None:
                         if new_log_message not in list(log_messages):
                             log_messages.add_log_message(new_log_message)
                         # If the widget failed, show the error inside the widget
-                        base.display_error(widget, [str(e)], ui_state, base_config)
+                        base.display_error(widget, [str(e)], widget_container)
 
                 widget.noutrefresh()
 
             # Refresh all warnings
             # Draw LAST, so they show on top
             for warning in widget_container.return_all_warnings():
-                warning.draw(ui_state, base_config)
+                warning.draw(widget_container)
                 if warning.win:
                     warning.win.noutrefresh()
             base.update_screen()
@@ -230,3 +227,5 @@ if __name__ == '__main__':
 
 # Ideas:
 # - Quote of the day, ... of the day
+
+# TODO: Reset UIState to None if widget is out of border
