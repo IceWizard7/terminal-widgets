@@ -44,7 +44,7 @@ cd terminal-widgets
 
 Run the following command in your project folder:
 ```bash
-pip install -r requirements.txt
+pip install .
 ```
 
 ### 1.3 Initialize Configuration

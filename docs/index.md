@@ -22,7 +22,6 @@ This dashboard lets you monitor Weather, News, Clock, Calendar, and more in a mo
 ```text
 .
 ├── LICENSE
-├── MANIFEST.in
 ├── PYPI-README.md
 ├── README.md
 ├── docs
@@ -30,9 +29,6 @@ This dashboard lets you monitor Weather, News, Clock, Calendar, and more in a mo
 ├── examples
 │    └── example_*.png
 ├── pyproject.toml
-├── requirements.txt
-├── setup.cfg
-├── setup.py
 └── twidgets
     ├── __init__.py
     ├── __main__.py
