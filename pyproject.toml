@@ -31,7 +31,7 @@ dependencies = [
 
 [project.urls]
 Homepage = "https://github.com/IceWizard7/terminal-widgets"
-Documentation = "https://github.com/IceWizard7/terminal-widgets/wiki"
+Documentation = "https://github.com/IceWizard7/terminal-widgets/blob/main/docs/index.md"
 Source = "https://github.com/IceWizard7/terminal-widgets"
 Issues = "https://github.com/IceWizard7/terminal-widgets/issues"
 
