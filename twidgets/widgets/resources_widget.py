@@ -15,7 +15,10 @@ from twidgets.core.base import (
 def update(_widget: Widget, _config_loader: ConfigLoader) -> list[str]:
     cpu = psutil.cpu_percent()
     cpu_cores = psutil.cpu_count(logical=False)
-    cpu_freq = psutil.cpu_freq()
+    try:
+        max_cpu_freq: float = psutil.cpu_freq().max
+    except Exception:
+        max_cpu_freq: float = 0.0
     memory = psutil.virtual_memory()
     swap = psutil.swap_memory()
     disk_usage = shutil.disk_usage('/')
@@ -65,7 +68,7 @@ def update(_widget: Widget, _config_loader: ConfigLoader) -> list[str]:
         disk_percent = 0.0
 
     return [
-        f'CPU: {cpu:04.1f}% ({cpu_cores} Cores @ {cpu_freq.max} MHz)',
+        f'CPU: {cpu:04.1f}% ({cpu_cores} Cores @ {max_cpu_freq} MHz)',
         f'Memory: {memory_used_mib} MiB / {memory_total_mib} MiB ({memory_percent}%)',
         f'Swap: {swap_used_mib} MiB / {swap_total_mib} MiB ({swap_percent}%)',
         f'Disk: {disk_used_gib} GiB / {disk_total_gib} GiB ({disk_percent}%)',
