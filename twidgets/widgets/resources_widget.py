@@ -18,7 +18,7 @@ def update(_widget: Widget, _config_loader: ConfigLoader) -> list[str]:
     try:
         max_cpu_freq: float = psutil.cpu_freq().max
     except Exception:
-        max_cpu_freq: float = 0.0
+        max_cpu_freq = 0.0
     memory = psutil.virtual_memory()
     swap = psutil.swap_memory()
     disk_usage = shutil.disk_usage('/')
