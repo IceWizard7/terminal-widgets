@@ -4,6 +4,7 @@ import shutil
 import pathlib
 import typing
 from . import main as app_main
+from . import __version__
 
 # Use the modern 'files()' API (has a fallback for Python 3.8, but not used.)
 # except ImportError:
@@ -89,6 +90,15 @@ def main() -> None:
         description='Terminal Widgets main command',
         prog='twidgets'
     )
+
+    # Add global --version flag
+    parser.add_argument(
+        '--version',
+        action='version',
+        version=f'%(prog)s {__version__}',
+        help='Show the program version'
+    )
+
     subparsers = parser.add_subparsers(dest='command', help='Available commands')
 
     # 'init' subcommand
