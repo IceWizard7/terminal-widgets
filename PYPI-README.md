@@ -175,7 +175,7 @@ For all examples see [Examples](https://github.com/IceWizard7/terminal-widgets/b
 
 ### 🧩 **5. Contributing**
 
-Help the project grow: create an issue or pull request (On github)!
+Help the project grow: create an issue or pull request (On GitHub)!
 
 ---
 
