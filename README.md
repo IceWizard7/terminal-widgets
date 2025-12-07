@@ -11,8 +11,9 @@
     <a href="#-1-getting-started">Getting started</a> •
     <a href="#-2-configuration">Configuration</a> •
     <a href="#-3-adding-new-widgets">Adding new widgets</a> •
-    <a href="#-4-contributing">Contributing</a> •
-    <a href="#-5-license">License</a>
+    <a href="#-4-examples">Examples</a> •
+    <a href="#-5-contributing">Contributing</a> •
+    <a href="#-6-license">License</a>
   </p>
 </div>
 
@@ -162,12 +163,21 @@ For full documentation see [Widget Guide](docs/widget_guide.md)
 
 ---
 
-### 🧩 **4. Contributing**
+### 🌅 **4. Examples**
+
+<img src="examples/example_1.png" alt="Example 1 of Terminal Widgets">
+<img src="examples/example_2.png" alt="Example 2 of Terminal Widgets">
+<img src="examples/example_3.png" alt="Example 3 of Terminal Widgets">
+
+For all examples see [Examples](examples/)
+
+
+### 🧩 **5. Contributing**
 
 Help the project grow: create an issue or pull request!
 
 ---
 
-### 📜 **5. License**
+### 📜 **6. License**
 
 See [License](LICENSE)
