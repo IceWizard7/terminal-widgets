@@ -66,7 +66,7 @@ def main_curses(stdscr: base.CursesWindowType) -> None:
 
     min_height: int
     min_width: int
-    min_height, min_width = widget_container.get_max_height_width_widgets()
+    min_height, min_width = widget_container.get_max_height_width_all_widgets()
 
     base.loading_screen(widget_container)
     base.initialize_widgets(widget_container)
@@ -86,7 +86,7 @@ def main_curses(stdscr: base.CursesWindowType) -> None:
 
     while True:
         try:
-            min_height, min_width = widget_container.get_max_height_width_widgets()
+            min_height, min_width = widget_container.get_max_height_width_all_widgets()
 
             key: int = widget_container.stdscr.getch()  # Keypresses
 

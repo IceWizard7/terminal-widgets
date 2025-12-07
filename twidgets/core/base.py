@@ -169,6 +169,17 @@ class Widget:
         except CursesError:
             self.win = None
 
+    """
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Widget):
+            return NotImplemented
+        return (
+            self.name == other.name and
+            self.title == other.title and
+            self.interval == other.interval
+        )
+    """
+
 
 class WarningWidget:
     def __init__(
@@ -226,7 +237,9 @@ class WidgetContainer:
             return
         if widget not in self._all_widgets:
             self._all_widgets.append(widget)
-        if widget not in self._widgets:
+        if widget not in self._widgets:  # TODO: My theory, widget getting added x2
+            if any(widget.name == _widget.name for _widget in self._widgets):
+                raise DebugException(f'Widget "{widget.name}" is already defined')
             self._widgets.append(widget)
 
     @staticmethod
@@ -236,10 +249,14 @@ class WidgetContainer:
 
     def deactivate_widget(self, widget: Widget) -> None:
         if self.ui_state.highlighted == widget:
+            self.ui_state.previously_highlighted = widget
             self.ui_state.highlighted = None
-        if not widget not in self._widgets:
-            return
-        self._widgets.remove(widget)
+        self.remove_widget_content(widget)
+        widget.disable_help_mode()
+        widget.reinit_window(self)
+        widget.noutrefresh()
+        if widget in self._widgets:  # TODO: works without this. but i want this. this would be good.
+            self._widgets.remove(widget)
 
     def reactivate_all_widgets(self) -> None:
         for widget in self._all_widgets:
@@ -983,13 +1000,13 @@ def move_widgets_resize(
 
     current_terminal_height, current_terminal_width = widget_container.stdscr.getmaxyx()
 
-    widget_container.reactivate_all_widgets()
+    widget_container.reactivate_all_widgets()  # Allows for making the terminal bigger
 
-    for widget in widget_container.return_widgets():
+    for widget in widget_container.return_all_widgets():
         if not widget.dimensions.within_borders(current_terminal_height, current_terminal_width):
-            widget_container.remove_widget_content(widget)
+            # widget_container.remove_widget_content(widget)
             widget_container.deactivate_widget(widget)
-            widget.noutrefresh()
+            # widget.noutrefresh()
 
     widget_container.reinit_all_widget_windows()  # Allows for making the terminal bigger
     widget_container.reinit_all_warning_windows()  # Allows for making the terminal bigger
@@ -1002,7 +1019,7 @@ def move_widgets_resize(
         )
         for similar_warning in similar_warnings:
             widget_container.remove_warning(similar_warning)
-    update_screen()
+    # update_screen()
 
 
 def display_error_message_screen_too_small(
@@ -1304,6 +1321,10 @@ def switch_windows(
         my: int,
         _b_state: int
 ) -> None:
+    if widget_container.ui_state.highlighted:
+        if widget_container.base_config.reset_help_mode_after_escape:
+            widget_container.ui_state.highlighted.disable_help_mode()
+
     # Find which widget was clicked
     widget_container.ui_state.previously_highlighted = widget_container.ui_state.highlighted
     widget_container.ui_state.highlighted = None
@@ -1315,9 +1336,11 @@ def switch_windows(
 
         if y1 <= my <= y2 and x1 <= mx <= x2:
             widget_container.ui_state.highlighted = widget
-        else:
-            if widget_container.base_config.reset_help_mode_after_escape:
-                widget.disable_help_mode()
+            break  # TODO?
+        else:  # That widget was not pressed -> Is no longer pressed -> Deactivate the help mode if active
+            pass
+            # if widget_container.base_config.reset_help_mode_after_escape:
+            #     widget.disable_help_mode()
 
 
 def handle_mouse_input(
