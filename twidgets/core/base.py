@@ -169,17 +169,6 @@ class Widget:
         except CursesError:
             self.win = None
 
-    """
-    def __eq__(self, other: object) -> bool:
-        if not isinstance(other, Widget):
-            return NotImplemented
-        return (
-            self.name == other.name and
-            self.title == other.title and
-            self.interval == other.interval
-        )
-    """
-
 
 class WarningWidget:
     def __init__(
@@ -237,7 +226,7 @@ class WidgetContainer:
             return
         if widget not in self._all_widgets:
             self._all_widgets.append(widget)
-        if widget not in self._widgets:  # TODO: My theory, widget getting added x2
+        if widget not in self._widgets:
             if any(widget.name == _widget.name for _widget in self._widgets):
                 raise DebugException(f'Widget "{widget.name}" is already defined')
             self._widgets.append(widget)
@@ -255,7 +244,7 @@ class WidgetContainer:
         widget.disable_help_mode()
         widget.reinit_window(self)
         widget.noutrefresh()
-        if widget in self._widgets:  # TODO: works without this. but i want this. this would be good.
+        if widget in self._widgets:
             self._widgets.remove(widget)
 
     def reactivate_all_widgets(self) -> None:
@@ -1336,11 +1325,7 @@ def switch_windows(
 
         if y1 <= my <= y2 and x1 <= mx <= x2:
             widget_container.ui_state.highlighted = widget
-            break  # TODO?
-        else:  # That widget was not pressed -> Is no longer pressed -> Deactivate the help mode if active
-            pass
-            # if widget_container.base_config.reset_help_mode_after_escape:
-            #     widget.disable_help_mode()
+            break
 
 
 def handle_mouse_input(
