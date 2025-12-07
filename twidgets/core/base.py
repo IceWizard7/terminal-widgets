@@ -1,10 +1,10 @@
-from __future__ import annotations  # allows forward references in type hints
-from enum import Enum, IntEnum
-from pathlib import Path
+from __future__ import annotations  # Allows forward references in type hints
+import enum
+import pathlib
 import yaml
 import yaml.parser
 import yaml.scanner
-from dotenv import load_dotenv
+import dotenv
 import os
 import curses
 import _curses
@@ -1172,7 +1172,7 @@ class DebugException(Exception):
 
 # region Logging
 
-class LogLevels(Enum):
+class LogLevels(enum.Enum):
     UNKNOWN = (0, '? Unknown')
     INFO = (1, 'ℹ️ Info')
     DEBUG = (2, '🐞 Debug')
@@ -1291,7 +1291,7 @@ class LogMessages:
 
 class WidgetLoader:
     def __init__(self) -> None:
-        self.CONFIG_DIR = Path.home() / '.config' / 'twidgets'
+        self.CONFIG_DIR = pathlib.Path.home() / '.config' / 'twidgets'
         self.PER_WIDGET_PY_DIR = self.CONFIG_DIR / 'py_widgets'
 
     @staticmethod
@@ -1375,22 +1375,19 @@ class WidgetLoader:
 
 class ConfigLoader:
     def __init__(self) -> None:
-        # self.BASE_DIR = Path(__file__).resolve().parent.parent
-        # self.CONFIG_DIR = self.BASE_DIR / 'config'
-        # self.WIDGETS_DIR = self.CONFIG_DIR / 'widgets'
-        self.CONFIG_DIR = Path.home() / '.config' / 'twidgets'
+        self.CONFIG_DIR = pathlib.Path.home() / '.config' / 'twidgets'
         self.PER_WIDGET_CONFIG_DIR = self.CONFIG_DIR / 'widgets'
-        load_dotenv(self.CONFIG_DIR / 'secrets.env')
+        dotenv.load_dotenv(self.CONFIG_DIR / 'secrets.env')
 
     def reload_secrets(self) -> None:
-        load_dotenv(self.CONFIG_DIR / 'secrets.env', override=True)
+        dotenv.load_dotenv(self.CONFIG_DIR / 'secrets.env', override=True)
 
     @staticmethod
     def get_secret(name: str, default: typing.Any = None) -> str | None:
         return os.getenv(name, default)
 
     @staticmethod
-    def load_yaml(path: Path) -> dict[typing.Any, typing.Any]:
+    def load_yaml(path: pathlib.Path) -> dict[typing.Any, typing.Any]:
         try:
             with open(path, 'r', encoding='utf-8') as f:
                 return yaml.safe_load(f) or {}
@@ -1452,11 +1449,7 @@ class ConfigScanner:
 
 # endregion Loaders & Scanners
 
-def curses_wrapper(func: typing.Callable[[CursesWindowType], None]) -> None:
-    curses.wrapper(func)
-
-
-# Constants
+# region Constants
 
 CursesWindowType = _curses.window  # Type of stdscr, widget.win
 
@@ -1465,7 +1458,7 @@ CursesReverse = curses.A_REVERSE
 CursesError = _curses.error
 
 
-class CursesKeys(IntEnum):
+class CursesKeys(enum.IntEnum):
     UP = curses.KEY_UP
     DOWN = curses.KEY_DOWN
     LEFT = curses.KEY_LEFT
@@ -1475,3 +1468,9 @@ class CursesKeys(IntEnum):
     ESCAPE = 27
     MOUSE = curses.KEY_MOUSE
     BUTTON1_PRESSED = curses.BUTTON1_PRESSED
+
+# endregion Constants
+
+
+def curses_wrapper(func: typing.Callable[[CursesWindowType], None]) -> None:
+    curses.wrapper(func)
