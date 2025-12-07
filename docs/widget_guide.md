@@ -113,7 +113,7 @@ def keyboard_press_action(widget: Widget, key: typing.Any, ui_state: UIState, ba
             some_func(widget, ...)
 ```
 
-This function will get called whenever a key is pressed in your widget.
+This function will get called whenever a key is pressed while your widget is highlighted.
 
 #### 3.2.5.3 Initialize functions
 
@@ -158,18 +158,24 @@ from twidgets.core.base import ConfigLoader  # Loading secrets (secrets.env)
 import typing
 ```
 
-To get secrets, use:
+Inside your update function:
+```python
+def update(_widget: Widget, _config_loader: ConfigLoader) -> typing.Any:
+```
+
+You can use:
 ```python
 data: typing.Any = _config_loader.get_secret(key)
 ```
+to get secrets.
 
 Example:
 ```python
-api_key: str = _config_loader.get_secret('WEATHER_API_KEY')
+def update(_widget: Widget, _config_loader: ConfigLoader) -> typing.Any:
+    api_key: str = _config_loader.get_secret('WEATHER_API_KEY')
 ```
 
-> Note that this shouldn't be used in the `draw` function, but rather in the `update` function, so the secrets don't get
-> loaded every frame.
+> Note that this should always be used in the `update` function, so secrets don't get reloaded every frame.
 
 #### 3.2.7 Adding custom data to config
 
