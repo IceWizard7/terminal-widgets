@@ -11,7 +11,6 @@ def main_curses(stdscr: base.CursesWindowType) -> None:
     os.chdir(script_dir)
 
     # Holds all widgets (Allows communication between scheduler thread & renderer, without exiting)
-    #
     widget_container: base.WidgetContainer = base.WidgetContainer(stdscr, widgets_pkg)
 
     # Scan configs
@@ -40,9 +39,7 @@ def main_curses(stdscr: base.CursesWindowType) -> None:
 
             widget_container.handle_mouse_input(key)
 
-            widget_container.handle_key_input(
-                key, min_height, min_width
-            )
+            widget_container.handle_key_input(key, min_height, min_width)
 
             if widget_container.stop_event.is_set():
                 break
