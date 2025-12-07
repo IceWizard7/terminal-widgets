@@ -20,6 +20,8 @@ import sys
 import datetime
 
 
+# region Widget & essentials
+
 class Dimensions:
     def __init__(self, height: int, width: int, y: int, x: int) -> None:
         self.base_height: int = height
@@ -170,6 +172,228 @@ class Widget:
             self.win = None
 
 
+class Config:
+    def __init__(
+            self,
+            file_name: str,
+            log_messages: LogMessages,
+            name: str | None = None,
+            title: str | None = None,
+            enabled: bool | None = None,
+            interval: int | float | None = None,
+            height: int | None = None,
+            width: int | None = None,
+            y: int | None = None,
+            x: int | None = None,
+            **kwargs: typing.Any  # Used for extra arguments, e.g. 'time_format' in clock_widget
+    ) -> None:
+        fields: list[tuple[str, object, type | tuple[type, ...]]] = [
+            ('name', name, str),
+            ('title', title, str),
+            ('enabled', enabled, bool),
+            ('interval', interval, (int, float)),
+            ('height', height, int),
+            ('width', width, int),
+            ('y', y, int),
+            ('x', x, int),
+        ]
+
+        for field_name, value, expected_type in fields:
+            if value is None or not isinstance(value, expected_type):
+                log_messages.add_log_message(LogMessage(
+                    f'Configuration for {field_name} is missing / incorrect ("{file_name}" widget)',
+                    LogLevels.ERROR.key
+                ))
+
+        self.name: str = typing.cast(str, name)
+        self.title: str = typing.cast(str, title)
+        self.enabled: bool = typing.cast(bool, enabled)
+        self.interval: int | float | None = interval
+        if interval == 0:
+            self.interval = None
+        self.last_updated: int = 0
+        self.dimensions: Dimensions = Dimensions(height=height, width=width, y=y, x=x)  # type: ignore[arg-type]
+
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+
+    def __getattr__(self, name: str) -> typing.Any:  # only gets called if key is not found
+        return None  # signal to code editor that any key may exist
+
+
+class RGBColor:
+    def __init__(self, r: int, g: int, b: int) -> None:
+        self.r = r
+        self.g = g
+        self.b = b
+
+    def rgb_to_0_1000(self) -> tuple[int, int, int]:
+        return (
+            round(self.r * 1000 / 255),
+            round(self.g * 1000 / 255),
+            round(self.b * 1000 / 255),
+        )
+
+    @staticmethod
+    def add_rgb_color_from_dict(color: dict[str, int]) -> RGBColor:
+        # Make sure every value is an int (else raise an error)
+        return RGBColor(r=int(color['r']), g=int(color['g']), b=int(color['b']))
+
+
+def draw_colored_border(widget: Widget, color_pair: int) -> None:
+    if not widget.win:
+        return
+
+    widget.win.attron(curses.color_pair(color_pair))
+    widget.win.border()
+    widget.win.attroff(curses.color_pair(color_pair))
+
+
+def draw_widget(
+        widget: Widget,
+        ui_state: UIState,
+        base_config: BaseConfig,
+        title: str | None = None,
+        loading: bool = False,
+        error: bool = False
+) -> None:
+    if not widget.win:
+        return
+    if not title:
+        title = widget.title[:widget.dimensions.current_width - 4]
+    else:
+        title = title[:widget.dimensions.current_width - 4]
+    widget.win.erase()  # Instead of clear(), prevents flickering
+    if widget == ui_state.highlighted:
+        draw_colored_border(widget, base_config.PRIMARY_PAIR_NUMBER)
+    elif loading:
+        draw_colored_border(widget, base_config.LOADING_PAIR_NUMBER)
+    elif error:
+        draw_colored_border(widget, base_config.ERROR_PAIR_NUMBER)
+    else:
+        widget.win.border()
+    widget.win.addstr(0, 2, f'{title}')
+
+
+def add_widget_content(widget: Widget, content: list[str]) -> None:
+    if not widget.win:
+        return
+
+    for i, line in enumerate(content):
+        if i < widget.dimensions.current_height - 2:  # Keep inside border
+            widget.win.addstr(1 + i, 1, line[:widget.dimensions.current_width - 2])
+
+
+def convert_color_number_to_curses_pair(color_number: int) -> int:
+    return curses.color_pair(color_number)
+
+
+def safe_addstr(widget: Widget, y: int, x: int, text: str, color: int = 0) -> None:
+    if not widget.win:
+        return
+
+    max_y, max_x = widget.win.getmaxyx()
+    if y < 0 or y >= max_y:
+        return
+    safe_text = text[:max_x - x - 1]
+    try:
+        widget.win.addstr(y, x, safe_text, color)
+    except CursesError:
+        pass
+
+
+def prompt_user_input(widget: Widget, prompt: str) -> str:
+    if not widget.win:
+        return ''
+
+    win = widget.win
+
+    curses.curs_set(1)
+    win.keypad(True)  # Enable special keys (arrow keys, backspace, etc.)
+
+    may_y: int
+    max_x: int
+
+    max_y, max_x = win.getmaxyx()
+    input_y: int = max_y - 2
+    left_margin: int = 2
+    right_margin: int = 2
+    usable_width: int = max_x - (left_margin + right_margin)
+
+    input_x: int = left_margin + len(prompt)
+    max_input_len: int = max(0, usable_width - len(prompt) - 1)
+
+    input_str: str = ''
+    cursor_pos: int = 0
+
+    def redraw_input() -> None:
+        win.move(input_y, left_margin)
+        # Clear only the safe inner region (never touch border)
+        win.addstr(' ' * usable_width)
+        win.move(input_y, left_margin)
+        win.addstr(prompt)
+        visible_text = input_str[:max_input_len]
+        win.addstr(visible_text)
+        win.move(input_y, input_x + cursor_pos)
+        win.refresh()
+
+    try:
+        redraw_input()
+    except CursesError:
+        return ''
+
+    while True:
+        ch = win.get_wch()
+
+        if ch == '\n':  # ENTER
+            break
+        if ch == '\x1b' or ch == CursesKeys.ESCAPE:
+            input_str = ''  # Return empty string
+            break
+        elif ch in ('\b', '\x7f', curses.KEY_BACKSPACE):  # BACKSPACE
+            if cursor_pos > 0:
+                input_str = input_str[:cursor_pos - 1] + input_str[cursor_pos:]
+                cursor_pos -= 1
+                try:
+                    redraw_input()
+                except CursesError:
+                    return ''
+        elif ch == curses.KEY_LEFT:  # LEFT
+            if cursor_pos > 0:
+                cursor_pos -= 1
+                win.move(input_y, input_x + cursor_pos)
+                win.refresh()
+        elif ch == curses.KEY_RIGHT:  # RIGHT
+            if cursor_pos < len(input_str):
+                cursor_pos += 1
+                win.move(input_y, input_x + cursor_pos)
+                win.refresh()
+        elif ch == curses.KEY_DC:  # DELETE
+            if cursor_pos < len(input_str):
+                input_str = input_str[:cursor_pos] + input_str[cursor_pos + 1:]
+                try:
+                    redraw_input()
+                except CursesError:
+                    return ''
+        elif isinstance(ch, int):  # Ignore other special keys
+            continue
+        elif isinstance(ch, str) and len(ch) == 1:  # Normal text input
+            if len(input_str) < max_input_len:
+                input_str = input_str[:cursor_pos] + ch + input_str[cursor_pos:]
+                cursor_pos += 1
+                try:
+                    redraw_input()
+                except CursesError:
+                    return ''
+
+    curses.curs_set(0)
+    return input_str
+
+
+# endregion Widget & essentials
+
+# region WarningWidget & essentials
+
 class WarningWidget:
     def __init__(
             self,
@@ -212,11 +436,63 @@ class WarningWidget:
         self.win.erase()
 
 
+def add_warning_widget_content(warning_widget: WarningWidget, content: list[str]) -> None:
+    if not warning_widget.win:
+        return
+
+    for i, line in enumerate(content):
+        if i < warning_widget.dimensions.current_height - 2:  # Keep inside border
+            warning_widget.win.addstr(1 + i, 1, line[:warning_widget.dimensions.current_width - 2])
+
+
+def draw_warning_widget(warning_widget: WarningWidget, widget_container: WidgetContainer) -> None:
+    if not warning_widget.win:
+        return
+    title = warning_widget.title[:warning_widget.dimensions.current_width - 4]
+    warning_widget.win.erase()  # Instead of clear(), prevents flickering
+    draw_colored_border_warning_widget(warning_widget, widget_container.base_config.ERROR_PAIR_NUMBER)
+    warning_widget.win.addstr(0, 2, f'{title}')
+
+
+def draw_colored_border_warning_widget(warning_widget: WarningWidget, color_pair: int) -> None:
+    if not warning_widget.win:
+        return
+
+    warning_widget.win.attron(curses.color_pair(color_pair))
+    warning_widget.win.border()
+    warning_widget.win.attroff(curses.color_pair(color_pair))
+
+
+# endregion WarningWidget & essentials
+
+# region WidgetContainer & essentials
+
 class WidgetContainer:
-    def __init__(self, stdscr: CursesWindowType, base_config: BaseConfig) -> None:
+    def __init__(self, stdscr: CursesWindowType, widgets_pkg: types.ModuleType) -> None:
         self.stdscr = stdscr
         self.ui_state: UIState = UIState()
-        self.base_config = base_config  # TODO: Change this? Directly get from func? idk?
+
+        # Logs (Warnings, Errors)
+        self.log_messages: LogMessages = LogMessages()
+
+        # Widget Loader
+        self.widget_loader: WidgetLoader = WidgetLoader()
+
+        # Define config loader (Only loads secrets)
+        self.config_loader: ConfigLoader = ConfigLoader()
+        self.config_loader.reload_secrets()  # Needed to reload secrets.env changes
+
+        # Initiate base config
+        self.base_config: BaseConfig = self.config_loader.load_base_config(self.log_messages)
+
+        # Reloader Thread
+        self.stop_event: threading.Event = threading.Event()
+        self.reloader_thread: threading.Thread = threading.Thread(
+            target=self.reload_widget_scheduler_function
+        )
+        self.reloader_thread.daemon = True  # Don't block exit if something goes wrong
+
+        self.widgets_pkg: types.ModuleType = widgets_pkg
         self._warnings: list[WarningWidget] = []
         self._all_widgets: list[Widget] = []
         self._widgets: list[Widget] = []
@@ -341,304 +617,289 @@ class WidgetContainer:
             if warning_widget.win:
                 warning_widget.win.erase()
 
+    def discover_builtin_widgets(self) -> list[str]:
+        return self.widget_loader.discover_builtin_widgets(self.widgets_pkg)
 
-class UIState:
-    def __init__(self) -> None:
-        self.previously_highlighted: Widget | None = None
-        self.highlighted: Widget | None = None
+    def discover_custom_widgets(self) -> list[str]:
+        return self.widget_loader.discover_custom_widgets()
 
+    def scan_config(self) -> None:
+        # Scan configs
+        config_scanner: ConfigScanner = ConfigScanner(self.config_loader)
+        config_scan_results: LogMessages | bool = config_scanner.scan_config(
+            self.discover_builtin_widgets() + self.discover_custom_widgets()
+        )
 
-class RestartException(Exception):
-    """Raised to signal that the curses UI should restart"""
+        if config_scan_results is not True:
+            raise ConfigScanFoundError(config_scan_results)  # type: ignore[arg-type]
 
+    def build_widgets(self) -> dict[str, Widget]:
+        # Import all widget modules
+        builtin_widget_modules: dict[str, types.ModuleType] = self.widget_loader.load_builtin_widget_modules(
+            self.discover_builtin_widgets()
+        )
+        custom_widget_modules: dict[str, types.ModuleType] = self.widget_loader.load_custom_widget_modules()
 
-class StopException(Exception):
-    """Raised to signal that the curses UI should stop"""
-    def __init__(self, log_messages: LogMessages) -> None:
-        self.log_messages: LogMessages = log_messages
+        try:
+            widget_dict = self.widget_loader.build_widgets(
+                self, self.config_loader, self.log_messages,
+                builtin_widget_modules | custom_widget_modules
+            )
+            return widget_dict
+        except (
+                WidgetSourceFileException,
+                TerminalTooSmall
+        ):
+            raise
+        except Exception as e:
+            raise UnknownException(self.log_messages, str(e))
 
+    def start_reloader_thread(self) -> None:
+        self.reloader_thread.start()
 
-class YAMLParseException(Exception):
-    """Raised to signal that there was an error parsing a YAML file"""
+    def init_curses_setup(self) -> None:
+        curses.mousemask(curses.ALL_MOUSE_EVENTS)
+        curses.curs_set(0)
+        curses.mouseinterval(0)
+        self.stdscr.move(0, 0)
+        curses.set_escdelay(25)
+        self.init_colors()
+        self.stdscr.bkgd(' ', curses.color_pair(1))  # Activate standard color
+        self.stdscr.clear()
+        self.stdscr.refresh()
+        self.stdscr.timeout(100)
 
+    def loading_screen(self) -> None:
+        for widget in self.return_widgets():
+            if not widget.win:
+                continue
+            draw_widget(widget, self.ui_state, self.base_config, loading=True)
+            add_widget_content(widget, [' Loading... '])
+            widget.win.refresh()
+        return None
 
-class TerminalTooSmall(Exception):
-    def __init__(self, height: int, width: int, min_height: int, min_width: int) -> None:
-        """Raised to signal that the terminal is too small"""
-        self.height = height
-        self.width = width
-        self.min_height = min_height
-        self.min_width = min_width
-        super().__init__(height, width)
+    def initialize_widgets(self) -> None:
+        for widget in self.return_widgets():
+            widget.init(self)
+        return None
 
-    def __repr__(self) -> str:
-        return self.__str__()
+    def move_widgets_resize(
+            self,
+            min_height_current_layout: int,
+            min_width_current_layout: int
+    ) -> None:
+        current_terminal_height: int
+        current_terminal_width: int
 
-    def __str__(self) -> str:
-        return \
-            f'\n' \
-            f'⚠️ Terminal too small.\n' \
-            f'Min. size: {self.min_width}x{self.min_height} (Width x Height)\n' \
-            f'Current size: {self.width}x{self.height}\n' \
-            f'Either decrease your font size,\n' \
-            f'increase the size of the terminal,\n' \
-            f'or remove widgets.\n'
+        current_terminal_height, current_terminal_width = self.stdscr.getmaxyx()
 
+        self.reactivate_all_widgets()  # Allows for making the terminal bigger
 
-class ConfigScanFoundError(Exception):
-    def __init__(self, log_messages: LogMessages) -> None:
-        self.log_messages: LogMessages = log_messages
-        super().__init__(log_messages)
+        for widget in self.return_all_widgets():
+            if not widget.dimensions.within_borders(current_terminal_height, current_terminal_width):
+                self.deactivate_widget(widget)
 
-
-class ConfigFileNotFoundError(Exception):
-    def __init__(self, error_details: str) -> None:
-        self.error_details: str = error_details
-        super().__init__(error_details)
-
-
-class ConfigSpecificException(Exception):
-    def __init__(self, log_messages: LogMessages) -> None:
-        self.log_messages: LogMessages = log_messages
-        super().__init__(log_messages)
-
-
-class WidgetSourceFileException(Exception):
-    def __init__(self, log_messages: LogMessages) -> None:
-        self.log_messages: LogMessages = log_messages
-        super().__init__(log_messages)
-
-
-# class WidgetWinNotInitializedException(Exception):
-#     """Raised to signal that there was an error initialising a Widget Window"""
-
-
-class UnknownException(Exception):
-    def __init__(self, log_messages: LogMessages, error_message: str) -> None:
-        self.log_messages: LogMessages = log_messages
-        self.error_message = error_message
-        super().__init__(log_messages, error_message)
-
-
-class DebugException(Exception):
-    def __init__(self, error_message: str) -> None:
-        self.error_message = error_message
-        super().__init__(error_message)
-
-
-class LogLevels(Enum):
-    UNKNOWN = (0, '? Unknown')
-    INFO = (1, 'ℹ️ Info')
-    DEBUG = (2, '🐞 Debug')
-    WARNING = (3, '⚠️ Warnings')
-    ERROR = (4, '⚠️ Errors')  # 🔴️
-
-    @property
-    def key(self) -> int:
-        return self.value[0]
-
-    @property
-    def label(self) -> str:
-        return self.value[1]
-
-    @classmethod
-    def from_key(cls, key: int) -> LogLevels:
-        """Return the LogLevels member that matches the key"""
-        for level in cls:
-            if level.key == key:
-                return level
-        return LogLevels.UNKNOWN
-
-
-class LogMessage:
-    def __init__(self, message: str, level: int) -> None:
-        self.log_time: datetime.datetime = datetime.datetime.now()
-        self.message: str = message
-        self.level: int = level
-
-    def __str__(self) -> str:
-        return f'{self.log_time.strftime("%H:%M:%S")}: {self.message}'
-
-    def __repr__(self) -> str:
-        return self.message
-
-    def __eq__(self, other: object) -> bool:
-        if not isinstance(other, LogMessage):
-            return NotImplemented
-        if self.message == other.message and self.level == other.level:
-            return True
-        return False
-
-    def is_error(self) -> bool:
-        if self.level == LogLevels.ERROR.key:
-            return True
-        return False
-
-
-class LogMessages:
-    def __init__(self, log_messages: list[LogMessage] | None = None) -> None:
-        if log_messages is None:
-            self.log_messages: list[LogMessage] = []
+        self.reinit_all_widget_windows()  # Allows for making the terminal bigger
+        self.reinit_all_warning_windows()  # Allows for making the terminal bigger
+        if self.validate_terminal_too_small(min_height_current_layout, min_width_current_layout):
+            self.display_error_message_screen_too_small(min_height_current_layout, min_width_current_layout)
         else:
-            self.log_messages = log_messages
+            similar_warnings: list[WarningWidget] = self.return_similar_warnings_by_name_title(
+                'terminal_too_small',
+                ' Terminal Too Small '
+            )
+            for similar_warning in similar_warnings:
+                self.remove_warning(similar_warning)
 
-    def __add__(self, other: LogMessages) -> LogMessages:
-        new_log: LogMessages = LogMessages()
-        new_log.log_messages = self.log_messages + other.log_messages
-        return new_log
+    def handle_mouse_input(self, key: int) -> None:
+        if key == CursesKeys.MOUSE:
+            try:
+                _, mx, my, _, b_state = curses.getmouse()
+                if b_state & CursesKeys.BUTTON1_PRESSED:
+                    self.switch_windows(mx, my, b_state)
+                    if self.ui_state.highlighted is not None:
+                        self.ui_state.highlighted.mouse_action(mx, my, b_state, self)
+            except CursesError:
+                # Ignore invalid mouse events (like scroll in some terminals)
+                return
 
-    def __eq__(self, other: object) -> bool:
-        if not isinstance(other, LogMessages):
-            return NotImplemented
-        return self.log_messages == other.log_messages
+    def handle_key_input(self, key: int, min_height_current_layout: int, min_width_current_layout: int) -> None:
+        highlighted_widget: Widget | None = self.ui_state.highlighted
 
-    def __ne__(self, other: object) -> bool:
-        if not isinstance(other, LogMessages):
-            return NotImplemented
-        return self.log_messages != other.log_messages
+        if key == CursesKeys.ESCAPE:
+            if highlighted_widget is not None:
+                if self.base_config.reset_help_mode_after_escape:
+                    highlighted_widget.disable_help_mode()
+            self.ui_state.previously_highlighted = self.ui_state.highlighted
+            self.ui_state.highlighted = None
 
-    def __contains__(self, item: LogMessage) -> bool:
-        for log_message in list(self.log_messages):
-            if log_message == item:
-                return True
-        return False
-
-    def __iter__(self) -> collections.abc.Iterator[LogMessage]:
-        return iter(self.log_messages)
-
-    def add_log_message(self, message: LogMessage) -> None:
-        self.log_messages.append(message)
-
-    def print_log_messages(self, heading: str) -> None:
-        if not self.log_messages:
+        if key == curses.KEY_RESIZE:
+            self.move_widgets_resize(min_height_current_layout, min_width_current_layout)
             return
 
-        print(heading, end='')
-        log_messages_by_level: dict[int, list[LogMessage]] = {}
-        for message in self.log_messages:
-            if message.level in log_messages_by_level.keys():
-                log_messages_by_level[message.level].append(message)
-            else:
-                log_messages_by_level[message.level] = [message]
+        if highlighted_widget is None:
+            if key == ord(self.base_config.quit_key):
+                raise StopException(self.log_messages)
+            elif key == ord(self.base_config.help_key):
+                pass  # TODO: General help page
+            elif key == ord(self.base_config.reload_key):  # Reload widgets & config
+                raise RestartException
+            return
+        else:
+            if key == ord(self.base_config.help_key):
+                highlighted_widget.toggle_help_mode()
 
-        for level in sorted(log_messages_by_level.keys()):
-            if log_messages_by_level[level]:
-                print(f'\n{LogLevels.from_key(level).label}:')
-                for message in log_messages_by_level[level]:
-                    print(message)
+        highlighted_widget.keyboard_action(key, self)
 
-    def contains_error(self) -> bool:
-        for message in self.log_messages:
-            if message.is_error():
-                return True
+    def switch_windows(self, mx: int, my: int, _b_state: int) -> None:
+        if self.ui_state.highlighted:
+            if self.base_config.reset_help_mode_after_escape:
+                self.ui_state.highlighted.disable_help_mode()
+
+        # Find which widget was clicked
+        self.ui_state.previously_highlighted = self.ui_state.highlighted
+        self.ui_state.highlighted = None
+        for widget in self.return_widgets():
+            y1 = widget.dimensions.current_y
+            y2 = y1 + widget.dimensions.current_height
+            x1 = widget.dimensions.current_x
+            x2 = x1 + widget.dimensions.current_width
+
+            if y1 <= my <= y2 and x1 <= mx <= x2:
+                self.ui_state.highlighted = widget
+                break
+
+    def validate_terminal_too_small(self, min_height: int, min_width: int) -> bool:
+        height, width = self.stdscr.getmaxyx()
+
+        if height < min_height or width < min_width:
+            return True
         return False
 
-    def is_empty(self) -> bool:
-        if self.log_messages:
-            return False
-        return True
+    def display_error_message_screen_too_small(self, min_height: int, min_width: int) -> None:
+        current_terminal_height, current_terminal_width = self.stdscr.getmaxyx()
 
+        warning_message_height: int = 10
+        warning_message_width: int = 50
 
-class Config:
-    def __init__(
-            self,
-            file_name: str,
-            log_messages: LogMessages,
-            name: str | None = None,
-            title: str | None = None,
-            enabled: bool | None = None,
-            interval: int | float | None = None,
-            height: int | None = None,
-            width: int | None = None,
-            y: int | None = None,
-            x: int | None = None,
-            **kwargs: typing.Any  # Used for extra arguments, e.g. 'time_format' in clock_widget
-    ) -> None:
-        fields: list[tuple[str, object, type | tuple[type, ...]]] = [
-            ('name', name, str),
-            ('title', title, str),
-            ('enabled', enabled, bool),
-            ('interval', interval, (int, float)),
-            ('height', height, int),
-            ('width', width, int),
-            ('y', y, int),
-            ('x', x, int),
+        warning_message_y = (current_terminal_height - warning_message_height) // 2
+        warning_message_x = (current_terminal_width - warning_message_width) // 2
+
+        warning_error: TerminalTooSmall = TerminalTooSmall(
+            current_terminal_height,
+            current_terminal_width,
+            min_height,
+            min_width
+        )
+
+        warning_dimensions: Dimensions = Dimensions(
+            warning_message_height,
+            warning_message_width,
+            warning_message_y,
+            warning_message_x
+        )
+
+        if not warning_dimensions.within_borders(current_terminal_height, current_terminal_width):
+            raise warning_error
+
+        warning: WarningWidget = WarningWidget(
+            'terminal_too_small',
+            ' Terminal Too Small ',
+            warning_error,
+            str(warning_error).split('\n'),
+            warning_dimensions,
+            self.stdscr
+        )
+
+        self.add_warning(
+            warning
+        )
+
+    def init_colors(self) -> None:
+        curses.start_color()
+        if self.base_config.use_standard_terminal_background:
+            curses.use_default_colors()
+        if curses.can_change_color():
+            if not self.base_config.use_standard_terminal_background:
+                curses.init_color(
+                    self.base_config.BACKGROUND_NUMBER,  # type: ignore[unused-ignore]
+                    *self.base_config.background_color.rgb_to_0_1000()  # type: ignore[unused-ignore]
+                )  # type: ignore[unused-ignore]
+                # (PyCharm sees this as an error -> unused-ignore)
+
+            for color_number, color in self.base_config.base_colors.items():
+                curses.init_color(
+                    color_number,  # type: ignore[unused-ignore]
+                    *color[1].rgb_to_0_1000()  # type: ignore[union-attr]
+                    # This will always be RGBColor, until the next part of the code is reached
+                )  # type: ignore[unused-ignore]
+                # (PyCharm sees this as an error -> unused-ignore)
+        else:
+            self.base_config.base_colors = {
+                2: (1, curses.COLOR_WHITE),
+                15: (2, curses.COLOR_BLUE),
+                13: (3, curses.COLOR_CYAN),
+                9: (4, curses.COLOR_YELLOW),
+                10: (5, curses.COLOR_RED)
+            }
+
+        for color_number, color in self.base_config.base_colors.items():
+            curses.init_pair(
+                color[0],
+                color_number,
+                self.base_config.BACKGROUND_NUMBER
+            )
+
+        gradient_color: list[int] = [
+            28, 34, 40, 46, 82, 118, 154, 172,
+            196, 160, 127, 135, 141, 99, 63, 33, 27, 24
         ]
 
-        for field_name, value, expected_type in fields:
-            if value is None or not isinstance(value, expected_type):
-                log_messages.add_log_message(LogMessage(
-                    f'Configuration for {field_name} is missing / incorrect ("{file_name}" widget)',
-                    LogLevels.ERROR.key
-                ))
+        for i, color in enumerate(gradient_color, start=6):  # type: ignore
+            curses.init_pair(i, color, self.base_config.BACKGROUND_NUMBER)  # type: ignore[arg-type]
 
-        self.name: str = typing.cast(str, name)
-        self.title: str = typing.cast(str, title)
-        self.enabled: bool = typing.cast(bool, enabled)
-        self.interval: int | float | None = interval
-        if interval == 0:
-            self.interval = None
-        self.last_updated: int = 0
-        self.dimensions: Dimensions = Dimensions(height=height, width=width, y=y, x=x)  # type: ignore[arg-type]
+    def cleanup_curses_setup(self) -> None:
+        self.stop_event.set()
+        self.reloader_thread.join(timeout=1)
+        try:
+            curses.endwin()
+        except CursesError:
+            pass  # Ignore; Doesn't happen on Py3.13, but does on Py3.12
 
-        for key, value in kwargs.items():
-            setattr(self, key, value)
+    def display_error(self, widget: Widget, content: list[str]) -> None:
+        draw_widget(widget, self.ui_state, self.base_config, ' Error ', error=True)
+        add_widget_content(widget, content)
 
-    def __getattr__(self, name: str) -> typing.Any:  # only gets called if key is not found
-        return None  # signal to code editor that any key may exist
+    def reload_widget_scheduler_function(self) -> None:
+        while not self.stop_event.is_set():
+            now = time_module.time()
 
+            # Calculate reloadable widgets every time every widget has reloaded
+            reloadable_widgets: list[Widget] = [w for w in self.return_widgets() if w.updatable()]
+            # Update widgets if their interval has passed
+            for widget in reloadable_widgets:
+                if self.stop_event.is_set():  # Check on every iteration as well
+                    break
 
-class RGBColor:
-    def __init__(self, r: int, g: int, b: int) -> None:
-        self.r = r
-        self.g = g
-        self.b = b
+                if widget.last_updated is None:
+                    continue
 
-    def rgb_to_0_1000(self) -> tuple[int, int, int]:
-        return (
-            round(self.r * 1000 / 255),
-            round(self.g * 1000 / 255),
-            round(self.b * 1000 / 255),
-        )
+                # See widget.updatable(), types are safe.
+                if now - widget.last_updated >= widget.interval:  # type: ignore[operator]
+                    try:
+                        widget.draw_data = widget.update(self.config_loader)
+                        widget.last_updated = now
+                    except ConfigSpecificException as e:
+                        widget.draw_data = {'__error__': e.log_messages}
+                    except Exception as e:
+                        widget.draw_data = {'__error__': str(e)}
+
+            # Small sleep to avoid busy loop, tuned to a small value
+            time_module.sleep(0.06667)  # -> ~15 FPS
 
     @staticmethod
-    def add_rgb_color_from_dict(color: dict[str, int]) -> RGBColor:
-        # Make sure every value is an int (else raise an error)
-        return RGBColor(r=int(color['r']), g=int(color['g']), b=int(color['b']))
-
-
-class BaseStandardFallBackConfig:
-    def __init__(self) -> None:
-        self.background_color: RGBColor = (
-            RGBColor(r=31, g=29, b=67)
-        )
-
-        self.foreground_color: RGBColor = (
-            RGBColor(r=227, g=236, b=252)
-        )
-
-        self.primary_color: RGBColor = (
-            RGBColor(r=129, g=97, b=246)
-        )
-
-        self.secondary_color: RGBColor = (
-            RGBColor(r=164, g=99, b=247)
-        )
-
-        self.loading_color: RGBColor = (
-            RGBColor(r=215, g=135, b=0)
-        )
-
-        self.error_color: RGBColor = (
-            RGBColor(r=255, g=0, b=0)
-        )
-
-        self.use_standard_terminal_background: bool = True
-
-        self.quit_key: str = 'q'
-        self.reload_key: str = 'r'
-        self.help_key: str = 'h'
-        self.reset_help_mode_after_escape: bool = True
+    def update_screen() -> None:
+        curses.doupdate()
 
 
 class BaseConfig:
@@ -789,359 +1050,244 @@ class BaseConfig:
             ))
 
 
-def draw_colored_border(widget: Widget, color_pair: int) -> None:
-    if not widget.win:
-        return
-
-    widget.win.attron(curses.color_pair(color_pair))
-    widget.win.border()
-    widget.win.attroff(curses.color_pair(color_pair))
-
-
-def draw_colored_border_warning_widget(warning_widget: WarningWidget, color_pair: int) -> None:
-    if not warning_widget.win:
-        return
-
-    warning_widget.win.attron(curses.color_pair(color_pair))
-    warning_widget.win.border()
-    warning_widget.win.attroff(curses.color_pair(color_pair))
-
-
-def draw_widget(
-        widget: Widget,
-        ui_state: UIState,
-        base_config: BaseConfig,
-        title: str | None = None,
-        loading: bool = False,
-        error: bool = False
-) -> None:
-    if not widget.win:
-        return
-    if not title:
-        title = widget.title[:widget.dimensions.current_width - 4]
-    else:
-        title = title[:widget.dimensions.current_width - 4]
-    widget.win.erase()  # Instead of clear(), prevents flickering
-    if widget == ui_state.highlighted:
-        draw_colored_border(widget, base_config.PRIMARY_PAIR_NUMBER)
-    elif loading:
-        draw_colored_border(widget, base_config.LOADING_PAIR_NUMBER)
-    elif error:
-        draw_colored_border(widget, base_config.ERROR_PAIR_NUMBER)
-    else:
-        widget.win.border()
-    widget.win.addstr(0, 2, f'{title}')
-
-
-def draw_warning_widget(warning_widget: WarningWidget, widget_container: WidgetContainer) -> None:
-    if not warning_widget.win:
-        return
-    title = warning_widget.title[:warning_widget.dimensions.current_width - 4]
-    warning_widget.win.erase()  # Instead of clear(), prevents flickering
-    draw_colored_border_warning_widget(warning_widget, widget_container.base_config.ERROR_PAIR_NUMBER)
-    warning_widget.win.addstr(0, 2, f'{title}')
-
-
-def add_widget_content(widget: Widget, content: list[str]) -> None:
-    if not widget.win:
-        return
-
-    for i, line in enumerate(content):
-        if i < widget.dimensions.current_height - 2:  # Keep inside border
-            widget.win.addstr(1 + i, 1, line[:widget.dimensions.current_width - 2])
-
-
-def add_warning_widget_content(warning_widget: WarningWidget, content: list[str]) -> None:
-    if not warning_widget.win:
-        return
-
-    for i, line in enumerate(content):
-        if i < warning_widget.dimensions.current_height - 2:  # Keep inside border
-            warning_widget.win.addstr(1 + i, 1, line[:warning_widget.dimensions.current_width - 2])
-
-
-def convert_color_number_to_curses_pair(color_number: int) -> int:
-    return curses.color_pair(color_number)
-
-
-def safe_addstr(widget: Widget, y: int, x: int, text: str, color: int = 0) -> None:
-    if not widget.win:
-        return
-
-    max_y, max_x = widget.win.getmaxyx()
-    if y < 0 or y >= max_y:
-        return
-    safe_text = text[:max_x - x - 1]
-    try:
-        widget.win.addstr(y, x, safe_text, color)
-    except CursesError:
-        pass
-
-
-def loading_screen(widget_container: WidgetContainer) -> None:
-    for widget in widget_container.return_widgets():
-        if not widget.win:
-            continue
-        draw_widget(widget, widget_container.ui_state, widget_container.base_config, loading=True)
-        add_widget_content(widget, [' Loading... '])
-        widget.win.refresh()
-    return None
-
-
-def initialize_widgets(widget_container: WidgetContainer) -> None:
-    for widget in widget_container.return_widgets():
-        widget.init(widget_container)
-    return None
-
-
-def display_error(widget: Widget, content: list[str], widget_container: WidgetContainer) -> None:
-    draw_widget(widget, widget_container.ui_state, widget_container.base_config, ' Error ', error=True)
-    add_widget_content(widget, content)
-
-
-def init_colors(widget_container: WidgetContainer) -> None:
-    curses.start_color()
-    if widget_container.base_config.use_standard_terminal_background:
-        curses.use_default_colors()
-    if curses.can_change_color():
-        if not widget_container.base_config.use_standard_terminal_background:
-            curses.init_color(
-                widget_container.base_config.BACKGROUND_NUMBER,  # type: ignore[call-arg, unused-ignore]
-                *widget_container.base_config.background_color.rgb_to_0_1000()  # type: ignore[call-arg, unused-ignore]
-            )  # type: ignore[unused-ignore]
-            # (PyCharm sees this as an error -> unused-ignore)
-
-        for color_number, color in widget_container.base_config.base_colors.items():
-            curses.init_color(
-                color_number,  # type: ignore[call-arg, unused-ignore]
-                *color[1].rgb_to_0_1000()  # type: ignore[union-attr]
-            )  # type: ignore[unused-ignore]
-            # (PyCharm sees this as an error -> unused-ignore)
-    else:
-        widget_container.base_config.base_colors = {
-            2: (1, curses.COLOR_WHITE),
-            15: (2, curses.COLOR_BLUE),
-            13: (3, curses.COLOR_CYAN),
-            9: (4, curses.COLOR_YELLOW),
-            10: (5, curses.COLOR_RED)
-        }
-
-    for color_number, color in widget_container.base_config.base_colors.items():
-        curses.init_pair(
-            color[0],
-            color_number,
-            widget_container.base_config.BACKGROUND_NUMBER
+class BaseStandardFallBackConfig:
+    def __init__(self) -> None:
+        self.background_color: RGBColor = (
+            RGBColor(r=31, g=29, b=67)
         )
 
-    gradient_color: list[int] = [
-        28, 34, 40, 46, 82, 118, 154, 172,
-        196, 160, 127, 135, 141, 99, 63, 33, 27, 24
-    ]
+        self.foreground_color: RGBColor = (
+            RGBColor(r=227, g=236, b=252)
+        )
 
-    for i, color in enumerate(gradient_color, start=6):  # type: ignore
-        curses.init_pair(i, color, widget_container.base_config.BACKGROUND_NUMBER)  # type: ignore[arg-type]
+        self.primary_color: RGBColor = (
+            RGBColor(r=129, g=97, b=246)
+        )
 
+        self.secondary_color: RGBColor = (
+            RGBColor(r=164, g=99, b=247)
+        )
 
-def init_curses_setup(widget_container: WidgetContainer) -> None:
-    curses.mousemask(curses.ALL_MOUSE_EVENTS)
-    curses.curs_set(0)
-    curses.mouseinterval(0)
-    widget_container.stdscr.move(0, 0)
-    curses.set_escdelay(25)
-    init_colors(widget_container)
-    widget_container.stdscr.bkgd(' ', curses.color_pair(1))  # Activate standard color
-    widget_container.stdscr.clear()
-    widget_container.stdscr.refresh()
-    widget_container.stdscr.timeout(100)
+        self.loading_color: RGBColor = (
+            RGBColor(r=215, g=135, b=0)
+        )
 
+        self.error_color: RGBColor = (
+            RGBColor(r=255, g=0, b=0)
+        )
 
-def cleanup_curses_setup(
-        stop_event: threading.Event,
-        reloader_thread: threading.Thread
-) -> None:
-    stop_event.set()
-    reloader_thread.join(timeout=1)
-    try:
-        curses.endwin()
-    except CursesError:
-        pass  # Ignore; Doesn't happen on Py3.13, but does on Py3.12
+        self.use_standard_terminal_background: bool = True
+
+        self.quit_key: str = 'q'
+        self.reload_key: str = 'r'
+        self.help_key: str = 'h'
+        self.reset_help_mode_after_escape: bool = True
 
 
-def validate_terminal_too_small(
-        widget_container: WidgetContainer,
-        min_height: int,
-        min_width: int
-) -> bool:
-    height, width = widget_container.stdscr.getmaxyx()
+class UIState:
+    def __init__(self) -> None:
+        self.previously_highlighted: Widget | None = None
+        self.highlighted: Widget | None = None
 
-    if height < min_height or width < min_width:
+
+# endregion WidgetContainer & essentials
+
+# region Custom Exceptions
+
+class RestartException(Exception):
+    """Raised to signal that the curses UI should restart"""
+
+
+class StopException(Exception):
+    """Raised to signal that the curses UI should stop"""
+    def __init__(self, log_messages: LogMessages) -> None:
+        self.log_messages: LogMessages = log_messages
+
+
+class YAMLParseException(Exception):
+    """Raised to signal that there was an error parsing a YAML file"""
+
+
+class TerminalTooSmall(Exception):
+    def __init__(self, height: int, width: int, min_height: int, min_width: int) -> None:
+        """Raised to signal that the terminal is too small"""
+        self.height = height
+        self.width = width
+        self.min_height = min_height
+        self.min_width = min_width
+        super().__init__(height, width)
+
+    def __repr__(self) -> str:
+        return self.__str__()
+
+    def __str__(self) -> str:
+        return \
+            f'\n' \
+            f'⚠️ Terminal too small.\n' \
+            f'Min. size: {self.min_width}x{self.min_height} (Width x Height)\n' \
+            f'Current size: {self.width}x{self.height}\n' \
+            f'Either decrease your font size,\n' \
+            f'increase the size of the terminal,\n' \
+            f'or remove widgets.\n'
+
+
+class ConfigScanFoundError(Exception):
+    def __init__(self, log_messages: LogMessages) -> None:
+        self.log_messages: LogMessages = log_messages
+        super().__init__(log_messages)
+
+
+class ConfigFileNotFoundError(Exception):
+    def __init__(self, error_details: str) -> None:
+        self.error_details: str = error_details
+        super().__init__(error_details)
+
+
+class ConfigSpecificException(Exception):
+    def __init__(self, log_messages: LogMessages) -> None:
+        self.log_messages: LogMessages = log_messages
+        super().__init__(log_messages)
+
+
+class WidgetSourceFileException(Exception):
+    def __init__(self, log_messages: LogMessages) -> None:
+        self.log_messages: LogMessages = log_messages
+        super().__init__(log_messages)
+
+
+class UnknownException(Exception):
+    def __init__(self, log_messages: LogMessages, error_message: str) -> None:
+        self.log_messages: LogMessages = log_messages
+        self.error_message = error_message
+        super().__init__(log_messages, error_message)
+
+
+class DebugException(Exception):
+    def __init__(self, error_message: str) -> None:
+        self.error_message = error_message
+        super().__init__(error_message)
+
+
+# endregion Custom Exceptions
+
+# region Logging
+
+class LogLevels(Enum):
+    UNKNOWN = (0, '? Unknown')
+    INFO = (1, 'ℹ️ Info')
+    DEBUG = (2, '🐞 Debug')
+    WARNING = (3, '⚠️ Warnings')
+    ERROR = (4, '⚠️ Errors')  # 🔴️
+
+    @property
+    def key(self) -> int:
+        return self.value[0]
+
+    @property
+    def label(self) -> str:
+        return self.value[1]
+
+    @classmethod
+    def from_key(cls, key: int) -> LogLevels:
+        """Return the LogLevels member that matches the key"""
+        for level in cls:
+            if level.key == key:
+                return level
+        return LogLevels.UNKNOWN
+
+
+class LogMessage:
+    def __init__(self, message: str, level: int) -> None:
+        self.log_time: datetime.datetime = datetime.datetime.now()
+        self.message: str = message
+        self.level: int = level
+
+    def __str__(self) -> str:
+        return f'{self.log_time.strftime("%H:%M:%S")}: {self.message}'
+
+    def __repr__(self) -> str:
+        return self.message
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, LogMessage):
+            return NotImplemented
+        if self.message == other.message and self.level == other.level:
+            return True
+        return False
+
+    def is_error(self) -> bool:
+        if self.level == LogLevels.ERROR.key:
+            return True
+        return False
+
+
+class LogMessages:
+    def __init__(self, log_messages: list[LogMessage] | None = None) -> None:
+        if log_messages is None:
+            self.log_messages: list[LogMessage] = []
+        else:
+            self.log_messages = log_messages
+
+    def __add__(self, other: LogMessages) -> LogMessages:
+        new_log: LogMessages = LogMessages()
+        new_log.log_messages = self.log_messages + other.log_messages
+        return new_log
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, LogMessages):
+            return NotImplemented
+        return self.log_messages == other.log_messages
+
+    def __ne__(self, other: object) -> bool:
+        if not isinstance(other, LogMessages):
+            return NotImplemented
+        return self.log_messages != other.log_messages
+
+    def __contains__(self, item: LogMessage) -> bool:
+        for log_message in list(self.log_messages):
+            if log_message == item:
+                return True
+        return False
+
+    def __iter__(self) -> collections.abc.Iterator[LogMessage]:
+        return iter(self.log_messages)
+
+    def add_log_message(self, message: LogMessage) -> None:
+        self.log_messages.append(message)
+
+    def print_log_messages(self, heading: str) -> None:
+        if not self.log_messages:
+            return
+
+        print(heading, end='')
+        log_messages_by_level: dict[int, list[LogMessage]] = {}
+        for message in self.log_messages:
+            if message.level in log_messages_by_level.keys():
+                log_messages_by_level[message.level].append(message)
+            else:
+                log_messages_by_level[message.level] = [message]
+
+        for level in sorted(log_messages_by_level.keys()):
+            if log_messages_by_level[level]:
+                print(f'\n{LogLevels.from_key(level).label}:')
+                for message in log_messages_by_level[level]:
+                    print(message)
+
+    def contains_error(self) -> bool:
+        for message in self.log_messages:
+            if message.is_error():
+                return True
+        return False
+
+    def is_empty(self) -> bool:
+        if self.log_messages:
+            return False
         return True
-    return False
 
 
-def move_widgets_resize(
-    widget_container: WidgetContainer,
-    min_height_current_layout: int,
-    min_width_current_layout: int
-) -> None:
-    current_terminal_height: int
-    current_terminal_width: int
+# endregion Logging
 
-    current_terminal_height, current_terminal_width = widget_container.stdscr.getmaxyx()
-
-    widget_container.reactivate_all_widgets()  # Allows for making the terminal bigger
-
-    for widget in widget_container.return_all_widgets():
-        if not widget.dimensions.within_borders(current_terminal_height, current_terminal_width):
-            # widget_container.remove_widget_content(widget)
-            widget_container.deactivate_widget(widget)
-            # widget.noutrefresh()
-
-    widget_container.reinit_all_widget_windows()  # Allows for making the terminal bigger
-    widget_container.reinit_all_warning_windows()  # Allows for making the terminal bigger
-    if validate_terminal_too_small(widget_container, min_height_current_layout, min_width_current_layout):
-        display_error_message_screen_too_small(widget_container, min_height_current_layout, min_width_current_layout)
-    else:
-        similar_warnings: list[WarningWidget] = widget_container.return_similar_warnings_by_name_title(
-            'terminal_too_small',
-            ' Terminal Too Small '
-        )
-        for similar_warning in similar_warnings:
-            widget_container.remove_warning(similar_warning)
-    # update_screen()
-
-
-def display_error_message_screen_too_small(
-        widget_container: WidgetContainer,
-        min_height_current_layout: int,
-        min_width_current_layout: int
-) -> None:
-    current_terminal_height, current_terminal_width = widget_container.stdscr.getmaxyx()
-
-    warning_message_height: int = 10
-    warning_message_width: int = 50
-
-    warning_message_y = (current_terminal_height - warning_message_height) // 2
-    warning_message_x = (current_terminal_width - warning_message_width) // 2
-
-    warning_error: TerminalTooSmall = TerminalTooSmall(
-        current_terminal_height,
-        current_terminal_width,
-        min_height_current_layout,
-        min_width_current_layout
-    )
-
-    warning_dimensions: Dimensions = Dimensions(
-        warning_message_height,
-        warning_message_width,
-        warning_message_y,
-        warning_message_x
-    )
-
-    if not warning_dimensions.within_borders(current_terminal_height, current_terminal_width):
-        raise warning_error
-
-    warning: WarningWidget = WarningWidget(
-        'terminal_too_small',
-        ' Terminal Too Small ',
-        warning_error,
-        str(warning_error).split('\n'),
-        warning_dimensions,
-        widget_container.stdscr
-    )
-
-    widget_container.add_warning(
-        warning
-    )
-
-
-def prompt_user_input(widget: Widget, prompt: str) -> str:
-    if not widget.win:
-        return ''
-
-    win = widget.win
-
-    curses.curs_set(1)
-    win.keypad(True)  # Enable special keys (arrow keys, backspace, etc.)
-
-    may_y: int
-    max_x: int
-
-    max_y, max_x = win.getmaxyx()
-    input_y: int = max_y - 2
-    left_margin: int = 2
-    right_margin: int = 2
-    usable_width: int = max_x - (left_margin + right_margin)
-
-    input_x: int = left_margin + len(prompt)
-    max_input_len: int = max(0, usable_width - len(prompt) - 1)
-
-    input_str: str = ''
-    cursor_pos: int = 0
-
-    def redraw_input() -> None:
-        win.move(input_y, left_margin)
-        # Clear only the safe inner region (never touch border)
-        win.addstr(' ' * usable_width)
-        win.move(input_y, left_margin)
-        win.addstr(prompt)
-        visible_text = input_str[:max_input_len]
-        win.addstr(visible_text)
-        win.move(input_y, input_x + cursor_pos)
-        win.refresh()
-
-    try:
-        redraw_input()
-    except CursesError:
-        return ''
-
-    while True:
-        ch = win.get_wch()
-
-        if ch == '\n':  # ENTER
-            break
-        if ch == '\x1b' or ch == CursesKeys.ESCAPE:
-            input_str = ''  # Return empty string
-            break
-        elif ch in ('\b', '\x7f', curses.KEY_BACKSPACE):  # BACKSPACE
-            if cursor_pos > 0:
-                input_str = input_str[:cursor_pos - 1] + input_str[cursor_pos:]
-                cursor_pos -= 1
-                try:
-                    redraw_input()
-                except CursesError:
-                    return ''
-        elif ch == curses.KEY_LEFT:  # LEFT
-            if cursor_pos > 0:
-                cursor_pos -= 1
-                win.move(input_y, input_x + cursor_pos)
-                win.refresh()
-        elif ch == curses.KEY_RIGHT:  # RIGHT
-            if cursor_pos < len(input_str):
-                cursor_pos += 1
-                win.move(input_y, input_x + cursor_pos)
-                win.refresh()
-        elif ch == curses.KEY_DC:  # DELETE
-            if cursor_pos < len(input_str):
-                input_str = input_str[:cursor_pos] + input_str[cursor_pos + 1:]
-                try:
-                    redraw_input()
-                except CursesError:
-                    return ''
-        elif isinstance(ch, int):  # Ignore other special keys
-            continue
-        elif isinstance(ch, str) and len(ch) == 1:  # Normal text input
-            if len(input_str) < max_input_len:
-                input_str = input_str[:cursor_pos] + ch + input_str[cursor_pos:]
-                cursor_pos += 1
-                try:
-                    redraw_input()
-                except CursesError:
-                    return ''
-
-    curses.curs_set(0)
-    return input_str
-
+# region Loaders & Scanners
 
 class WidgetLoader:
     def __init__(self) -> None:
@@ -1304,119 +1450,7 @@ class ConfigScanner:
         return True
 
 
-def switch_windows(
-        widget_container: WidgetContainer,
-        mx: int,
-        my: int,
-        _b_state: int
-) -> None:
-    if widget_container.ui_state.highlighted:
-        if widget_container.base_config.reset_help_mode_after_escape:
-            widget_container.ui_state.highlighted.disable_help_mode()
-
-    # Find which widget was clicked
-    widget_container.ui_state.previously_highlighted = widget_container.ui_state.highlighted
-    widget_container.ui_state.highlighted = None
-    for widget in widget_container.return_widgets():
-        y1 = widget.dimensions.current_y
-        y2 = y1 + widget.dimensions.current_height
-        x1 = widget.dimensions.current_x
-        x2 = x1 + widget.dimensions.current_width
-
-        if y1 <= my <= y2 and x1 <= mx <= x2:
-            widget_container.ui_state.highlighted = widget
-            break
-
-
-def handle_mouse_input(
-        widget_container: WidgetContainer,
-        key: int,
-        _log_messages: LogMessages
-) -> None:
-    if key == CursesKeys.MOUSE:
-        try:
-            _, mx, my, _, b_state = curses.getmouse()
-            if b_state & CursesKeys.BUTTON1_PRESSED:
-                switch_windows(widget_container, mx, my, b_state)
-                if widget_container.ui_state.highlighted is not None:
-                    widget_container.ui_state.highlighted.mouse_action(mx, my, b_state, widget_container)
-        except CursesError:
-            # Ignore invalid mouse events (like scroll in some terminals)
-            return
-
-
-def handle_key_input(
-        widget_container: WidgetContainer,
-        key: int,
-        log_messages: LogMessages,
-        min_height_current_layout: int,
-        min_width_current_layout: int
-) -> None:
-    highlighted_widget: Widget | None = widget_container.ui_state.highlighted
-
-    if key == CursesKeys.ESCAPE:
-        if highlighted_widget is not None:
-            if widget_container.base_config.reset_help_mode_after_escape:
-                highlighted_widget.disable_help_mode()
-        widget_container.ui_state.previously_highlighted = widget_container.ui_state.highlighted
-        widget_container.ui_state.highlighted = None
-
-    if key == curses.KEY_RESIZE:
-        move_widgets_resize(
-            widget_container, min_height_current_layout, min_width_current_layout
-        )
-        return
-
-    if highlighted_widget is None:
-        if key == ord(widget_container.base_config.quit_key):
-            raise StopException(log_messages)
-        elif key == ord(widget_container.base_config.help_key):
-            pass  # TODO: General help page
-        elif key == ord(widget_container.base_config.reload_key):  # Reload widgets & config
-            raise RestartException
-        return
-    else:
-        if key == ord(widget_container.base_config.help_key):
-            highlighted_widget.toggle_help_mode()
-
-    highlighted_widget.keyboard_action(key, widget_container)
-
-
-def reload_widget_scheduler(
-        config_loader: ConfigLoader,
-        widget_container: WidgetContainer,
-        stop_event: threading.Event
-) -> None:
-    while not stop_event.is_set():
-        now = time_module.time()
-
-        # Calculate reloadable widgets every time every widget has reloaded
-        reloadable_widgets = [w for w in widget_container.return_widgets() if w.updatable()]
-        # Update widgets if their interval has passed
-        for widget in reloadable_widgets:
-            if stop_event.is_set():  # Check on every iteration as well
-                break
-
-            if widget.last_updated is None:
-                continue
-
-            # See widget.updatable(), types are safe.
-            if now - widget.last_updated >= widget.interval:  # type: ignore[operator]
-                try:
-                    widget.draw_data = widget.update(config_loader)
-                    widget.last_updated = now
-                except ConfigSpecificException as e:
-                    widget.draw_data = {'__error__': e.log_messages}
-                except Exception as e:
-                    widget.draw_data = {'__error__': str(e)}
-
-        # Small sleep to avoid busy loop, tuned to a small value
-        time_module.sleep(0.06667)  # -> ~15 FPS
-
-
-def update_screen() -> None:
-    curses.doupdate()
-
+# endregion Loaders & Scanners
 
 def curses_wrapper(func: typing.Callable[[CursesWindowType], None]) -> None:
     curses.wrapper(func)

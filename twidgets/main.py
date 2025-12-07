@@ -1,11 +1,8 @@
-import threading
 import os
-import types
 import typing
 
 import twidgets.core.base as base
 import twidgets.widgets as widgets_pkg
-from twidgets.core.base import TerminalTooSmall
 
 
 def main_curses(stdscr: base.CursesWindowType) -> None:
@@ -13,76 +10,27 @@ def main_curses(stdscr: base.CursesWindowType) -> None:
     script_dir = os.path.dirname(os.path.abspath(__file__))
     os.chdir(script_dir)
 
-    # Logs (Warnings, Errors)
-    log_messages: base.LogMessages = base.LogMessages()
-
-    # Config loader (Doesn't load anything yet)
-    config_loader: base.ConfigLoader = base.ConfigLoader()
-    config_loader.reload_secrets()  # needed to reload secrets.env changes
-
-    # Widget Loader
-    widget_loader: base.WidgetLoader = base.WidgetLoader()
-
-    builtin_widget_names: list[str] = widget_loader.discover_builtin_widgets(widgets_pkg)
-    custom_widget_names: list[str] = widget_loader.discover_custom_widgets()
+    # Holds all widgets (Allows communication between scheduler thread & renderer, without exiting)
+    #
+    widget_container: base.WidgetContainer = base.WidgetContainer(stdscr, widgets_pkg)
 
     # Scan configs
-    config_scanner: base.ConfigScanner = base.ConfigScanner(config_loader)
-    config_scan_results: base.LogMessages | bool = config_scanner.scan_config(
-        builtin_widget_names + custom_widget_names
-    )
-
-    if config_scan_results is not True:
-        raise base.ConfigScanFoundError(config_scan_results)  # type: ignore[arg-type]
-
-    # Initiate base config
-    base_config: base.BaseConfig = config_loader.load_base_config(log_messages)
-
-    # Holds all widgets (Allows communication between scheduler thread & renderer, without exiting)
-    widget_container: base.WidgetContainer = base.WidgetContainer(stdscr, base_config)
+    widget_container.scan_config()
 
     # Initiate setup
-    base.init_curses_setup(widget_container)
+    widget_container.init_curses_setup()
 
-    # Import all widget modules
-    builtin_widget_modules: dict[str, types.ModuleType] = widget_loader.load_builtin_widget_modules(
-        builtin_widget_names
-    )
-    custom_widget_modules: dict[str, types.ModuleType] = widget_loader.load_custom_widget_modules()
-
-    try:
-        widget_dict = widget_loader.build_widgets(
-            widget_container, config_loader, log_messages,
-            builtin_widget_modules | custom_widget_modules
-        )
-    except base.WidgetSourceFileException:
-        raise
-    except TerminalTooSmall:
-        raise
-    except Exception as e:
-        raise base.UnknownException(log_messages, str(e))
-
-    widget_container.add_widget_list(list(widget_dict.values()))
+    # Build widgets
+    widget_container.add_widget_list(list(widget_container.build_widgets().values()))
 
     min_height: int
     min_width: int
     min_height, min_width = widget_container.get_max_height_width_all_widgets()
 
-    base.loading_screen(widget_container)
-    base.initialize_widgets(widget_container)
-    base.move_widgets_resize(widget_container, min_height, min_width)
-
-    stop_event: threading.Event = threading.Event()
-    reloader_thread: threading.Thread = threading.Thread(
-        target=base.reload_widget_scheduler,
-        args=(
-            config_loader,
-            widget_container,
-            stop_event
-        )
-    )
-    reloader_thread.daemon = True  # don't block exit if something goes wrong
-    reloader_thread.start()
+    widget_container.loading_screen()
+    widget_container.initialize_widgets()
+    widget_container.move_widgets_resize(min_height, min_width)
+    widget_container.start_reloader_thread()
 
     while True:
         try:
@@ -90,19 +38,19 @@ def main_curses(stdscr: base.CursesWindowType) -> None:
 
             key: int = widget_container.stdscr.getch()  # Keypresses
 
-            base.handle_mouse_input(widget_container, key, log_messages)
+            widget_container.handle_mouse_input(key)
 
-            base.handle_key_input(
-                widget_container, key, log_messages, min_height, min_width
+            widget_container.handle_key_input(
+                key, min_height, min_width
             )
 
-            if stop_event.is_set():
+            if widget_container.stop_event.is_set():
                 break
 
             # Refresh all widgets
             for widget in widget_container.return_widgets():
                 try:
-                    if stop_event.is_set():
+                    if widget_container.stop_event.is_set():
                         break
 
                     if not widget.updatable():
@@ -116,35 +64,35 @@ def main_curses(stdscr: base.CursesWindowType) -> None:
                         if '__error__' in data_copy:
                             if isinstance(data_copy['__error__'], base.LogMessages):
                                 for log_message in list(data_copy['__error__']):
-                                    base.display_error(widget, [str(log_message)], widget_container)
-                                    if log_message not in list(log_messages):
-                                        log_messages.add_log_message(log_message)
+                                    widget_container.display_error(widget, [str(log_message)])
+                                    if log_message not in list(widget_container.log_messages):
+                                        widget_container.log_messages.add_log_message(log_message)
                             else:
-                                base.display_error(widget, [widget.draw_data['__error__']], widget_container)
+                                widget_container.display_error(widget, [widget.draw_data['__error__']])
                         else:
                             widget.draw(widget_container, data_copy)
                     # else: Data still loading
                 except base.ConfigSpecificException as e:
                     for log_message in list(e.log_messages):
-                        base.display_error(widget, [str(log_message)], widget_container)
-                        if log_message not in list(log_messages):
-                            log_messages.add_log_message(log_message)
+                        widget_container.display_error(widget, [str(log_message)])
+                        if log_message not in list(widget_container.log_messages):
+                            widget_container.log_messages.add_log_message(log_message)
                 except Exception as e:
                     if hasattr(e, 'log_messages'):
                         for log_message in list(e.log_messages):
-                            base.display_error(widget, [str(log_message)], widget_container)
-                            if log_message not in list(log_messages):
-                                log_messages.add_log_message(log_message)
+                            widget_container.display_error(widget, [str(log_message)])
+                            if log_message not in list(widget_container.log_messages):
+                                widget_container.log_messages.add_log_message(log_message)
                     else:
                         new_log_message: base.LogMessage = base.LogMessage(
                             f'{str(e)} (widget "{widget.name}")',
                             base.LogLevels.ERROR.key
                         )
 
-                        if new_log_message not in list(log_messages):
-                            log_messages.add_log_message(new_log_message)
+                        if new_log_message not in list(widget_container.log_messages):
+                            widget_container.log_messages.add_log_message(new_log_message)
                         # If the widget failed, show the error inside the widget
-                        base.display_error(widget, [str(e)], widget_container)
+                        widget_container.display_error(widget, [str(e)])
 
                 widget.noutrefresh()
 
@@ -154,7 +102,7 @@ def main_curses(stdscr: base.CursesWindowType) -> None:
                 warning.draw(widget_container)
                 if warning.win:
                     warning.win.noutrefresh()
-            base.update_screen()
+            widget_container.update_screen()
         except (
                 base.RestartException,
                 base.ConfigScanFoundError,
@@ -166,18 +114,18 @@ def main_curses(stdscr: base.CursesWindowType) -> None:
         ):
             # Clean up threads and re-raise so outer loop stops
             try:
-                base.cleanup_curses_setup(stop_event, reloader_thread)
+                widget_container.cleanup_curses_setup()
             except base.CursesError:
                 return  # Ignore; Doesn't happen on Py3.13, but does on Py3.12
             raise  # re-raise so wrapper(main_curses) exits and outer loop stops
         except Exception as e:
             # Clean up threads and re-raise so outer loop stops
             try:
-                base.cleanup_curses_setup(stop_event, reloader_thread)
+                widget_container.cleanup_curses_setup()
             except base.CursesError:
                 return  # Ignore; Doesn't happen on Py3.13, but does on Py3.12
 
-            raise base.UnknownException(log_messages, str(e))
+            raise base.UnknownException(widget_container.log_messages, str(e))
 
 
 def main_entry_point() -> None:
