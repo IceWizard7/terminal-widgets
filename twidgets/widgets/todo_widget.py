@@ -192,9 +192,8 @@ def init(widget: Widget, _ui_state: UIState, _base_config: BaseConfig) -> None:
 def draw(widget: Widget, ui_state: UIState, base_config: BaseConfig) -> None:
     draw_widget(widget, ui_state, base_config, widget.title)
 
-    if ui_state.previously_highlighted != ui_state.highlighted:  # changed
-        if ui_state.previously_highlighted == widget and ui_state.highlighted != widget:
-            remove_highlighted_line(widget)
+    if ui_state.highlighted != widget:
+        remove_highlighted_line(widget)
 
     todos, rel_index = render_todos(
         list(widget.draw_data.get('todos', {}).values()),
