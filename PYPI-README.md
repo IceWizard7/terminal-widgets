@@ -11,8 +11,9 @@
     <a href="https://www.github.com/IceWizard7/terminal-widgets/#-1-getting-started">Getting started</a> •
     <a href="https://www.github.com/IceWizard7/terminal-widgets#-2-configuration">Configuration</a> •
     <a href="https://www.github.com/IceWizard7/terminal-widgets#-3-adding-new-widgets">Adding new widgets</a> •
-    <a href="https://www.github.com/IceWizard7/terminal-widgets#-4-contributing">Contributing</a> •
-    <a href="https://www.github.com/IceWizard7/terminal-widgets#-5-license">License</a>
+    <a href="https://www.github.com/IceWizard7/terminal-widgets#-4-examples">Examples</a> •
+    <a href="https://www.github.com/IceWizard7/terminal-widgets#-5-contributing">Contributing</a> •
+    <a href="https://www.github.com/IceWizard7/terminal-widgets#-6-license">License</a>
   </p>
 </div>
 
@@ -162,12 +163,22 @@ For full documentation see [Widget Guide](https://github.com/IceWizard7/terminal
 
 ---
 
-### 🧩 **4. Contributing**
+### 🌅 **4. Examples**
 
-Help the project grow: create an issue or pull request (on github)!
+<img src="https://raw.githubusercontent.com/IceWizard7/terminal-widgets/main/examples/example_1.png" alt="Example 1 of Terminal Widgets">
+<img src="https://raw.githubusercontent.com/IceWizard7/terminal-widgets/main/examples/example_2.png" alt="Example 2 of Terminal Widgets">
+<img src="https://raw.githubusercontent.com/IceWizard7/terminal-widgets/main/examples/example_3.png" alt="Example 3 of Terminal Widgets">
+
+For all examples see [Examples](https://github.com/IceWizard7/terminal-widgets/blob/main/examples)
 
 ---
 
-### 📜 **5. License**
+### 🧩 **5. Contributing**
+
+Help the project grow: create an issue or pull request (On github)!
+
+---
+
+### 📜 **6. License**
 
 See [License](https://github.com/IceWizard7/terminal-widgets/blob/main/LICENSE)

@@ -171,6 +171,7 @@ For full documentation see [Widget Guide](docs/widget_guide.md)
 
 For all examples see [Examples](examples/)
 
+---
 
 ### 🧩 **5. Contributing**
 
