@@ -3,9 +3,7 @@
   <h3 align="center">🖥 Terminal Widgets</h3>
 
   <p align="center">
-    This tool lets you design and run dynamic, customizable dashboards directly inside your terminal.
-    It combines modular widgets, real-time data updates, and flexible layout management for a highly
-    interactive CLI experience.
+    This tool enables you to create and run fully customizable dashboards directly in your terminal.
     <br />
     <br />
     <a href="https://www.github.com/IceWizard7/terminal-widgets/#-1-getting-started">Getting started</a> •
