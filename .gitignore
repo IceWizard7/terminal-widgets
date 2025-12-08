@@ -14,3 +14,4 @@ twidgets/config/secrets.env
 dist/
 twidgets.egg-info/
 publish-guide.txt
+.venv_py312.nosync
