@@ -4,6 +4,7 @@ import psutil
 import locale
 import platform
 import os
+import typing
 from twidgets.core.base import (
     Widget,
     Config,
@@ -25,11 +26,11 @@ from twidgets.core.base import (
 def run_cmd(cmd: str) -> str | None:
     """Run a shell command and return output if successful, else None."""
     try:
-        result: subprocess.CompletedProcess = subprocess.run(
+        result: subprocess.CompletedProcess[typing.Any] = subprocess.run(
             cmd, shell=True, text=True, capture_output=True
         )
         if result.returncode == 0:
-            return result.stdout.strip()
+            return str(result.stdout.strip())
     except Exception:
         pass
     return None
@@ -44,28 +45,28 @@ def get_uptime() -> str:
     hours, remainder = divmod(uptime.seconds, 3600)
     minutes: int
     minutes, _ = divmod(remainder, 60)
-    uptime_string: str = f"{days} days, {hours} hours, {minutes} mins"
+    uptime_string: str = f'{days} days, {hours} hours, {minutes} mins'
     return uptime_string
 
 
 def get_shell_info() -> str:
-    shell: str = os.environ.get("SHELL") or "Unknown"
-    version: str | None = run_cmd(f"{shell} --version") if shell != "Unknown" else None
+    shell: str = os.environ.get('SHELL') or 'Unknown'
+    version: str | None = run_cmd(f'{shell} --version') if shell != 'Unknown' else None
     final_shell: str = str(version or shell)
     return final_shell
 
 
 def get_cpu_info() -> str:
-    cpu: str = platform.processor().strip() or ""
-    if not cpu or cpu.lower() == "unknown":
-        cpu_alt: str | None = run_cmd("grep 'model name' /proc/cpuinfo | head -n 1 | cut -d: -f2")
-        cpu = cpu_alt.strip() if cpu_alt else "Unknown CPU"
+    cpu: str = platform.processor().strip() or ''
+    if not cpu or cpu.lower() == 'unknown':
+        cpu_alt: str | None = run_cmd('grep "model name" /proc/cpuinfo | head -n 1 | cut -d: -f2')
+        cpu = cpu_alt.strip() if cpu_alt else 'Unknown CPU'
     try:
-        cores: int = psutil.cpu_count(logical=False)
+        cores: int | None = psutil.cpu_count(logical=False)
         freq_info: psutil._common.scpufreq | None = psutil.cpu_freq()
         freq: float | None = freq_info.max if freq_info else None
         if freq:
-            cpu += f" ({cores} Cores @ {int(freq)} MHz)"
+            cpu += f' ({cores} Cores @ {int(freq)} MHz)'
     except Exception:
         pass
     return cpu
@@ -73,16 +74,16 @@ def get_cpu_info() -> str:
 
 def get_display_info_linux() -> str:
     display_info: str
-    if os.environ.get("DISPLAY"):
-        display_info_tmp: str | None = run_cmd("xdpyinfo 2>/dev/null | grep 'dimensions:' | awk '{print $2}'")
-        display_info = display_info_tmp or "Display: Unknown"
+    if os.environ.get('DISPLAY'):
+        display_info_tmp: str | None = run_cmd('xdpyinfo 2>/dev/null | grep "dimensions:" | awk "{print $2}"')
+        display_info = display_info_tmp or 'Display: Unknown'
     else:
-        display_info = "Display: Headless"
+        display_info = 'Display: Headless'
     return display_info
 
 
 def get_gpu_info_linux() -> str:
-    gpu_info: str = run_cmd("lspci | grep -i 'vga\\|3d\\|display'") or "Unknown GPU"
+    gpu_info: str = run_cmd('lspci | grep -i "vga\\|3d\\|display"') or 'Unknown GPU'
     return gpu_info.strip()
 
 
@@ -95,16 +96,16 @@ def return_macos_info() -> list[str]:
     encoding: str = locale.getpreferredencoding() or 'UTF-8'
     terminal: str | None = os.environ.get('TERM_PROGRAM')
     terminal_font: str = run_cmd('defaults read com.apple.Terminal "Default Window Settings"') or 'N/A'
-    cpu_info: str = run_cmd("sysctl -n machdep.cpu.brand_string") or "Unknown CPU"
+    cpu_info: str = run_cmd('sysctl -n machdep.cpu.brand_string') or 'Unknown CPU'
 
-    gpu_info: str = "Unknown"
+    gpu_info: str = 'Unknown'
     try:
-        gpu_output: str | None = run_cmd("/usr/sbin/system_profiler SPDisplaysDataType")
+        gpu_output: str | None = run_cmd('/usr/sbin/system_profiler SPDisplaysDataType')
         if gpu_output:
             lines: list[str] = gpu_output.splitlines()
             for line in lines:
-                if "Chipset Model:" in line:
-                    gpu_info = line.split("Chipset Model:")[1].strip()
+                if 'Chipset Model:' in line:
+                    gpu_info = line.split('Chipset Model:')[1].strip()
                     break
     except Exception:
         pass
@@ -190,18 +191,18 @@ def return_raspi_info() -> list[str]:
 
 
 def return_linux_info() -> list[str]:
-    user_name: str = os.getenv("USER") or os.getenv("LOGNAME") or "Unknown"
+    user_name: str = os.getenv('USER') or os.getenv('LOGNAME') or 'Unknown'
     hostname: str = platform.node()
     uptime_string: str = get_uptime()
     shell: str = get_shell_info()
     cpu_info: str = get_cpu_info()
     gpu_info: str = get_gpu_info_linux()
     display_info: str = get_display_info_linux()
-    terminal: str = (os.environ.get("TERM_PROGRAM") or os.environ.get("TERM") or os.environ.get("COLORTERM") or
-                     ("SSH" if os.environ.get("SSH_TTY") else "Unknown"))
-    terminal_font: str = "N/A"
-    system_lang: str = locale.getlocale()[0] or "Unknown"
-    encoding: str = locale.getpreferredencoding() or "UTF-8"
+    terminal: str = (os.environ.get('TERM_PROGRAM') or os.environ.get('TERM') or os.environ.get('COLORTERM') or
+                     ('SSH' if os.environ.get('SSH_TTY') else 'Unknown'))
+    terminal_font: str = 'N/A'
+    system_lang: str = locale.getlocale()[0] or 'Unknown'
+    encoding: str = locale.getpreferredencoding() or 'UTF-8'
     os_info: str = platform.platform()
     kernel: str = platform.release()
 
