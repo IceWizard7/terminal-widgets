@@ -166,7 +166,7 @@ For full documentation see [Widget Guide](docs/widget_guide.md).
 ![Example 2 of Terminal Widgets](examples/example_2.png)
 ![Example 3 of Terminal Widgets](examples/example_3.png)
 
-For all examples see [Examples](examples).
+For all examples see [Examples](examples/index.md).
 
 ---
 

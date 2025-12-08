@@ -170,7 +170,7 @@ https://github.com/IceWizard7/terminal-widgets/blob/main/docs/widget_guide.md).
 ![Example 2 of Terminal Widgets](https://raw.githubusercontent.com/IceWizard7/terminal-widgets/main/examples/example_2.png)
 ![Example 3 of Terminal Widgets](https://raw.githubusercontent.com/IceWizard7/terminal-widgets/main/examples/example_3.png)
 
-For all examples see [Examples](https://github.com/IceWizard7/terminal-widgets/blob/main/examples).
+For all examples see [Examples](https://github.com/IceWizard7/terminal-widgets/blob/main/examples/index.md).
 
 ---
 
