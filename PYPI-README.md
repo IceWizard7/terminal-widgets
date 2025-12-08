@@ -17,15 +17,13 @@
   </p>
 </div>
 
-<img src="https://raw.githubusercontent.com/IceWizard7/terminal-widgets/main/examples/example_1.png" alt="Example Image of Terminal Widgets">
+[<img src="https://raw.githubusercontent.com/IceWizard7/terminal-widgets/main/examples/example_1.png" alt="Example Image of Terminal Widgets">](https://raw.githubusercontent.com/IceWizard7/terminal-widgets/main/examples/example_1.png)
 
-<p>
-    <img alt="Stats" src="https://img.shields.io/pypi/v/twidgets">
-    <img alt="Stats" src="https://img.shields.io/pypi/pyversions/twidgets">
-    <img alt="Stats" src="https://img.shields.io/pypi/l/twidgets">
-    <img alt="Stats" src="https://static.pepy.tech/badge/twidgets">
-    <img alt="Stats" src="https://static.pepy.tech/badge/twidgets/month">
-</p>
+[<img alt="Stats" src="https://img.shields.io/pypi/v/twidgets">](https://pypi.org/project/twidgets/)
+[<img alt="Stats" src="https://img.shields.io/pypi/pyversions/twidgets">](https://pypi.org/project/twidgets/)
+[<img alt="Stats" src="https://img.shields.io/pypi/l/twidgets">](https://pypi.org/project/twidgets/)
+[<img alt="Stats" src="https://static.pepy.tech/badge/twidgets">](https://pepy.tech/projects/twidgets)
+[<img alt="Stats" src="https://static.pepy.tech/badge/twidgets/month">](https://pepy.tech/projects/twidgets)
 
 ---
 
@@ -165,9 +163,9 @@ For full documentation see [Widget Guide](https://github.com/IceWizard7/terminal
 
 ### 🌅 **4. Examples**
 
-<img src="https://raw.githubusercontent.com/IceWizard7/terminal-widgets/main/examples/example_1.png" alt="Example 1 of Terminal Widgets">
-<img src="https://raw.githubusercontent.com/IceWizard7/terminal-widgets/main/examples/example_2.png" alt="Example 2 of Terminal Widgets">
-<img src="https://raw.githubusercontent.com/IceWizard7/terminal-widgets/main/examples/example_3.png" alt="Example 3 of Terminal Widgets">
+[<img src="https://raw.githubusercontent.com/IceWizard7/terminal-widgets/main/examples/example_1.png" alt="Example 1 of Terminal Widgets">](https://raw.githubusercontent.com/IceWizard7/terminal-widgets/main/examples/example_1.png)
+[<img src="https://raw.githubusercontent.com/IceWizard7/terminal-widgets/main/examples/example_2.png" alt="Example 2 of Terminal Widgets">](https://raw.githubusercontent.com/IceWizard7/terminal-widgets/main/examples/example_2.png)
+[<img src="https://raw.githubusercontent.com/IceWizard7/terminal-widgets/main/examples/example_3.png" alt="Example 3 of Terminal Widgets">](https://raw.githubusercontent.com/IceWizard7/terminal-widgets/main/examples/example_3.png)
 
 For all examples see [Examples](https://github.com/IceWizard7/terminal-widgets/blob/main/examples)
 
