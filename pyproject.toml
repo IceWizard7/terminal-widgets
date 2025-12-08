@@ -24,7 +24,6 @@ classifiers = [
     "Operating System :: POSIX",
     "Operating System :: MacOS",
     "Operating System :: Unix",
-    "License :: OSI Approved :: Apache Software License",
     "Topic :: Terminals",
     "Topic :: System :: Monitoring",
     "Topic :: Utilities",
