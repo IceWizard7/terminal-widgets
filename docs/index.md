@@ -1,25 +1,41 @@
-## Terminal Widgets Documentation
+<br/>
+<div align="center">
+  <h3 align="center">🖥 Terminal Widgets</h3>
 
-Welcome to **Terminal Widgets** — a modular dashboard that lets you monitor
-weather, news, time, todo events, and more in a customizable interface.
-Build your own Python-powered widgets
-and configure the entire setup effortlessly with clean, human-friendly YAML.
+  <p align="center">
+    This tool enables you to create and run fully customizable dashboards directly in your terminal.
+    <br />
+  </p>
+</div>
+
+![Example Image of Terminal Widgets](../examples/example_1.png)
+![Stats](https://img.shields.io/pypi/v/twidgets)
+![Stats](https://img.shields.io/pypi/pyversions/twidgets)
+![Stats](https://img.shields.io/pypi/l/twidgets)
+![Stats](https://static.pepy.tech/badge/twidgets)
+![Stats](https://static.pepy.tech/badge/twidgets/month)
 
 ---
 
-## Setup
-- See the [Setup Guide](setup_guide.md) for installation.
-- Configure secrets and widgets as explained in the [Configuration Guide](configuration_guide.md).
+## 1. Getting started
+
+See the **[Setup Guide](setup_guide.md)** for installation instructions.
 
 ---
 
-## Adding Widgets
-- Learn how to create and integrate new widgets in the [Widget Guide](widget_guide.md).
+## 2. Configuration
+
+See the **[Configuration Guide](configuration_guide.md)** for setting up secrets and widgets.
 
 ---
 
+## 3. Adding Widgets
 
-## Project Structure
+See the **[Widget Guide](widget_guide.md)** for creating and integrating custom widgets.
+
+---
+
+## 4. Project Structure
 
 ```text
 .
