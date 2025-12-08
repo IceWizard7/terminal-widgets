@@ -23,76 +23,109 @@ from twidgets.core.base import (
 
 
 def run_cmd(cmd: str) -> str | None:
-    result = subprocess.run(cmd, shell=True, text=True,
-                            capture_output=True)
-    if result.returncode == 0:
-        return result.stdout.strip()
+    """Run a shell command and return output if successful, else None."""
+    try:
+        result: subprocess.CompletedProcess = subprocess.run(
+            cmd, shell=True, text=True, capture_output=True
+        )
+        if result.returncode == 0:
+            return result.stdout.strip()
+    except Exception:
+        pass
     return None
 
 
-def return_macos_info() -> list[str]:
+def get_uptime() -> str:
     boot_time: datetime.datetime = datetime.datetime.fromtimestamp(psutil.boot_time())
-    uptime = datetime.datetime.now() - boot_time
-    days = uptime.days
+    uptime: datetime.timedelta = datetime.datetime.now() - boot_time
+    days: int = uptime.days
+    hours: int
+    remainder: int
     hours, remainder = divmod(uptime.seconds, 3600)
+    minutes: int
     minutes, _ = divmod(remainder, 60)
-    uptime_string: str = f'{days} days, {hours} hours, {minutes} mins'
+    uptime_string: str = f"{days} days, {hours} hours, {minutes} mins"
+    return uptime_string
 
-    system_lang = locale.getlocale()[0] or 'Unknown'
-    encoding = locale.getpreferredencoding() or 'UTF-8'
 
+def get_shell_info() -> str:
+    shell: str = os.environ.get("SHELL") or "Unknown"
+    version: str | None = run_cmd(f"{shell} --version") if shell != "Unknown" else None
+    final_shell: str = str(version or shell)
+    return final_shell
+
+
+def get_cpu_info() -> str:
+    cpu: str = platform.processor().strip() or ""
+    if not cpu or cpu.lower() == "unknown":
+        cpu_alt: str | None = run_cmd("grep 'model name' /proc/cpuinfo | head -n 1 | cut -d: -f2")
+        cpu = cpu_alt.strip() if cpu_alt else "Unknown CPU"
+    try:
+        cores: int = psutil.cpu_count(logical=False)
+        freq_info: psutil._common.scpufreq | None = psutil.cpu_freq()
+        freq: float | None = freq_info.max if freq_info else None
+        if freq:
+            cpu += f" ({cores} Cores @ {int(freq)} MHz)"
+    except Exception:
+        pass
+    return cpu
+
+
+def get_display_info_linux() -> str:
+    display_info: str
+    if os.environ.get("DISPLAY"):
+        display_info_tmp: str | None = run_cmd("xdpyinfo 2>/dev/null | grep 'dimensions:' | awk '{print $2}'")
+        display_info = display_info_tmp or "Display: Unknown"
+    else:
+        display_info = "Display: Headless"
+    return display_info
+
+
+def get_gpu_info_linux() -> str:
+    gpu_info: str = run_cmd("lspci | grep -i 'vga\\|3d\\|display'") or "Unknown GPU"
+    return gpu_info.strip()
+
+
+def return_macos_info() -> list[str]:
     user_name: str = os.getenv('USER') or os.getenv('LOGNAME') or 'Unknown'
     hostname: str = platform.node()
+    uptime_string: str = get_uptime()
+    shell: str = get_shell_info()
+    system_lang: str = locale.getlocale()[0] or 'Unknown'
+    encoding: str = locale.getpreferredencoding() or 'UTF-8'
+    terminal: str | None = os.environ.get('TERM_PROGRAM')
+    terminal_font: str = run_cmd('defaults read com.apple.Terminal "Default Window Settings"') or 'N/A'
+    cpu_info: str = run_cmd("sysctl -n machdep.cpu.brand_string") or "Unknown CPU"
+
+    gpu_info: str = "Unknown"
+    try:
+        gpu_output: str | None = run_cmd("/usr/sbin/system_profiler SPDisplaysDataType")
+        if gpu_output:
+            lines: list[str] = gpu_output.splitlines()
+            for line in lines:
+                if "Chipset Model:" in line:
+                    gpu_info = line.split("Chipset Model:")[1].strip()
+                    break
+    except Exception:
+        pass
+
+    display_info: str = run_cmd(
+        '/usr/sbin/system_profiler SPDisplaysDataType | grep Resolution'
+    ) or 'Resolution: Unknown'
+    brew_packages: str = run_cmd('brew list | wc -l') or 'Unknown'
+
     os_version: str = ' '.join(v for v in platform.mac_ver() if isinstance(v, str))
     host_version: str | None = run_cmd('sysctl -n hw.model')
-    kernel: str = platform.release()
-    terminal: str | None = os.environ.get('TERM_PROGRAM')
-
-    brew_packages: str | None = run_cmd('brew list | wc -l')
-
-    short_shell: str | None = os.environ.get('SHELL')
-    long_shell: str | None = short_shell
-    if short_shell:
-        try:
-            long_shell = run_cmd(f'{short_shell} --version')
-        except Exception:
-            pass
-
-    final_shell: str = 'Unknown'
-    if short_shell:
-        final_shell = short_shell
-    if long_shell:
-        final_shell = long_shell
-
-    display_info: str | None = run_cmd('/usr/sbin/system_profiler SPDisplaysDataType | grep Resolution')
-    if not isinstance(display_info, str):
-        display_info = 'Resolution: Unknown'
-    terminal_font = run_cmd('defaults read com.apple.Terminal "Default Window Settings"')
-    cpu_info: str = 'Unknown'
-    try:
-        cpu_info = (f'{run_cmd("sysctl -n machdep.cpu.brand_string")}'
-                    f' ({psutil.cpu_count(logical=False)} Cores @ {psutil.cpu_freq().max} MHz)')
-    except Exception:
-        pass
-
-    gpu_info: str = 'Unknown'
-    try:
-        gpu_output: str | None = run_cmd('/usr/sbin/system_profiler SPDisplaysDataType')
-        if gpu_output is not None:
-            gpu_info = (f'{" ".join(gpu_output.split("Chipset Model: ")[1].split()[:2])}'
-                        f' ({gpu_output.split("Total Number of Cores: ")[1].split()[0]} Cores)')
-    except Exception:
-        pass
 
     return [
         f'                    \'c.          {user_name}@{hostname}',
         f'                 ,xNMM.          -------------------- ',
         f'               .OMMMMo           OS: macOS {os_version}',
         f'               OMMM0,            Host: {host_version}',
-        f'     .;loddo:\' loolloddol;.      Kernel: {kernel}',
+        f'     .;loddo:\' loolloddol;.      Kernel: {platform.release()}',
         f'   cKMMMMMMMMMMNWMMMMMMMMMM0:    Uptime: {uptime_string}',
         f' .KMMMMMMMMMMMMMMMMMMMMMMMWd.    Packages: {brew_packages} (brew)',
-        f' XMMMMMMMMMMMMMMMMMMMMMMMX.      Shell: {final_shell}',
+        f' XMMMMMMMMMMMMMMMMMMMMMMMX.      Shell: {shell}',
         f';MMMMMMMMMMMMMMMMMMMMMMMM:       {display_info}',
         f':MMMMMMMMMMMMMMMMMMMMMMMM:       Language: {system_lang}',
         f'.MMMMMMMMMMMMMMMMMMMMMMMMX.      Encoding: {encoding}',
@@ -107,81 +140,88 @@ def return_macos_info() -> list[str]:
 
 def return_raspi_info() -> list[str]:
     boot_time: datetime.datetime = datetime.datetime.fromtimestamp(psutil.boot_time())
-    uptime = datetime.datetime.now() - boot_time
-    days = uptime.days
+    uptime: datetime.timedelta = datetime.datetime.now() - boot_time
+    days: int = uptime.days
+    hours: int
+    remainder: int
     hours, remainder = divmod(uptime.seconds, 3600)
+    minutes: int
     minutes, _ = divmod(remainder, 60)
     uptime_string: str = f'{days} days, {hours} hours, {minutes} mins'
-
-    system_lang = locale.getlocale()[0] or 'Unknown'
-    encoding = locale.getpreferredencoding() or 'UTF-8'
 
     user_name: str = os.getenv('USER') or os.getenv('LOGNAME') or 'Unknown'
     hostname: str = platform.node()
     os_info: str = platform.platform().split('+')[0]
     host_version: str = (run_cmd('cat /sys/firmware/devicetree/base/model') or 'Unknown Model').replace('\x00', '')
     kernel: str = platform.release()
-    terminal: str = (
-            os.environ.get('TERM_PROGRAM')
-            or os.environ.get('TERM')
-            or os.environ.get('COLORTERM')
-            or ('SSH' if os.environ.get('SSH_TTY') else 'Unknown')
-    )
+
+    terminal: str = (os.environ.get('TERM_PROGRAM') or os.environ.get('TERM') or os.environ.get('COLORTERM') or
+                     ('SSH' if os.environ.get('SSH_TTY') else 'Unknown'))
     terminal_font: str = 'N/A'
 
     pkg_packages: str = run_cmd('dpkg --get-selections | wc -l') or 'Unknown'
 
-    short_shell: str | None = os.environ.get('SHELL')
-    long_shell: str | None = short_shell
-    if short_shell:
-        try:
-            long_shell = run_cmd(f'{short_shell} --version')
-        except Exception:
-            pass
+    shell: str = get_shell_info()
+    cpu_info: str = get_cpu_info()
+    gpu_info: str = (run_cmd('vcgencmd version | grep version') or get_gpu_info_linux()).strip()
+    display_info: str = run_cmd('tvservice -s | grep -o "[0-9]*x[0-9]*"') or get_display_info_linux()
+    system_lang: str = locale.getlocale()[0] or 'Unknown'
+    encoding: str = locale.getpreferredencoding() or 'UTF-8'
 
-    final_shell: str = 'Unknown'
-    if short_shell:
-        final_shell = short_shell
-    if long_shell:
-        final_shell = long_shell
+    return [
+        f'',
+        f'     AAAAAAAAA   AAc  AAA        {user_name}@{hostname}',
+        f'    AA        AA         A       --------------',
+        f'     A     A   A   A     A       OS: {os_info}',
+        f'      A      AAAA      AA        Host: {host_version}',
+        f'        AFAAAAA AAAAJAA          Kernel: {kernel}',
+        f'      AZ   A           A         Uptime: {uptime_string}',
+        f'      A  AAAAAAAAA FAA  A        Packages: {pkg_packages} (dpkg)',
+        f'     AAAA      A      AAAA       Shell: {shell}',
+        f'   AA  A       A          A      {display_info}',
+        f'   A   A      AAA     AA  A      Language: {system_lang}',
+        f'    A AAAAAAA     AAAAAA AA      Encoding: {encoding}',
+        f'     A    AA       A    5A       Terminal: {terminal}',
+        f'     Ac    Aw     A     A        Terminal Font: {terminal_font}',
+        f'      AA   AAAAAAAA    A         CPU: {cpu_info}',
+        f'         AAA       AA            GPU: {gpu_info}',
+        f'            AA2vAA               ',
+    ]
 
-    cpu_info: str = 'Unknown CPU'
-    raw_cpu_info: str | None = platform.processor() or run_cmd(
-        'cat /proc/cpuinfo | grep "Model name" | head -n 1 | cut -d: -f2')
-    if raw_cpu_info is None:
-        raw_cpu_info = run_cmd('lscpu | grep "Model name" | awk -F: "{print $2}"')
-        if raw_cpu_info is not None:
-            cpu_info = raw_cpu_info.split('Model name:')[1].strip() or 'Unknown CPU'
-    else:
-        cpu_info = raw_cpu_info.strip()
 
-    if os.environ.get('DISPLAY'):
-        display_info: str | None = (run_cmd('xdpyinfo 2>/dev/null | grep "dimensions:" | awk "{print $2}"')
-                                    or 'Display: Unknown')
-    else:
-        # Try using tvservice (Pi HDMI detection)
-        display_info = run_cmd('tvservice -s | grep -o "[0-9]*x[0-9]*"') or 'Display: Headless'
-
-    gpu_info: str = (run_cmd('vcgencmd version | grep version') or run_cmd(
-        'lspci | grep -i "vga\\|3d\\|display"') or 'Unknown').strip()
+def return_linux_info() -> list[str]:
+    user_name: str = os.getenv("USER") or os.getenv("LOGNAME") or "Unknown"
+    hostname: str = platform.node()
+    uptime_string: str = get_uptime()
+    shell: str = get_shell_info()
+    cpu_info: str = get_cpu_info()
+    gpu_info: str = get_gpu_info_linux()
+    display_info: str = get_display_info_linux()
+    terminal: str = (os.environ.get("TERM_PROGRAM") or os.environ.get("TERM") or os.environ.get("COLORTERM") or
+                     ("SSH" if os.environ.get("SSH_TTY") else "Unknown"))
+    terminal_font: str = "N/A"
+    system_lang: str = locale.getlocale()[0] or "Unknown"
+    encoding: str = locale.getpreferredencoding() or "UTF-8"
+    os_info: str = platform.platform()
+    kernel: str = platform.release()
 
     return [
         f'',
         f'       _,met$$$$$gg.          {user_name}@{hostname}',
         f'    ,g$$$$$$$$$$$$$$$P.       --------------',
         f'  ,g$$P"     """Y$$.".        OS: {os_info}',
-        f' ,$$P\'              `$$$.     Host: {host_version}',
-        f'\',$$P       ,ggs.     `$$b:   Kernel: {kernel}',
-        f'`d$$\'     ,$P"\'   .    $$$    Uptime: {uptime_string}',
-        f' $$P      d$\'     ,    $$P    Packages: {pkg_packages} (dpkg)',
-        f' $$:      $$.   -    ,d$$\'    Shell: {final_shell}',
-        f' $$;      Y$b._   _,d$P\'      {display_info}',
-        f' Y$$.    `.`"Y$$$$P"\'         Language: {system_lang}',
-        f' `$$b      "-.__              Encoding: {encoding}',
-        f'  `Y$$                        Terminal: {terminal}',
-        f'   `Y$$.                      Terminal Font: {terminal_font}',
-        f'     `$$b.                    CPU: {cpu_info}',
-        f'       `Y$$b.                 GPU: {gpu_info}',
+        f' ,$$P\'              `$$$.     Kernel: {kernel}',
+        f'\',$$P       ,ggs.     `$$b:   Uptime: {uptime_string}',
+        f'`d$$\'     ,$P"\'   .    $$$    Shell: {shell}',
+        f' $$P      d$\'     ,    $$P    {display_info}',
+        f' $$:      $$.   -    ,d$$\'    Language: {system_lang}',
+        f' $$;      Y$b._   _,d$P\'      Encoding: {encoding}',
+        f' Y$$.    `.`"Y$$$$P"\'         Terminal: {terminal}',
+        f' `$$b      "-.__              Terminal Font: {terminal_font}',
+        f'  `Y$$                        CPU: {cpu_info}',
+        f'   `Y$$.                      GPU: {gpu_info}',
+        f'     `$$b.                    ',
+        f'       `Y$$b.                 ',
         f'          `"Y$b._             ',
         f'              `"""            '
     ]
@@ -199,6 +239,8 @@ def update(_widget: Widget, _config_loader: ConfigLoader) -> list[str]:
         return return_macos_info()
     elif system_type == 'raspbian':
         return return_raspi_info()
+    elif system_type == 'linux':
+        return return_linux_info()
     else:
         return [
             f'Invalid system_type "{system_type}" not supported.'

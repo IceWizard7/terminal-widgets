@@ -7,4 +7,4 @@ width: 85
 y: 0
 x: 2
 
-system_type: 'macos'  # 'macos', 'raspbian'
+system_type: 'macos'  # 'macos', 'raspbian', 'linux'
