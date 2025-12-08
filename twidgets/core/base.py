@@ -1403,7 +1403,7 @@ class ConfigLoader:
         base_path = self.CONFIG_DIR / 'base.yaml'
         if not base_path.exists():
             if test_env:
-                return BaseConfig(log_messages)
+                return BaseConfig(log_messages)  # Fallback completely to BaseStandardFallbackConfig
             else:
                 raise ConfigFileNotFoundError(f'Base config "{base_path}" not found')
         try:
