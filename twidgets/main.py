@@ -110,17 +110,11 @@ def main_curses(stdscr: base.CursesWindowType) -> None:
                 base.WidgetSourceFileException
         ):
             # Clean up threads and re-raise so outer loop stops
-            try:
-                widget_container.cleanup_curses_setup()
-            except base.CursesError:
-                return  # Ignore; Doesn't happen on Py3.13, but does on Py3.12
+            widget_container.cleanup_curses_setup()
             raise  # re-raise so wrapper(main_curses) exits and outer loop stops
         except Exception as e:
             # Clean up threads and re-raise so outer loop stops
-            try:
-                widget_container.cleanup_curses_setup()
-            except base.CursesError:
-                return  # Ignore; Doesn't happen on Py3.13, but does on Py3.12
+            widget_container.cleanup_curses_setup()
 
             raise base.UnknownException(widget_container.log_messages, str(e))
 
