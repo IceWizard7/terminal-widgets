@@ -1,11 +1,13 @@
 import unittest
 import sys
 
-loader = unittest.TestLoader()
-suite = loader.discover('tests')
+if __name__ == '__main__':
+    # Discover all tests in the current directory (tests/)
+    loader = unittest.TestLoader()
+    suite = loader.discover(start_dir='.', pattern='test_*.py')
 
-runner = unittest.TextTestRunner()
-result = runner.run(suite)
+    runner = unittest.TextTestRunner(verbosity=2)
+    result = runner.run(suite)
 
-# Exit with 1 if tests fail
-sys.exit(0 if result.wasSuccessful() else 1)
+    # Exit with code 1 if any tests failed, so CI job fails
+    sys.exit(0 if result.wasSuccessful() else 1)
