@@ -1,6 +1,5 @@
 import unittest
 import unittest.mock
-import typing
 from twidgets.core.base import Widget, Dimensions
 
 
