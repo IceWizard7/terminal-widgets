@@ -468,7 +468,9 @@ def draw_colored_border_warning_widget(warning_widget: WarningWidget, color_pair
 # region WidgetContainer & essentials
 
 class WidgetContainer:
-    def __init__(self, stdscr: CursesWindowType, widgets_pkg: types.ModuleType | None) -> None:
+    def __init__(self, stdscr: CursesWindowType, widgets_pkg: types.ModuleType | None, test_env: bool) -> None:
+        self.test_env = test_env
+
         self.stdscr = stdscr
         self.ui_state: UIState = UIState()
 
@@ -483,7 +485,7 @@ class WidgetContainer:
         self.config_loader.reload_secrets()  # Needed to reload secrets.env changes
 
         # Initiate base config
-        self.base_config: BaseConfig = self.config_loader.load_base_config(self.log_messages)
+        self.base_config: BaseConfig = self.config_loader.load_base_config(self.log_messages, test_env)
 
         # Reloader Thread
         self.stop_event: threading.Event = threading.Event()
@@ -627,7 +629,7 @@ class WidgetContainer:
         # Scan configs
         config_scanner: ConfigScanner = ConfigScanner(self.config_loader)
         config_scan_results: LogMessages | bool = config_scanner.scan_config(
-            self.discover_builtin_widgets() + self.discover_custom_widgets()
+            self.discover_builtin_widgets() + self.discover_custom_widgets(), self.test_env
         )
 
         if config_scan_results is not True:
@@ -1397,10 +1399,13 @@ class ConfigLoader:
         except yaml.scanner.ScannerError:
             raise YAMLParseException(f'Config for path "{path}" not valid YAML')
 
-    def load_base_config(self, log_messages: LogMessages) -> BaseConfig:
+    def load_base_config(self, log_messages: LogMessages, test_env: bool) -> BaseConfig:
         base_path = self.CONFIG_DIR / 'base.yaml'
         if not base_path.exists():
-            raise ConfigFileNotFoundError(f'Base config "{base_path}" not found')
+            if test_env:
+                return BaseConfig(log_messages)
+            else:
+                raise ConfigFileNotFoundError(f'Base config "{base_path}" not found')
         try:
             pure_yaml: dict[typing.Any, typing.Any] = self.load_yaml(base_path)
         except yaml.parser.ParserError:
@@ -1424,13 +1429,13 @@ class ConfigScanner:
     def __init__(self, config_loader: ConfigLoader) -> None:
         self.config_loader = config_loader
 
-    def scan_config(self, widget_names: list[str]) -> LogMessages | typing.Literal[True]:
+    def scan_config(self, widget_names: list[str], test_env: bool) -> LogMessages | typing.Literal[True]:
         """Scan config, either returns log messages or 'True' representing that no errors were found"""
         final_log: LogMessages = LogMessages()
 
         current_log: LogMessages = LogMessages()
         try:
-            self.config_loader.load_base_config(current_log)
+            self.config_loader.load_base_config(current_log, test_env)
             if current_log.contains_error():
                 final_log += current_log
         except YAMLParseException as e:

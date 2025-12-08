@@ -11,7 +11,7 @@ def main_curses(stdscr: base.CursesWindowType) -> None:
     os.chdir(script_dir)
 
     # Holds all widgets (Allows communication between scheduler thread & renderer, without exiting)
-    widget_container: base.WidgetContainer = base.WidgetContainer(stdscr, widgets_pkg)
+    widget_container: base.WidgetContainer = base.WidgetContainer(stdscr, widgets_pkg, test_env=False)
 
     # Scan configs
     widget_container.scan_config()
