@@ -33,4 +33,4 @@ jobs:
 
     - name: Run tests
       run: |
-        python -m unittest tests/main.py
+        python tests/run_tests.py
