@@ -1,18 +1,25 @@
-twidgets/config/widgets/todo_save_file.txt
-.idea/*
+# Pycache
 __pycache__/*
-__pycache__.nosync/*
+tests/__pycache__
 twidgets/__pycache__/*
-twidgets/__pycache__.nosync/*
-twidgets/widgets/__pycache__/*
-twidgets/widgets/__pycache__.nosync/*
+twidgets/config/__pycache__
 twidgets/core/__pycache__/*
+twidgets/widgets/__pycache__/*
+.idea/*
+
+
+# Venv
 .venv.nosync
-twidgets/core/__pycache__.nosync/*
-.idea/workspace.xml
-twidgets/config/secrets.env
+.venv_py312.nosync
+
+# macOS-specific files
 .DS_Store
+
+# Build files
 dist/
 twidgets.egg-info/
 publish-guide.txt
-.venv_py312.nosync
+
+# Secret files
+twidgets/config/secrets.env
+twidgets/config/widgets/todo_save_file.txt
