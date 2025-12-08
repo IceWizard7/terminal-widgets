@@ -3,13 +3,13 @@
 ### 2.1 Changing standard colors and configuration
 Edit the `base.yaml` file under `~/.config/twidgets/base.yaml` to change standard colors and configuration.
 
-If you remove anything or let anything blank, it will just fall back to the standard configuration. \
+If you let anything blank, it will fall back to the standard configuration. \
 However, you will get warned.
 
 Example:
 ```yaml
 use_standard_terminal_background: False  # Whether to use the standard terminal background, or
-# the specified background_color
+# the specified background_color; True / False
 
 background_color:
   r: 31  # Red value
@@ -28,10 +28,14 @@ error_color:
 quit_key: 'q'
 reload_key: 'r'
 help_key: 'h'
+
+# Whether to disable the help mode of a widget if you highlight a different one; True / False
+reset_help_mode_after_escape: True
 ```
 
 ### 2.2 Configure secrets
-Edit / create the `secrets.env` file located at `~/.config/twidgets/secrets.env` to add your API keys and preferred settings.
+Edit / create the `secrets.env` file located at `~/.config/twidgets/secrets.env`
+to add your API keys and preferred settings.
 > ⚠️ Make sure to **NEVER** share your secrets with anybody.
 
 Example (Full example provided in `~/.config/twidgets/secrets.env.example`):
@@ -45,15 +49,13 @@ NEWS_FEED_NAME='BBC'
 
 ### 2.3 Adjust widgets and layouts
 
-Each widget has its own .yaml file under `~/.config/twidgets/widgets/`
+Each widget has its own `.yaml` file under `~/.config/twidgets/widgets/`
 
-You can adjust name, title, enabled status, position, size, and refresh interval
+You can adjust name, title, enabled status, position, size, and refresh interval.
 
-Widgets refresh their display internally 15 times per second.
+Widgets refresh their content internally 15 times per second.
 The `interval` setting controls how often the widget fetches new data via its `update` function.
-This mainly matters for high-load widgets such as Weather or News, where frequent API calls may be expensive.
-
-> Most widgets don’t need a high interval. Heavy-load widgets like Weather or News benefit from controlling this.
+This mainly matters for high-load widgets such as weather or news, where frequent API calls may be expensive.
 
 Example:
 ```yaml

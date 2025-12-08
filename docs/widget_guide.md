@@ -1,16 +1,23 @@
 ## 3. Adding new widgets
 
-### 3.1. ⚙️ Define Configuration (`.yaml`)
+### 3.1 Define Configuration (`.yaml`)
 
 Create the configuration file at `~/.config/twidgets/widgets/custom.yaml`
 
-Configure `name`, `title`, `enabled`, `interval`, `height`, `width`, `y` and `x`
+> **Naming schemes are described [here](#33-adding-widgets-to-your-layout).** \
+> You can create an infinite amount of widgets, the file names `custom.yaml` and `custom_widget.py` are just examples.
+
+Configure `name`, `title`, `enabled`, `interval`, `height`, `width`, `y` and `x`.
 For simple widgets, set `interval = 0` (see [Configuration Guide](configuration_guide.md))
 
-### 3.2. 🐍 Write the Widget Logic (`.py`)
-> **Note:** Make sure to name the `.yaml` and `.py` files the same way (excluding suffixes)
-
+### 3.2 Write the Widget Logic (`.py`)
 Create the widget's Python file at `~/.config/twidgets/py_widgets/custom_widget.py`
+
+> **Naming schemes are described [here](#33-adding-widgets-to-your-layout).** \
+> You can create an infinite amount of widgets, the file names `custom.yaml` and `custom_widget.py` are just examples.
+
+> Note that the built-in widgets are located in your python installation, at
+> `(python_installation_path)/lib/(python-version)/site-packages/twidgets/widgets/*_widget.py`
 
 #### 3.2.1 Imports
 
@@ -31,7 +38,7 @@ Start the function with:
 draw_widget(widget, ui_state, base_config)
 ```
 
-which will initialize the widget title and make it loadable, highlightable, etc.
+which will initialize the widget title and make it loadable and highlightable.
 
 #### 3.2.3 Add widget content
 
@@ -41,14 +48,14 @@ content: list[str] = ['line1', 'line2', 'line3', 'line4', 'line5']
 add_widget_content(widget, content)
 ```
 
-Advanced: For precise text positioning or colors in a terminal widget
+> Advanced: For precise text positioning or colors in a terminal widget use `safe_addstr`
 
 ```python
 from twidgets.core.base import (
     safe_addstr,
     convert_color_number_to_curses_pair,
     CursesBold
-)  # Adding content with precise positioning / colors
+)
 
 row: int = 3
 col: int = 2
@@ -61,7 +68,8 @@ safe_addstr(
 
 #### 3.2.4 Widgets with heavy loading
 
-If your widget requires heavy loading, API calls or the data doesn't need to be reloaded every frame, add: 
+If your widget requires heavy loading, API calls or the data doesn't need to be reloaded every frame,
+move the update logic into its own function:  
 
 ```python
 from twidgets.core.base import ConfigLoader
@@ -70,11 +78,21 @@ import typing
 def update(_widget: Widget, _config_loader: ConfigLoader) -> typing.Any:
 ```
 
-And modify the `draw` function to accept `info`
+> Note that `widget` and `config_loader` will **always** be passed to your update function,
+> so make sure to keep those arguments.
+
+And modify the `draw` function to accept `info`.
 (`info` will be passed automatically from the `update` function by the scheduler):
 
 ```python
 def draw(widget: Widget, ui_state: UIState, base_config: BaseConfig, info: typing.Any) -> None:
+```
+
+Example:
+```python
+def draw(widget: Widget, ui_state: UIState, base_config: BaseConfig, info: list[str]) -> None:
+    draw_widget(widget, ui_state, base_config)
+    add_widget_content(widget, info)
 ```
 
 You can adapt the time, when the `update` function will be called again (reloading the data) by changing
@@ -97,7 +115,8 @@ def mouse_click_action(widget: Widget, _mx: int, _my: int, _b_state: int, ui_sta
 This function will get called whenever a mouse click happens (in your widget), so you can use it to for example make
 clickable buttons.
 
-> Note that the widget border color will automatically be updated on every mouse click.
+> Note that the widget border color will automatically be updated on every mouse click,
+> without utilising your `mouse_click_action` function.
 
 #### 3.2.5.2 Keyboard actions
 
@@ -148,7 +167,7 @@ This function will get called whenever the help key (Default: `h`) is getting pr
 
 #### 3.2.5.5 Integrating custom functions
 
-> To integrate this, see [building widget](#328-building-widget).
+> To integrate any custom function, see [building widget](#328-building-widget).
 
 #### 3.2.6 Using secrets
 
@@ -163,7 +182,7 @@ Inside your update function:
 def update(_widget: Widget, _config_loader: ConfigLoader) -> typing.Any:
 ```
 
-You can use:
+You can now use:
 ```python
 data: typing.Any = _config_loader.get_secret(key)
 ```
@@ -175,9 +194,9 @@ def update(_widget: Widget, _config_loader: ConfigLoader) -> typing.Any:
     api_key: str = _config_loader.get_secret('WEATHER_API_KEY')
 ```
 
-> Note that this should always be used in the `update` function, so secrets don't get reloaded every frame.
+> Note that this can only be used in the `update` function, so secrets don't get reloaded every frame.
 
-#### 3.2.7 Adding custom data to config
+#### 3.2.7 Adding custom data to your widget configuration
 
 Example:
 
@@ -192,9 +211,10 @@ custom_attribute: 'this is a custom attribute!'
 ```
 
 > Note that this will not be checked by the ConfigScanner.
-It only checks `base.yaml` for integrity, as well as "name",
-"title", "enabled", "interval", "height", "width", "y" and "x" for every widget. \
-To detect if these attributes are missing, see the next section.
+It only checks `base.yaml` for integrity, as well as `name`,
+`title`, `enabled`, `interval`, `height`, `width`, `y` and `x` for every widget.
+> 
+> To detect if these attributes are missing, see the next section.
 
 #### 3.2.7.1 Config specific Errors
 
@@ -207,18 +227,18 @@ from twidgets.core.base import (
     LogMessage,
     LogLevels
 )
-
-if not widget.config.some_value:  # Will be None if no attribute is found
-    raise ConfigSpecificException(LogMessages([LogMessage(
-        f'Configuration for some_value is missing / incorrect ("{widget.name}" widget)',
-        LogLevels.ERROR.key)]))
+def draw(widget: Widget, ui_state: UIState, base_config: BaseConfig) -> None:
+    if not widget.config.some_value:  # Will be None if no attribute is found
+        raise ConfigSpecificException(LogMessages([LogMessage(
+            f'Configuration for some_value is missing / incorrect ("{widget.name}" widget)',
+            LogLevels.ERROR.key)]))
 ```
 
-With this you can add custom error messages for all users to your widget.
+With this you can add custom error messages to your widget, for example if certain attributes are missing.
 
 #### 3.2.8 Building widget
 
-If your widget has an `update`, `mouse_click_action`, `keyboard_press_action` or an `init` function,
+If your widget has an `update`, `mouse_click_action`, `keyboard_press_action`, `init` or a `draw_help` function,
 specify them here. (See the comments for examples)
 
 ```python
@@ -233,16 +253,18 @@ def build(stdscr: CursesWindowType, config: Config) -> Widget:
     )
 ```
 
-### 3.3 Adding your Widget to the Layout
+### 3.3 Adding widgets to your layout
 While integration is automatic, your files must still follow a specific naming convention for the system
 to recognize them as a valid widget:
 
-* **YAML Configuration File** (`~/.config/twidgets/widgets/`):
+- **YAML Configuration File** (`~/.config/twidgets/widgets/`):
     * Must end with: **`.yaml`**
     * *Examples:*
     * `hello123.yaml`, `mycoolwidget.yaml`, `weather.yaml`
 
-* **Python Widget File** (`~/.config/twidgets/py_widgets/`):
+- **Python Widget File** (`~/.config/twidgets/py_widgets/`):
     * Must end with: **`_widget.py`**
     * *Examples:*
     * `hello123_widget.py`, `mycoolwidget_widget.py`, `weather_widget.py`
+
+> **Note:** Make sure to name the `.yaml` and `.py` files the same way (excluding suffixes)

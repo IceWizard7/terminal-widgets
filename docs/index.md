@@ -1,7 +1,8 @@
 ## Terminal Widgets Documentation
 
 Welcome to **Terminal Widgets** — a modular dashboard that lets you monitor
-weather, news, time, calendar events, and more in a customizable interface. Build your own Python-powered widgets
+weather, news, time, todo events, and more in a customizable interface.
+Build your own Python-powered widgets
 and configure the entire setup effortlessly with clean, human-friendly YAML.
 
 ---

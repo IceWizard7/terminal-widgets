@@ -37,7 +37,7 @@ twidgets
 > ⚠️ Requires Python Version 3.10+
 
 #### 1.2.1 Cloning this repository
-1. Open a terminal and navigate to the folder where you want the project
+1. Open a terminal and navigate to the folder where you want the project.
 2. Clone the repository using:
 ```bash
 git clone https://github.com/IceWizard7/terminal-widgets.git
