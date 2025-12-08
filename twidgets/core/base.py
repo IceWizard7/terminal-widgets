@@ -1482,3 +1482,13 @@ class CursesKeys(enum.IntEnum):
 
 def curses_wrapper(func: typing.Callable[[CursesWindowType], None]) -> None:
     curses.wrapper(func)
+
+
+def returnable_curses_wrapper(func: typing.Callable[[CursesWindowType], None]) -> typing.Any:
+    result_container: dict[str, typing.Any] = {}
+
+    def inner(stdscr: CursesWindowType) -> None:
+        result_container['result'] = func(stdscr)
+
+    curses_wrapper(inner)
+    return result_container['result']
