@@ -35,7 +35,7 @@
 
 #### 1.2 Installation from Source
 1. Clone this repository
-2. Install dependencies: `pip install .`
+2. Install dependencies: `pip install -r requirements-dev.txt `
 3. Initialize configuration: `python -m twidgets init`
 4. Run: `python -m twidgets`
 > ⚠️ Requires Python Version 3.10+
