@@ -240,6 +240,8 @@ def update(_widget: Widget, _config_loader: ConfigLoader) -> list[str]:
         return return_macos_info()
     elif system_type == 'raspbian':
         return return_raspi_info()
+    elif system_type == 'linux':
+        return return_linux_info()
     else:
         return [
             f'Invalid system_type "{system_type}" not supported.'
