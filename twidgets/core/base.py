@@ -864,7 +864,7 @@ class WidgetContainer:
         try:
             curses.endwin()
         except CursesError:
-            pass  # Ignore; Doesn't happen on Py3.13, but does on Py3.12
+            pass  # Ignore; Doesn't happen on Py3.13, but does on some versions of Py3.12
 
     def display_error(self, widget: Widget, content: list[str]) -> None:
         draw_widget(widget, self.ui_state, self.base_config, ' Error ', error=True)
