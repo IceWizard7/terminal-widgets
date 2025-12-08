@@ -468,7 +468,7 @@ def draw_colored_border_warning_widget(warning_widget: WarningWidget, color_pair
 # region WidgetContainer & essentials
 
 class WidgetContainer:
-    def __init__(self, stdscr: CursesWindowType, widgets_pkg: types.ModuleType) -> None:
+    def __init__(self, stdscr: CursesWindowType, widgets_pkg: types.ModuleType | None) -> None:
         self.stdscr = stdscr
         self.ui_state: UIState = UIState()
 
@@ -492,7 +492,7 @@ class WidgetContainer:
         )
         self.reloader_thread.daemon = True  # Don't block exit if something goes wrong
 
-        self.widgets_pkg: types.ModuleType = widgets_pkg
+        self.widgets_pkg = widgets_pkg
         self._warnings: list[WarningWidget] = []
         self._all_widgets: list[Widget] = []
         self._widgets: list[Widget] = []
@@ -1295,9 +1295,12 @@ class WidgetLoader:
         self.PER_WIDGET_PY_DIR = self.CONFIG_DIR / 'py_widgets'
 
     @staticmethod
-    def discover_builtin_widgets(widgets_pkg: types.ModuleType) -> list[str]:
+    def discover_builtin_widgets(widgets_pkg: types.ModuleType | None) -> list[str]:
         """Discord built-in widgets in twidgets/widgets/*_widget.py"""
         widget_names: list[str] = []
+
+        if not widgets_pkg:
+            return widget_names
 
         for module in pkgutil.iter_modules(widgets_pkg.__path__):
             # Only care about modules ending in `_widget`
