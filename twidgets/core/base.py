@@ -623,6 +623,8 @@ class WidgetContainer:
         return self.widget_loader.discover_builtin_widgets(self.widgets_pkg)
 
     def discover_custom_widgets(self) -> list[str]:
+        if self.test_env:
+            return []
         return self.widget_loader.discover_custom_widgets()
 
     def scan_config(self) -> None:
@@ -643,10 +645,19 @@ class WidgetContainer:
         custom_widget_modules: dict[str, types.ModuleType] = self.widget_loader.load_custom_widget_modules()
 
         try:
-            widget_dict = self.widget_loader.build_widgets(
-                self, self.config_loader, self.log_messages,
-                builtin_widget_modules | custom_widget_modules
-            )
+            if self.test_env:
+                widget_dict = self.widget_loader.build_widgets(
+                    self, self.config_loader, self.log_messages,
+                    builtin_widget_modules,
+                    self.test_env
+                )
+            else:
+                widget_dict = self.widget_loader.build_widgets(
+                    self, self.config_loader, self.log_messages,
+                    builtin_widget_modules | custom_widget_modules,
+                    self.test_env
+                )
+
             return widget_dict
         except (
                 WidgetSourceFileException,
@@ -1360,12 +1371,13 @@ class WidgetLoader:
             widget_container: WidgetContainer,
             config_loader: ConfigLoader,
             log_messages: LogMessages,
-            modules: dict[str, types.ModuleType]
+            modules: dict[str, types.ModuleType],
+            test_env: bool
     ) -> dict[str, Widget]:
         widgets: dict[str, Widget] = {}
 
         for name, module in modules.items():
-            widget_config = config_loader.load_widget_config(log_messages, name)
+            widget_config = config_loader.load_widget_config(log_messages, name, test_env)
             try:
                 widgets[name] = module.build(widget_container.stdscr, widget_config)
             except Exception:
@@ -1382,6 +1394,7 @@ class ConfigLoader:
     def __init__(self) -> None:
         self.CONFIG_DIR = pathlib.Path.home() / '.config' / 'twidgets'
         self.PER_WIDGET_CONFIG_DIR = self.CONFIG_DIR / 'widgets'
+        self.SCRIPT_DIR = pathlib.Path(__file__).resolve().parent.parent  # for test_env
         dotenv.load_dotenv(self.CONFIG_DIR / 'secrets.env')
 
     def reload_secrets(self) -> None:
@@ -1413,7 +1426,18 @@ class ConfigLoader:
 
         return BaseConfig(log_messages=log_messages, **pure_yaml)
 
-    def load_widget_config(self, log_messages: LogMessages, widget_name: str) -> Config:
+    def load_widget_config(self, log_messages: LogMessages, widget_name: str, test_env: bool) -> Config:
+        if test_env:
+            path = self.SCRIPT_DIR / 'config' / 'widgets' / f'{widget_name}.yaml'
+            if not path.exists():
+                raise ConfigFileNotFoundError(f'Config for widget "{widget_name}" not found (test_env), {path}')
+            try:
+                pure_yaml: dict[typing.Any, typing.Any] = self.load_yaml(path)
+            except yaml.parser.ParserError:
+                raise YAMLParseException(f'Config for widget "{widget_name}" not valid YAML')
+
+            return Config(file_name=widget_name, log_messages=log_messages, **pure_yaml)
+
         path = self.PER_WIDGET_CONFIG_DIR / f'{widget_name}.yaml'
         if not path.exists():
             raise ConfigFileNotFoundError(f'Config for widget "{widget_name}" not found')
@@ -1444,7 +1468,7 @@ class ConfigScanner:
         for widget_name in widget_names:
             current_log = LogMessages()
             try:
-                self.config_loader.load_widget_config(current_log, widget_name)
+                self.config_loader.load_widget_config(current_log, widget_name, test_env)
                 if current_log.contains_error():
                     final_log += current_log
             except YAMLParseException as e:
