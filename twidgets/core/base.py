@@ -1484,7 +1484,7 @@ def curses_wrapper(func: typing.Callable[[CursesWindowType], None]) -> None:
     curses.wrapper(func)
 
 
-def returnable_curses_wrapper(func: typing.Callable[[CursesWindowType], None]) -> typing.Any:
+def returnable_curses_wrapper(func: typing.Callable[[CursesWindowType], typing.Any]) -> typing.Any:
     result_container: dict[str, typing.Any] = {}
 
     def inner(stdscr: CursesWindowType) -> None:
