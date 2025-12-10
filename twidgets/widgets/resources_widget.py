@@ -15,10 +15,19 @@ from twidgets.core.base import (
 def update(_widget: Widget, _config_loader: ConfigLoader) -> list[str]:
     cpu = psutil.cpu_percent()
     cpu_cores = psutil.cpu_count(logical=False)
+    max_freq_mhz = 0.0
     try:
-        max_cpu_freq: float = psutil.cpu_freq().max
+        freq = psutil.cpu_freq()
+
+        if freq is not None:
+            max_freq = freq.max
+            # If the value is suspiciously small (like 4), assume it's in GHz
+            if max_freq < 100:  # anything below 100 MHz is definitely wrong
+                max_freq_mhz = max_freq * 1000
+            else:
+                max_freq_mhz = max_freq
     except Exception:
-        max_cpu_freq = 0.0
+        pass
     memory = psutil.virtual_memory()
     swap = psutil.swap_memory()
     disk_usage = shutil.disk_usage('/')
@@ -68,7 +77,7 @@ def update(_widget: Widget, _config_loader: ConfigLoader) -> list[str]:
         disk_percent = 0.0
 
     return [
-        f'CPU: {cpu:04.1f}% ({cpu_cores} Cores @ {max_cpu_freq} MHz)',
+        f'CPU: {cpu:04.1f}% ({cpu_cores} Cores @ {max_freq_mhz} MHz)',
         f'Memory: {memory_used_mib} MiB / {memory_total_mib} MiB ({memory_percent}%)',
         f'Swap: {swap_used_mib} MiB / {swap_total_mib} MiB ({swap_percent}%)',
         f'Disk: {disk_used_gib} GiB / {disk_total_gib} GiB ({disk_percent}%)',
