@@ -1442,7 +1442,7 @@ class ConfigLoader:
         if not path.exists():
             raise ConfigFileNotFoundError(f'Config for widget "{widget_name}" not found')
         try:
-            pure_yaml: dict[typing.Any, typing.Any] = self.load_yaml(path)
+            pure_yaml = self.load_yaml(path)
         except yaml.parser.ParserError:
             raise YAMLParseException(f'Config for widget "{widget_name}" not valid YAML')
 
