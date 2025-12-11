@@ -32,6 +32,6 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements-dev.txt
 
-    - name: Run tests
+    - name: Run tests (inside PTY for curses)
       run: |
-        python tests/run_tests.py
+        script -q -c "python tests/run_tests.py" /dev/null
