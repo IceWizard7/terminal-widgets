@@ -8,4 +8,5 @@ y: 20
 x: 2
 
 save_path: '~/.config/twidgets/widgets/todo_save_file.txt'
+test_env_save_path: 'twidgets/config/widgets/todo_save_file.txt'
 max_rendering: 7  # adapt based on height, use around height - 3

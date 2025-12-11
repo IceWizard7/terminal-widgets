@@ -175,6 +175,7 @@ class Widget:
 class Config:
     def __init__(
             self,
+            _test_env: bool,
             file_name: str,
             log_messages: LogMessages,
             name: str | None = None,
@@ -215,7 +216,13 @@ class Config:
         self.dimensions: Dimensions = Dimensions(height=height, width=width, y=y, x=x)  # type: ignore[arg-type]
 
         for key, value in kwargs.items():
+            if key.startswith('test_env_'):
+                setattr(self, key.removeprefix('test_env_'), value)
+                continue
+            if f'test_env_{key}' in kwargs.keys():
+                continue
             setattr(self, key, value)
+
 
     def __getattr__(self, name: str) -> typing.Any:  # only gets called if key is not found
         return None  # signal to code editor that any key may exist
@@ -1452,7 +1459,7 @@ class ConfigLoader:
             except yaml.parser.ParserError:
                 raise YAMLParseException(f'Config for widget "{widget_name}" not valid YAML')
 
-            return Config(file_name=widget_name, log_messages=log_messages, **pure_yaml)
+            return Config(file_name=widget_name, log_messages=log_messages, _test_env=test_env, **pure_yaml)
 
         path = self.PER_WIDGET_CONFIG_DIR / f'{widget_name}.yaml'
         if not path.exists():
@@ -1462,7 +1469,7 @@ class ConfigLoader:
         except yaml.parser.ParserError:
             raise YAMLParseException(f'Config for widget "{widget_name}" not valid YAML')
 
-        return Config(file_name=widget_name, log_messages=log_messages, **pure_yaml)
+        return Config(file_name=widget_name, log_messages=log_messages, _test_env=test_env, **pure_yaml)
 
 
 class ConfigScanner:
