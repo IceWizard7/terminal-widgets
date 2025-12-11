@@ -82,6 +82,3 @@ class TestWholeScreen(unittest.TestCase):
                 raise AssertionError(f'"{char}" != "{expected_char}" (expected "{expected_char}"), Line {line_count + 1}, Char {char_count + 1}')
 
         self.assertEqual(True, True)
-
-
-# TODO: Can I integrate this? Does github workflow use a terminal...?!
