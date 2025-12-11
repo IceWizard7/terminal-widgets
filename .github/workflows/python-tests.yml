@@ -32,6 +32,9 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements-dev.txt
 
+    - name: Set TERM
+      run: echo "TERM=xterm" >> $GITHUB_ENV
+
     - name: Run tests inside PTY
       run: |
         python tests/run_in_pty.py
