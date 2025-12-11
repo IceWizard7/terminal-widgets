@@ -1,7 +1,7 @@
 import pty
 import sys
 
-def main():
+def main() -> None:
     # Command to run inside PTY
     cmd = ["python", "tests/run_tests.py"]
 

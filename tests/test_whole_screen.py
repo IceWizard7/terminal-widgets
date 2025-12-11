@@ -1,7 +1,6 @@
 import typing
 import unittest
 from twidgets.core.base import WidgetContainer, returnable_curses_wrapper, CursesWindowType
-import twidgets.core.base as base
 import twidgets.widgets as widgets_pkg
 import os
 import time as time_module
@@ -10,7 +9,7 @@ os.environ['LINES'] = '30'
 os.environ['COLUMNS'] = '172'
 
 
-class TestWidgetContainer(unittest.TestCase):
+class TestWholeScreen(unittest.TestCase):
     def test_whole_screen(self) -> None:
         def main_curses(stdscr: CursesWindowType) -> list[str]:
             widget_container: WidgetContainer = WidgetContainer(stdscr, widgets_pkg, test_env=True)
@@ -52,8 +51,8 @@ class TestWidgetContainer(unittest.TestCase):
             screenshot: list[str] = []
             height, width = stdscr.getmaxyx()
             for y in range(height):
-                _line: str = stdscr.instr(y, 0, width).decode('utf-8')
-                screenshot.append(_line)
+                y_line: str = stdscr.instr(y, 0, width).decode('utf-8')
+                screenshot.append(y_line)
 
             return screenshot
 
@@ -66,8 +65,8 @@ class TestWidgetContainer(unittest.TestCase):
             raise AssertionError(f'Length of screenshot {len(result)} != {len(expected_result)} (expected {len(expected_result)})')
 
         print('\n\nResult:\n\n')
-        for line in result:
-            print(line)
+        for _line in result:
+            print(_line)
 
         for line_count, lines in enumerate(zip(result, expected_result)):
             line: str = lines[0]
