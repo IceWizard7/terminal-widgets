@@ -23,4 +23,3 @@ publish-guide.txt
 # Secret files
 twidgets/config/secrets.env
 twidgets/config/widgets/todo_save_file.txt
-tests/test_screen_expected_result.txt

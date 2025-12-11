@@ -6,8 +6,8 @@ import twidgets.widgets as widgets_pkg
 import os
 import time as time_module
 
-os.environ['LINES'] = '100'
-os.environ['COLUMNS'] = '200'
+os.environ['LINES'] = '30'
+os.environ['COLUMNS'] = '172'
 
 
 class TestWidgetContainer(unittest.TestCase):
@@ -31,23 +31,19 @@ class TestWidgetContainer(unittest.TestCase):
                 done = True
 
                 for widget in widget_container.return_widgets():
-                    try:
-                        if not widget.updatable():
-                            widget.draw(widget_container)
-                            widget.noutrefresh()
-                            continue
+                    if not widget.updatable():
+                        widget.draw(widget_container)
+                        widget.noutrefresh()
+                        continue
 
-                        if widget.draw_data:
-                            with widget.lock:
-                                data_copy: typing.Any = widget.draw_data.copy()
-                            # if '__error__' not in data_copy:
-                            widget.draw(widget_container, data_copy)
-                        else:
-                            # Data still loading
-                            done = False
-                    except base.ConfigSpecificException:
-                        # TODO: We need to assume some kind of base config for the unit testing, load from repo
-                        pass
+                    if widget.draw_data:
+                        with widget.lock:
+                            data_copy: typing.Any = widget.draw_data.copy()
+                        # if '__error__' not in data_copy:
+                        widget.draw(widget_container, data_copy)
+                    else:
+                        # Data still loading
+                        done = False
 
                     widget.noutrefresh()
                 time_module.sleep(0.01)
@@ -62,14 +58,27 @@ class TestWidgetContainer(unittest.TestCase):
             return screenshot
 
         result: list[str] = returnable_curses_wrapper(main_curses)
-        print('\n\n')
-        for line in result:
-            if any(char != ' ' for char in str(line)):
-                print(line)
-        print('\n')
+        with open('tests/test_screen_expected_result.txt', 'r') as file:
+            expected_result: list[str] = file.readlines()
+        ignored_character: str = 'Ü'  # Any char in test_screen_expected_result.txt that's 'Ü' just means Any
+
+        if len(result) != len(expected_result):
+            raise AssertionError(f'Length of screenshot {len(result)} != {len(expected_result)} (expected {len(expected_result)})')
+
+        for line_count, lines in enumerate(zip(result, expected_result)):
+            line: str = lines[0]
+            expected_line: str = lines[1]
+            for char_count, chars in enumerate(zip(line, expected_line)):
+                char: str = chars[0]
+                expected_char: str = chars[1]
+                # print(f'Checking "{char}" == "{expected_char}"')
+                if expected_char == ignored_character:
+                    continue
+                if char == expected_char:
+                    continue
+                raise AssertionError(f'"{char}" != "{expected_char}" (expected "{expected_char}"), Line {line_count + 1}, Char {char_count + 1}')
+
+        self.assertEqual(True, True)
 
 
 # TODO: Can I integrate this? Does github workflow use a terminal...?!
-
-# python -m tests.test_whole_screen
-# python tests/run_tests.py
