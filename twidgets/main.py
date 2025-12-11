@@ -116,7 +116,7 @@ def main_curses(stdscr: base.CursesWindowType) -> None:
             # Clean up threads and re-raise so outer loop stops
             widget_container.cleanup_curses_setup()
 
-            raise base.UnknownException(widget_container.log_messages, str(e))
+            raise base.UnknownException(widget_container, e)
 
 
 def main_entry_point() -> None:
@@ -149,14 +149,14 @@ def main_entry_point() -> None:
         except base.CursesError:
             break  # Ignore; Doesn't happen on Py3.13, but does on Py3.12
         except base.UnknownException as e:
-            if not e.log_messages.is_empty():
-                e.log_messages.print_log_messages(heading='Config errors & warnings:\n')
+            if not e.widget_container.log_messages.is_empty():
+                e.widget_container.log_messages.print_log_messages(heading='Config errors & warnings:\n')
                 print(f'')
             print(
                 f'⚠️ Unknown errors:\n'
-                f'{e.error_message}\n'
+                f'{str(e)}\n'
             )
-            raise
+            raise e.initial_exception
         break  # Exit if the end of the loop is reached (User exit)
 
 

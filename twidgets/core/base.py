@@ -481,11 +481,11 @@ class WidgetContainer:
         self.widget_loader: WidgetLoader = WidgetLoader()
 
         # Define config loader (Only loads secrets)
-        self.config_loader: ConfigLoader = ConfigLoader()
+        self.config_loader: ConfigLoader = ConfigLoader(self.test_env)
         self.config_loader.reload_secrets()  # Needed to reload secrets.env changes
 
         # Initiate base config
-        self.base_config: BaseConfig = self.config_loader.load_base_config(self.log_messages, test_env)
+        self.base_config: BaseConfig = self.config_loader.load_base_config(self.log_messages, self.test_env)
 
         # Reloader Thread
         self.stop_event: threading.Event = threading.Event()
@@ -659,13 +659,8 @@ class WidgetContainer:
                 )
 
             return widget_dict
-        except (
-                WidgetSourceFileException,
-                TerminalTooSmall
-        ):
+        except Exception:
             raise
-        except Exception as e:
-            raise UnknownException(self.log_messages, str(e))
 
     def start_reloader_thread(self) -> None:
         self.reloader_thread.start()
@@ -1169,10 +1164,10 @@ class WidgetSourceFileException(Exception):
 
 
 class UnknownException(Exception):
-    def __init__(self, log_messages: LogMessages, error_message: str) -> None:
-        self.log_messages: LogMessages = log_messages
-        self.error_message = error_message
-        super().__init__(log_messages, error_message)
+    def __init__(self, widget_container: WidgetContainer, initial_exception: Exception) -> None:
+        self.widget_container: WidgetContainer = widget_container
+        self.initial_exception = initial_exception
+        super().__init__(widget_container, initial_exception)
 
 
 class DebugException(Exception):
@@ -1391,14 +1386,23 @@ class WidgetLoader:
 
 
 class ConfigLoader:
-    def __init__(self) -> None:
+    def __init__(self, test_env: bool) -> None:
         self.CONFIG_DIR = pathlib.Path.home() / '.config' / 'twidgets'
         self.PER_WIDGET_CONFIG_DIR = self.CONFIG_DIR / 'widgets'
         self.SCRIPT_DIR = pathlib.Path(__file__).resolve().parent.parent  # for test_env
-        dotenv.load_dotenv(self.CONFIG_DIR / 'secrets.env')
+        self.test_env = test_env
+        if self.test_env:
+            path = self.SCRIPT_DIR / 'config' / f'secrets.env.example'
+            dotenv.load_dotenv(path)
+        else:
+            dotenv.load_dotenv(self.CONFIG_DIR / 'secrets.env')
 
     def reload_secrets(self) -> None:
-        dotenv.load_dotenv(self.CONFIG_DIR / 'secrets.env', override=True)
+        if self.test_env:
+            path = self.SCRIPT_DIR / 'config' / f'secrets.env.example'
+            dotenv.load_dotenv(path)
+        else:
+            dotenv.load_dotenv(self.CONFIG_DIR / 'secrets.env', override=True)
 
     @staticmethod
     def get_secret(name: str, default: typing.Any = None) -> str | None:
