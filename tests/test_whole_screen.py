@@ -65,6 +65,10 @@ class TestWidgetContainer(unittest.TestCase):
         if len(result) != len(expected_result):
             raise AssertionError(f'Length of screenshot {len(result)} != {len(expected_result)} (expected {len(expected_result)})')
 
+        print('Result:')
+        for line in result:
+            print(line)
+
         for line_count, lines in enumerate(zip(result, expected_result)):
             line: str = lines[0]
             expected_line: str = lines[1]
