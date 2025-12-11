@@ -32,6 +32,6 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements-dev.txt
 
-    - name: Run tests (inside PTY for curses)
+    - name: Run tests inside PTY
       run: |
-        script -q -c "python tests/run_tests.py" /dev/null
+        python tests/run_in_pty.py
