@@ -827,7 +827,9 @@ class WidgetContainer:
         curses.start_color()
         if self.base_config.use_standard_terminal_background:
             curses.use_default_colors()
-        if curses.can_change_color():
+
+        can_change_color = curses.can_change_color()
+        if can_change_color:
             if not self.base_config.use_standard_terminal_background:
                 curses.init_color(
                     self.base_config.BACKGROUND_NUMBER,  # type: ignore[unused-ignore]
@@ -914,6 +916,7 @@ class BaseConfig:
     def __init__(
         self,
         log_messages: LogMessages,
+        test_env: bool,
         use_standard_terminal_background: bool | None = None,
         background_color: dict[str, int] | None = None,
         foreground_color: dict[str, int] | None = None,
@@ -1015,6 +1018,8 @@ class BaseConfig:
         )
 
         self.BACKGROUND_NUMBER: int = -1 if self.use_standard_terminal_background else 1
+        if test_env:
+            self.BACKGROUND_NUMBER = -1
 
         self.BACKGROUND_FOREGROUND_PAIR_NUMBER: int = 1
         self.PRIMARY_PAIR_NUMBER: int = 2
@@ -1420,7 +1425,7 @@ class ConfigLoader:
         base_path = self.CONFIG_DIR / 'base.yaml'
         if not base_path.exists():
             if test_env:
-                return BaseConfig(log_messages)  # Fallback completely to BaseStandardFallbackConfig
+                return BaseConfig(log_messages=log_messages, test_env=test_env)  # Fallback completely to BaseStandardFallbackConfig
             else:
                 raise ConfigFileNotFoundError(f'Base config "{base_path}" not found')
         try:
@@ -1428,7 +1433,7 @@ class ConfigLoader:
         except yaml.parser.ParserError:
             raise YAMLParseException(f'Base config "{base_path}" not valid YAML')
 
-        return BaseConfig(log_messages=log_messages, **pure_yaml)
+        return BaseConfig(log_messages=log_messages, test_env=test_env, **pure_yaml)
 
     def load_widget_config(self, log_messages: LogMessages, widget_name: str, test_env: bool) -> Config:
         if test_env:
