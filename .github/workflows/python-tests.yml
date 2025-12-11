@@ -7,6 +7,8 @@ on:
   pull_request:  # Every PR
     branches:
       - main
+  workflow_dispatch:
+
 
 jobs:
   test:
