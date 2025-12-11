@@ -240,13 +240,16 @@ class RGBColor:
         return RGBColor(r=int(color['r']), g=int(color['g']), b=int(color['b']))
 
 
-def draw_colored_border(widget: Widget, color_pair: int) -> None:
+def draw_colored_border(widget: Widget, color_pair: int, test_env: bool) -> None:
     if not widget.win:
         return
 
-    widget.win.attron(curses.color_pair(color_pair))
-    widget.win.border()
-    widget.win.attroff(curses.color_pair(color_pair))
+    if test_env:
+        widget.win.border()
+    else:
+        widget.win.attron(curses.color_pair(color_pair))
+        widget.win.border()
+        widget.win.attroff(curses.color_pair(color_pair))
 
 
 def draw_widget(
@@ -255,7 +258,8 @@ def draw_widget(
         base_config: BaseConfig,
         title: str | None = None,
         loading: bool = False,
-        error: bool = False
+        error: bool = False,
+        test_env: bool = False
 ) -> None:
     if not widget.win:
         return
@@ -265,11 +269,11 @@ def draw_widget(
         title = title[:widget.dimensions.current_width - 4]
     widget.win.erase()  # Instead of clear(), prevents flickering
     if widget == ui_state.highlighted:
-        draw_colored_border(widget, base_config.PRIMARY_PAIR_NUMBER)
+        draw_colored_border(widget, base_config.PRIMARY_PAIR_NUMBER, test_env)
     elif loading:
-        draw_colored_border(widget, base_config.LOADING_PAIR_NUMBER)
+        draw_colored_border(widget, base_config.LOADING_PAIR_NUMBER, test_env)
     elif error:
-        draw_colored_border(widget, base_config.ERROR_PAIR_NUMBER)
+        draw_colored_border(widget, base_config.ERROR_PAIR_NUMBER, test_env)
     else:
         widget.win.border()
     widget.win.addstr(0, 2, f'{title}')
@@ -681,7 +685,7 @@ class WidgetContainer:
         for widget in self.return_widgets():
             if not widget.win:
                 continue
-            draw_widget(widget, self.ui_state, self.base_config, loading=True)
+            draw_widget(widget, self.ui_state, self.base_config, loading=True, test_env=self.test_env)
             add_widget_content(widget, [' Loading... '])
             widget.win.refresh()
         return None
@@ -824,6 +828,9 @@ class WidgetContainer:
         )
 
     def init_colors(self) -> None:
+        if self.test_env:
+            return  # Do not set up colors
+
         curses.start_color()
         if self.base_config.use_standard_terminal_background:
             curses.use_default_colors()
@@ -916,7 +923,7 @@ class BaseConfig:
     def __init__(
         self,
         log_messages: LogMessages,
-        test_env: bool,
+        _test_env: bool,
         use_standard_terminal_background: bool | None = None,
         background_color: dict[str, int] | None = None,
         foreground_color: dict[str, int] | None = None,
@@ -1018,7 +1025,7 @@ class BaseConfig:
         )
 
         self.BACKGROUND_NUMBER: int = -1 if self.use_standard_terminal_background else 1
-        if test_env:
+        if _test_env:
             self.BACKGROUND_NUMBER = -1
 
         self.BACKGROUND_FOREGROUND_PAIR_NUMBER: int = 1
@@ -1425,7 +1432,7 @@ class ConfigLoader:
         base_path = self.CONFIG_DIR / 'base.yaml'
         if not base_path.exists():
             if test_env:
-                return BaseConfig(log_messages=log_messages, test_env=test_env)  # Fallback completely to BaseStandardFallbackConfig
+                return BaseConfig(log_messages=log_messages, _test_env=test_env)  # Fallback completely to BaseStandardFallbackConfig
             else:
                 raise ConfigFileNotFoundError(f'Base config "{base_path}" not found')
         try:
@@ -1433,7 +1440,7 @@ class ConfigLoader:
         except yaml.parser.ParserError:
             raise YAMLParseException(f'Base config "{base_path}" not valid YAML')
 
-        return BaseConfig(log_messages=log_messages, test_env=test_env, **pure_yaml)
+        return BaseConfig(log_messages=log_messages, _test_env=test_env, **pure_yaml)
 
     def load_widget_config(self, log_messages: LogMessages, widget_name: str, test_env: bool) -> Config:
         if test_env:
