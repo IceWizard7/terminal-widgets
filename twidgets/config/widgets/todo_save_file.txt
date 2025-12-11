@@ -1,0 +1,1 @@
+{"1": "(1) https://github.com/IceWizard7/terminal-widgets","2": "(2) ---","3": "(3) Buy milk","4": "(4) Shop groceries","5": "(5) Study C","6": "(6) Get a job","7": "(7) I'm running out of ideas '#123","8": "(8) etc.", "9": "(9) etc.."}
