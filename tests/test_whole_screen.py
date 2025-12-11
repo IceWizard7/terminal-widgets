@@ -59,7 +59,7 @@ class TestWholeScreen(unittest.TestCase):
         result: list[str] = returnable_curses_wrapper(main_curses)
         with open('tests/test_screen_expected_result.txt', 'r') as file:
             expected_result: list[str] = file.readlines()
-        ignored_character: str = 'Ü'  # Any char in test_screen_expected_result.txt that's 'Ü' just means Any
+        ignored_character: str = '*'  # Any char in test_screen_expected_result.txt means Any
 
         if len(result) != len(expected_result):
             raise AssertionError(f'Length of screenshot {len(result)} != {len(expected_result)} (expected {len(expected_result)})')
