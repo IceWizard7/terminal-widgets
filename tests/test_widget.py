@@ -8,7 +8,7 @@ class TestWidget(unittest.TestCase):
     @unittest.mock.patch('curses.initscr', return_value=unittest.mock.MagicMock())
     def test_widget_draw_disabled(self, mock_initscr: unittest.mock.MagicMock) -> None:
         stdscr: typing.Any = mock_initscr()
-        dim: Dimensions = Dimensions(5, 5, 0, 0)
+        dim: Dimensions = Dimensions(5, 5, 0, 0, 0)
         config: unittest.mock.MagicMock = unittest.mock.MagicMock()
         config.enabled = False
         widget = Widget('name', 'title', config, unittest.mock.MagicMock(), None, dim, stdscr)
@@ -18,7 +18,7 @@ class TestWidget(unittest.TestCase):
         config: unittest.mock.MagicMock = unittest.mock.MagicMock()
         config.enabled = True
         w: Widget = Widget(
-            'name', 'title', config, unittest.mock.MagicMock(), None, Dimensions(1, 1, 0, 0), unittest.mock.MagicMock()
+            'name', 'title', config, unittest.mock.MagicMock(), None, Dimensions(1, 1, 0, 0, 0), unittest.mock.MagicMock()
         )
         self.assertFalse(w.help_mode)
         w.toggle_help_mode()

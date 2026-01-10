@@ -11,7 +11,7 @@ class TestWidgetContainer(unittest.TestCase):
         container: WidgetContainer = WidgetContainer(stdscr, test_env=True)
         config: unittest.mock.MagicMock = unittest.mock.MagicMock()
         config.enabled = True
-        dim: Dimensions = Dimensions(1, 1, 0, 0)
+        dim: Dimensions = Dimensions(1, 1, 0, 0, 0)
         w: Widget = Widget('name', 'title', config, unittest.mock.MagicMock(), None, dim, stdscr)
         container.add_widget(w)
         self.assertIn(w, container.return_widgets())
