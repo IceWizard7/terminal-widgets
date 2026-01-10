@@ -159,7 +159,13 @@ For full documentation see [Widget Guide](docs/widget_guide.md).
 
 ---
 
-### 🌅 **4. Examples**
+### **4. Upgrading to 2.0 ⚠️**
+
+Version 2.0 introduces breaking changes. Please see the [migration guide](docs/migration/v1.3-v2.0.md) for instructions on updating your code.
+
+---
+
+### 🌅 **5. Examples**
 
 ![Example 1 of Terminal Widgets](examples/example_1.png)
 ![Example 2 of Terminal Widgets](examples/example_2.png)
@@ -169,12 +175,12 @@ For all examples see [Examples](examples/index.md).
 
 ---
 
-### 🧩 **5. Contributing**
+### 🧩 **6. Contributing**
 
 Help the project grow: create an issue or pull request!
 
 ---
 
-### 📜 **6. License**
+### 📜 **7. License**
 
 See [License](LICENSE)
