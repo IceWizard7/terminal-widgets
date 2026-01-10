@@ -459,6 +459,8 @@ class WarningWidget:
 # TODO: Rename WarningWidget to FloatingWidget and make available to custom widget stuff??
 # TODO: Maybe add a z-index to all Widgets' Config etc. if we wanna go crazy!
 
+# TODO: ADD DOCUMENTATION FOR `Z`!
+
 # region WidgetContainer & essentials
 
 class WidgetContainer:
