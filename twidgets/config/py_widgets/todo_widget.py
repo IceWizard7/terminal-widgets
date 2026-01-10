@@ -111,6 +111,7 @@ def keyboard_press_action(widget: Widget, key: int, _widget_container: WidgetCon
 
     if 'todos' not in widget.draw_data:
         return
+
     len_todos = len(widget.draw_data['todos'])
     selected = widget.draw_data.get('selected_line', 0)
 
