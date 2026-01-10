@@ -16,11 +16,13 @@
 </div>
 
 ![Example Image of Terminal Widgets](examples/example_1.png)
-![Stats](https://img.shields.io/pypi/v/twidgets)
-![Stats](https://img.shields.io/pypi/pyversions/twidgets)
-![Stats](https://img.shields.io/pypi/l/twidgets)
-![Stats](https://static.pepy.tech/badge/twidgets)
-![Stats](https://static.pepy.tech/badge/twidgets/month)
+![PyPI Version](https://img.shields.io/pypi/v/twidgets)
+![Python Versions](https://img.shields.io/pypi/pyversions/twidgets)
+![License](https://img.shields.io/pypi/l/twidgets)
+![Downloads (all time)](https://static.pepy.tech/badge/twidgets)
+![Downloads (last month)](https://static.pepy.tech/badge/twidgets/month)
+
+### ⚠️ **Note:** This package is only compatible with Unix-based systems.
 
 ---
 
@@ -101,7 +103,7 @@ Adding new widgets is very easy. For a simple widget, that does not require heav
 you only need to define a configuration and 2 python functions
 
 > **Naming schemes are described [here](docs/widget_guide.md#33-adding-widgets-to-your-layout).** \
-> You can create an infinite amount of widgets, the file names `custom.yaml` and `custom_widget.py` are just examples.
+> You can create an infinite number of widgets, the file names `custom.yaml` and `custom_widget.py` are just examples.
 
 #### 3.1 Define Configuration (`.yaml`)
 
@@ -126,13 +128,12 @@ Then define `draw` and `build` functions.
 Example:
 
 ```python
-from twidgets.core.base import Widget, draw_widget, add_widget_content, Config, UIState, BaseConfig, CursesWindowType
-import typing
+from twidgets.core.base import Widget, WidgetContainer, Config, CursesWindowType
 
 # Define the draw function for content
-def draw(widget: Widget, ui_state: UIState, base_config: BaseConfig) -> None:
+def draw(widget: Widget, widget_container: WidgetContainer) -> None:
     # Initialize the widget title, make it loadable and highlightable
-    draw_widget(widget, ui_state, base_config)
+    draw_widget(widget, widget_container)
 
     # Add your content (list of strings)
     content: list[str] = [
@@ -140,7 +141,7 @@ def draw(widget: Widget, ui_state: UIState, base_config: BaseConfig) -> None:
         'This is a test.',
         'It was very easy to create.'
     ]
-    add_widget_content(widget, content)
+    widget.add_widget_content(content)
 
 # Define the build function
 def build(stdscr: CursesWindowType, config: Config) -> Widget:

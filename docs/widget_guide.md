@@ -5,16 +5,16 @@
 Create the configuration file at `~/.config/twidgets/widgets/custom.yaml`
 
 > **Naming schemes are described [here](#33-adding-widgets-to-your-layout).** \
-> You can create an infinite amount of widgets, the file names `custom.yaml` and `custom_widget.py` are just examples.
+> You can create an infinite number of widgets, the file names `custom.yaml` and `custom_widget.py` are just examples.
 
 Configure `name`, `title`, `enabled`, `interval`, `height`, `width`, `y` and `x`.
 For simple widgets, set `interval = 0` (see [Configuration Guide](configuration_guide.md))
 
 ### 3.2 Write the Widget Logic (`.py`)
-Create the widget's Python file at `~/.config/twidgets/py_widgets/custom_widget.py`
+Create the Python file for the widget at `~/.config/twidgets/py_widgets/custom_widget.py`
 
 > **Naming schemes are described [here](#33-adding-widgets-to-your-layout).** \
-> You can create an infinite amount of widgets, the file names `custom.yaml` and `custom_widget.py` are just examples.
+> You can create an infinite number of widgets, the file names `custom.yaml` and `custom_widget.py` are just examples.
 
 > Note that the built-in widgets are located in your python installation, at
 > `(python_installation_path)/lib/(python-version)/site-packages/twidgets/widgets/*_widget.py`
@@ -23,19 +23,19 @@ Create the widget's Python file at `~/.config/twidgets/py_widgets/custom_widget.
 
 Import:
 ```python
-from twidgets.core.base import Widget, draw_widget, add_widget_content, Config, UIState, BaseConfig, CursesWindowType
+from twidgets.core.base import Widget, WidgetContainer, Config, CursesWindowType
 ```
 
 #### 3.2.2 Simple widgets
 Then define a `draw` function:
 
 ```python
-def draw(widget: Widget, ui_state: UIState, base_config: BaseConfig) -> None:
+def draw(widget: Widget, widget_container: WidgetContainer) -> None:
 ```
 
 Start the function with:
 ```python
-draw_widget(widget, ui_state, base_config)
+draw_widget(widget, widget_container)
 ```
 
 which will initialise the widget title and make it loadable and highlightable.
@@ -45,54 +45,50 @@ which will initialise the widget title and make it loadable and highlightable.
 Add content with:
 ```python
 content: list[str] = ['line1', 'line2', 'line3', 'line4', 'line5']
-add_widget_content(widget, content)
+widget.add_widget_content(content)
 ```
 
 > Advanced: For precise text positioning or colours in a terminal widget use `safe_addstr`
 
 ```python
-from twidgets.core.base import (
-    safe_addstr,
-    convert_color_number_to_curses_pair,
-    CursesBold
-)
+from twidgets.core.base import CursesColors
 
-row: int = 3
-col: int = 2
+x: int = 3
+y: int = 2
 text: str = 'Example text'
 
-safe_addstr(
-    widget, row, col, text,
-    convert_color_number_to_curses_pair(base_config.PRIMARY_PAIR_NUMBER) | CursesBold)
+widget.safe_addstr(x, y, text, [widget_container.base_config.PRIMARY_PAIR_NUMBER], [CursesColors.BOLD])
 ```
 
 #### 3.2.4 Widgets with heavy loading
 
-If your widget requires heavy loading, API calls or the data doesn't need to be reloaded every frame,
+If your widget requires heavy loading, API calls or the data does not need to be reloaded every frame,
 move the update logic into its own function:  
 
+Import if needed:
 ```python
-from twidgets.core.base import ConfigLoader
 import typing
-
-def update(_widget: Widget, _config_loader: ConfigLoader) -> typing.Any:
 ```
 
-> Note that `widget` and `config_loader` will **always** be passed to your update function,
-> so make sure to keep those arguments.
+```python
+def update(widget: Widget, widget_container: WidgetContainer) -> typing.Any:
+```
 
-And modify the `draw` function to accept `info`.
+> Note that `widget` and `widget_container` will **always** be passed to your update function,
+> so make sure to keep these arguments, even if they are unused.
+
+Additionally, modify the `draw` function to accept `info`.
 (`info` will be passed automatically from the `update` function by the scheduler):
 
 ```python
-def draw(widget: Widget, ui_state: UIState, base_config: BaseConfig, info: typing.Any) -> None:
+def draw(widget: Widget, widget_container: WidgetContainer, info: typing.Any) -> None:
 ```
 
 Example:
 ```python
-def draw(widget: Widget, ui_state: UIState, base_config: BaseConfig, info: list[str]) -> None:
-    draw_widget(widget, ui_state, base_config)
-    add_widget_content(widget, info)
+def draw(widget: Widget, widget_container: WidgetContainer, info: list[str]) -> None:
+    draw_widget(widget, widget_container)
+    widget.add_widget_content(info)
 ```
 
 You can adapt the time, when the `update` function will be called again (reloading the data) by changing
@@ -107,12 +103,12 @@ You can adapt the time, when the `update` function will be called again (reloadi
 Example:
 
 ```python
-def mouse_click_action(widget: Widget, _mx: int, _my: int, _b_state: int, ui_state: UIState) -> None:
+def mouse_click_action(widget: Widget, mx: int, my: int, b_state: int, widget_container: WidgetContainer) -> None:
     # Click relative to widget border
-    local_y: int = _my - widget.dimensions.y - 1  # -1 for top border
+    local_y: int = my - widget.dimensions.y - 1  # -1 for top border
 ```
 
-This function will get called whenever a mouse click happens (in your widget), so you can use it to for example make
+This function will get called whenever a mouse click happens (in your widget), so you can use it, for example, to make
 clickable buttons.
 
 > Note that the widget border colour will automatically be updated on every mouse click,
@@ -123,11 +119,11 @@ clickable buttons.
 Example:
 
 ```python
-from twidgets.core.base import prompt_user_input, CursesKeys
+from twidgets.core.base import CursesKeys
 
-def keyboard_press_action(widget: Widget, key: typing.Any, ui_state: UIState, base_config: BaseConfig) -> None:
+def keyboard_press_action(widget: Widget, key: int, widget_container: WidgetContainer) -> None:
     if key in (CursesKeys.ENTER, 10, 13):  # Enter key + enter key codes
-        confirm = prompt_user_input(widget, 'Confirm deletion (y): ')
+        confirm = widget.prompt_user_input('Confirm deletion (y): ')
         if confirm.lower().strip() in ['y']:
             some_func(widget, ...)
 ```
@@ -139,22 +135,21 @@ This function will get called whenever a key is pressed while your widget is hig
 Example:
 
 ```python
-def init(widget: Widget, _ui_state: UIState, _base_config: BaseConfig) -> None:
-    load_todos(widget)
+def init(widget: Widget, widget_container: WidgetContainer) -> None:
+    load_todos(widget)  # Custom initialising logic, eg. loading todos
 ```
 
-This function will get called initially when `twidgets` is starting, or when the user manually reloads.
+This function will get called initially when `twidgets` starts or when the user manually reloads it.
 
 #### 3.2.5.4 Help functions
 
 Example:
 
 ```python
-def draw_help(widget: Widget, ui_state: UIState, base_config: BaseConfig) -> None:
-    draw_widget(widget, ui_state, base_config)
+def draw_help(widget: Widget, widget_container: WidgetContainer) -> None:
+    draw_widget(widget, widget_container)
 
-    add_widget_content(
-        widget,
+    widget.add_widget_content(
         [
             f'Help page ({widget.name} widget)',
             '',
@@ -163,7 +158,7 @@ def draw_help(widget: Widget, ui_state: UIState, base_config: BaseConfig) -> Non
     )
 ```
 
-This function will get called whenever the help key (Default: `h`) is getting pressed on your widget.
+This function will get called whenever the help key (default: `h`) is pressed for your widget.
 
 #### 3.2.5.5 Integrating custom functions
 
@@ -171,30 +166,31 @@ This function will get called whenever the help key (Default: `h`) is getting pr
 
 #### 3.2.6 Using secrets
 
-Import:
+Import if needed:
 ```python
-from twidgets.core.base import ConfigLoader  # Loading secrets (secrets.env)
 import typing
 ```
 
 Inside your update function:
 ```python
-def update(_widget: Widget, _config_loader: ConfigLoader) -> typing.Any:
+def update(widget: Widget, widget_container: WidgetContainer) -> typing.Any:
 ```
 
-You can now use:
+You can then use:
 ```python
-data: typing.Any = _config_loader.get_secret(key)
+data: typing.Any = widget_container.config_loader.get_secret(key)
 ```
-to get secrets.
+to retrieve secrets.
 
 Example:
 ```python
-def update(_widget: Widget, _config_loader: ConfigLoader) -> typing.Any:
-    api_key: str = _config_loader.get_secret('WEATHER_API_KEY')
+def update(widget: Widget, widget_container: WidgetContainer) -> typing.Any:
+    api_key: str = widget_container.config_loader.get_secret('WEATHER_API_KEY')
 ```
+TODO: Remove all occurrences of vars starting with _
+TODO: Remove BaseConfig & UIState
 
-> Note that this can only be used in the `update` function, so secrets don't get reloaded every frame.
+> Note that this can only be used in the `update` function, so secrets do not get reloaded every frame.
 
 #### 3.2.7 Adding custom data to your widget configuration
 
@@ -227,7 +223,7 @@ from twidgets.core.base import (
     LogMessage,
     LogLevels
 )
-def draw(widget: Widget, ui_state: UIState, base_config: BaseConfig) -> None:
+def draw(widget: Widget, widget_container: WidgetContainer) -> None:
     if not widget.config.some_value:  # Will be None if no attribute is found
         raise ConfigSpecificException(LogMessages([LogMessage(
             f'Configuration for some_value is missing / incorrect ("{widget.name}" widget)',

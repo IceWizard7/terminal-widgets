@@ -1,7 +1,7 @@
 ## 2. Configuration Guide
 
 ### 2.1 Changing standard colours and configuration
-Edit the `base.yaml` file under `~/.config/twidgets/base.yaml` to change standard colours and configuration.
+Edit the `base.yaml` file in `~/.config/twidgets/base.yaml` to change standard colours and configuration.
 
 If you let anything blank, it will fall back to the standard configuration. \
 However, you will get warned.
@@ -49,7 +49,7 @@ NEWS_FEED_NAME='BBC'
 
 ### 2.3 Adjust widgets and layouts
 
-Each widget has its own `.yaml` file under `~/.config/twidgets/widgets/`
+Each widget has its own `.yaml` file in `~/.config/twidgets/widgets/`
 
 You can adjust name, title, enabled status, position, size, and refresh interval.
 
