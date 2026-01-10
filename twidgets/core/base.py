@@ -223,7 +223,6 @@ class Config:
                 continue
             setattr(self, key, value)
 
-
     def __getattr__(self, name: str) -> typing.Any:  # only gets called if key is not found
         return None  # signal to code editor that any key may exist
 
@@ -1439,7 +1438,8 @@ class ConfigLoader:
         base_path = self.CONFIG_DIR / 'base.yaml'
         if not base_path.exists():
             if test_env:
-                return BaseConfig(log_messages=log_messages, _test_env=test_env)  # Fallback completely to BaseStandardFallbackConfig
+                # Fallback completely to BaseStandardFallbackConfig
+                return BaseConfig(log_messages=log_messages, _test_env=test_env)
             else:
                 raise ConfigFileNotFoundError(f'Base config "{base_path}" not found')
         try:
