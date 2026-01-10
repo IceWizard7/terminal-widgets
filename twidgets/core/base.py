@@ -835,7 +835,7 @@ class WidgetContainer:
 
     def init_colors(self) -> None:
         if self.test_env:
-            return  # Do not set up colors
+            return  # Do not set up colours
 
         curses.start_color()
         if self.base_config.use_standard_terminal_background:
@@ -946,7 +946,7 @@ class BaseConfig:
 
         base_cfg = BaseStandardFallBackConfig()
 
-        # Load fallback colors
+        # Load fallback colours
         self.background_color: RGBColor = base_cfg.background_color
         self.foreground_color: RGBColor = base_cfg.foreground_color
         self.primary_color: RGBColor = base_cfg.primary_color
@@ -982,7 +982,7 @@ class BaseConfig:
                 ))
             return getattr(self, field_name)  # type: ignore[no-any-return]
 
-        # Apply all colors via loop
+        # Apply all colours via loop
         color_inputs = {
             'background_color': background_color,
             'foreground_color': foreground_color,
