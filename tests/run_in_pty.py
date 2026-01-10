@@ -1,6 +1,7 @@
 import pty
 import sys
 
+
 def main() -> None:
     # Command to run inside PTY
     cmd = ["python", "tests/run_tests.py"]
@@ -13,6 +14,7 @@ def main() -> None:
 
     # Exit with correct code so GitHub Actions fails on test failures
     sys.exit(exit_code)
+
 
 if __name__ == "__main__":
     main()

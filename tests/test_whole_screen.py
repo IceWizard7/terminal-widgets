@@ -79,6 +79,9 @@ class TestWholeScreen(unittest.TestCase):
                     continue
                 if char == expected_char:
                     continue
-                raise AssertionError(f'"{char}" != "{expected_char}" (expected "{expected_char}"), Line {line_count + 1}, Char {char_count + 1}')
+                raise AssertionError(
+                    f'"{char}" != "{expected_char}"'
+                    f' (expected "{expected_char}"), Line {line_count + 1}, Char {char_count + 1}'
+                )
 
         self.assertEqual(True, True)
