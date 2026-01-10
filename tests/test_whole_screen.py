@@ -62,7 +62,9 @@ class TestWholeScreen(unittest.TestCase):
         ignored_character: str = '*'  # Any char in test_screen_expected_result.txt means Any
 
         if len(result) != len(expected_result):
-            raise AssertionError(f'Length of screenshot {len(result)} != {len(expected_result)} (expected {len(expected_result)})')
+            raise AssertionError(
+                f'Length of screenshot {len(result)} != {len(expected_result)} (expected {len(expected_result)})'
+            )
 
         print('\n\nResult:\n\n')
         for _line in result:
