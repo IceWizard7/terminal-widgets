@@ -53,11 +53,11 @@ widget.add_widget_content(content)
 ```python
 from twidgets.core.base import CursesColors
 
-x: int = 3
-y: int = 2
+y: int = 3
+x: int = 2
 text: str = 'Example text'
 
-widget.safe_addstr(x, y, text, [widget_container.base_config.PRIMARY_PAIR_NUMBER], [CursesColors.BOLD])
+widget.safe_addstr(y, x, text, [widget_container.base_config.PRIMARY_PAIR_NUMBER], [CursesColors.BOLD])
 ```
 
 #### 3.2.4 Widgets with heavy loading
