@@ -3,7 +3,7 @@
   <h3 align="center">🖥 Terminal Widgets</h3>
 
   <p align="center">
-    This tool enables you to create and run fully customizable dashboards directly in your terminal.
+    This tool enables you to create and run fully customisable dashboards directly in your terminal.
     <br />
   </p>
 </div>

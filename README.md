@@ -3,7 +3,7 @@
   <h3 align="center">🖥 Terminal Widgets</h3>
 
   <p align="center">
-    This tool enables you to create and run fully customizable dashboards directly in your terminal.
+    This tool enables you to create and run fully customisable dashboards directly in your terminal.
     <br />
     <br />
     <a href="#-1-getting-started">Getting started</a> •
@@ -46,7 +46,7 @@ For full documentation see [Setup Guide](docs/setup_guide.md).
 
 ### ✨ **2. Configuration**
 
-#### 2.1 Changing standard colors and configuration at `~/.config/twidgets/base.yaml`
+#### 2.1 Changing standard colours and configuration at `~/.config/twidgets/base.yaml`
 
 If you let anything blank, it will fall back to the standard configuration \
 However, you will get warned.

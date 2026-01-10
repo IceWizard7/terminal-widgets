@@ -1,7 +1,7 @@
 ## 2. Configuration Guide
 
-### 2.1 Changing standard colors and configuration
-Edit the `base.yaml` file under `~/.config/twidgets/base.yaml` to change standard colors and configuration.
+### 2.1 Changing standard colours and configuration
+Edit the `base.yaml` file under `~/.config/twidgets/base.yaml` to change standard colours and configuration.
 
 If you let anything blank, it will fall back to the standard configuration. \
 However, you will get warned.

@@ -38,7 +38,7 @@ Start the function with:
 draw_widget(widget, ui_state, base_config)
 ```
 
-which will initialize the widget title and make it loadable and highlightable.
+which will initialise the widget title and make it loadable and highlightable.
 
 #### 3.2.3 Add widget content
 
@@ -48,7 +48,7 @@ content: list[str] = ['line1', 'line2', 'line3', 'line4', 'line5']
 add_widget_content(widget, content)
 ```
 
-> Advanced: For precise text positioning or colors in a terminal widget use `safe_addstr`
+> Advanced: For precise text positioning or colours in a terminal widget use `safe_addstr`
 
 ```python
 from twidgets.core.base import (
@@ -100,7 +100,7 @@ You can adapt the time, when the `update` function will be called again (reloadi
 
 > To integrate this, see [building widget](#328-building-widget).
 
-#### 3.2.5 Custom mouse, keyboard, initialize & help functions
+#### 3.2.5 Custom mouse, keyboard, initialise & help functions
 
 #### 3.2.5.1 Mouse actions
 
@@ -115,7 +115,7 @@ def mouse_click_action(widget: Widget, _mx: int, _my: int, _b_state: int, ui_sta
 This function will get called whenever a mouse click happens (in your widget), so you can use it to for example make
 clickable buttons.
 
-> Note that the widget border color will automatically be updated on every mouse click,
+> Note that the widget border colour will automatically be updated on every mouse click,
 > without utilising your `mouse_click_action` function.
 
 #### 3.2.5.2 Keyboard actions
@@ -134,7 +134,7 @@ def keyboard_press_action(widget: Widget, key: typing.Any, ui_state: UIState, ba
 
 This function will get called whenever a key is pressed while your widget is highlighted.
 
-#### 3.2.5.3 Initialize functions
+#### 3.2.5.3 Initialise functions
 
 Example:
 
@@ -255,7 +255,7 @@ def build(stdscr: CursesWindowType, config: Config) -> Widget:
 
 ### 3.3 Adding widgets to your layout
 While integration is automatic, your files must still follow a specific naming convention for the system
-to recognize them as a valid widget:
+to recognise them as a valid widget:
 
 - **YAML Configuration File** (`~/.config/twidgets/widgets/`):
     * Must end with: **`.yaml`**
