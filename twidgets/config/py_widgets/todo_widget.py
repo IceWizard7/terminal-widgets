@@ -2,21 +2,15 @@ import json
 import pathlib
 from twidgets.core.base import (
     Widget,
+    WidgetContainer,
     Config,
     CursesWindowType,
-    draw_widget,
-    safe_addstr,
-    UIState,
-    BaseConfig,
-    prompt_user_input,
-    CursesReverse,
-    convert_color_number_to_curses_pair,
+    CursesColors,
     CursesKeys,
     ConfigSpecificException,
     LogMessages,
     LogMessage,
-    LogLevels,
-    add_widget_content
+    LogLevels
 )
 
 
@@ -79,19 +73,19 @@ def remove_highlighted_line(widget: Widget) -> None:
     widget.draw_data['selected_line'] = None
 
 
-def mouse_click_action(widget: Widget, _mx: int, _my: int, _b_state: int, ui_state: UIState) -> None:
+def mouse_click_action(widget: Widget, _mx: int, my: int, _b_state: int, widget_container: WidgetContainer) -> None:
     load_todos(widget)
 
     if widget.help_mode:
         return
 
     todos = list(widget.draw_data.get('todos', {}).values())
-    if not todos or ui_state.highlighted != widget:
+    if not todos or widget_container.ui_state.highlighted != widget:
         widget.draw_data['selected_line'] = None
         return
 
     # Click relative to widget border
-    local_y: int = _my - widget.dimensions.current_y - 1  # -1 for top border
+    local_y: int = my - widget.dimensions.current_y - 1  # -1 for top border
     if 0 <= local_y < min(len(todos), widget.dimensions.current_height - 2):
         # Compute which part of todos is currently visible
         abs_index = widget.draw_data.get('selected_line', 0) or 0
@@ -109,7 +103,7 @@ def mouse_click_action(widget: Widget, _mx: int, _my: int, _b_state: int, ui_sta
         widget.draw_data['selected_line'] = None
 
 
-def keyboard_press_action(widget: Widget, key: int, _ui_state: UIState, _base_config: BaseConfig) -> None:
+def keyboard_press_action(widget: Widget, key: int, _widget_container: WidgetContainer) -> None:
     load_todos(widget)
 
     if widget.help_mode:
@@ -140,14 +134,14 @@ def keyboard_press_action(widget: Widget, key: int, _ui_state: UIState, _base_co
 
     # Add new to_do
     if key in (CursesKeys.ENTER, 10, 13):
-        new_todo = prompt_user_input(widget, 'New To-Do: ')
+        new_todo = widget.prompt_user_input('New To-Do: ')
         if new_todo.strip():
             add_todo(widget, new_todo.strip())
 
     # Delete to_do
     elif key in (CursesKeys.BACKSPACE, 127, 8):  # Backspace
         if len_todos > 0:
-            confirm = prompt_user_input(widget, 'Confirm deletion (y): ')
+            confirm = widget.prompt_user_input('Confirm deletion (y): ')
             if confirm.lower().strip() in ['y']:
                 remove_todo(widget, widget.draw_data['selected_line'])
 
@@ -185,14 +179,14 @@ def render_todos(todos: list[str], highlighted_line: int | None, max_render: int
     return visible_todos, rel_index
 
 
-def init(widget: Widget, _ui_state: UIState, _base_config: BaseConfig) -> None:
+def init(widget: Widget, _widget_container: WidgetContainer) -> None:
     load_todos(widget)
 
 
-def draw(widget: Widget, ui_state: UIState, base_config: BaseConfig) -> None:
-    draw_widget(widget, ui_state, base_config, widget.title)
+def draw(widget: Widget, widget_container: WidgetContainer) -> None:
+    widget_container.draw_widget(widget, widget.title)
 
-    if ui_state.highlighted != widget:
+    if widget_container.ui_state.highlighted != widget:
         remove_highlighted_line(widget)
 
     todos, rel_index = render_todos(
@@ -203,18 +197,17 @@ def draw(widget: Widget, ui_state: UIState, base_config: BaseConfig) -> None:
 
     for i, todo in enumerate(todos):
         if rel_index is not None and i == rel_index:
-            safe_addstr(
-                widget, 1 + i, 1, todo[:widget.dimensions.current_width - 2],
-                CursesReverse | convert_color_number_to_curses_pair(base_config.SECONDARY_PAIR_NUMBER))
+            widget.safe_addstr(
+                1 + i, 1, todo[:widget.dimensions.current_width - 2],
+                [widget_container.base_config.SECONDARY_PAIR_NUMBER], [CursesColors.REVERSE])
         else:
-            safe_addstr(widget, 1 + i, 1, todo[:widget.dimensions.current_width - 2])
+            widget.safe_addstr(1 + i, 1, todo[:widget.dimensions.current_width - 2])
 
 
-def draw_help(widget: Widget, ui_state: UIState, base_config: BaseConfig) -> None:
-    draw_widget(widget, ui_state, base_config)
+def draw_help(widget: Widget, widget_container: WidgetContainer) -> None:
+    widget_container.draw_widget(widget)
 
-    add_widget_content(
-        widget,
+    widget.add_widget_content(
         [
             f'Help page ({widget.name} widget)',
             '',

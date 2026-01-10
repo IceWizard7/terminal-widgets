@@ -1,7 +1,6 @@
 import typing
 import unittest
 from twidgets.core.base import WidgetContainer, returnable_curses_wrapper, CursesWindowType
-import twidgets.widgets as widgets_pkg
 import os
 import time as time_module
 
@@ -12,7 +11,7 @@ os.environ['COLUMNS'] = '172'
 class TestWholeScreen(unittest.TestCase):
     def test_whole_screen(self) -> None:
         def main_curses(stdscr: CursesWindowType) -> list[str]:
-            widget_container: WidgetContainer = WidgetContainer(stdscr, widgets_pkg, test_env=True)
+            widget_container: WidgetContainer = WidgetContainer(stdscr, test_env=True)
             widget_container.scan_config()
             widget_container.init_curses_setup()
             widget_container.add_widget_list(list(widget_container.build_widgets().values()))
@@ -31,7 +30,7 @@ class TestWholeScreen(unittest.TestCase):
 
                 for widget in widget_container.return_widgets():
                     if not widget.updatable():
-                        widget.draw(widget_container)
+                        widget.draw_function(widget_container)
                         widget.noutrefresh()
                         continue
 
@@ -39,7 +38,7 @@ class TestWholeScreen(unittest.TestCase):
                         with widget.lock:
                             data_copy: typing.Any = widget.draw_data.copy()
                         # if '__error__' not in data_copy:
-                        widget.draw(widget_container, data_copy)
+                        widget.draw_function(widget_container, data_copy)
                     else:
                         # Data still loading
                         done = False
@@ -49,6 +48,9 @@ class TestWholeScreen(unittest.TestCase):
             widget_container.update_screen()
 
             screenshot: list[str] = []
+
+            height: int
+            width: int
             height, width = stdscr.getmaxyx()
             for y in range(height):
                 y_line: str = stdscr.instr(y, 0, width).decode('utf-8')
@@ -59,20 +61,20 @@ class TestWholeScreen(unittest.TestCase):
         result: list[str] = returnable_curses_wrapper(main_curses)
         with open('tests/test_screen_expected_result.txt', 'r') as file:
             expected_result: list[str] = file.readlines()
-        ignored_character: str = '*'  # Any char in test_screen_expected_result.txt means Any
+        ignored_character: str = '*'  # Char (in test_screen_expected_result.txt) that means Any
 
         if len(result) != len(expected_result):
             raise AssertionError(
                 f'Length of screenshot {len(result)} != {len(expected_result)} (expected {len(expected_result)})'
             )
 
+        line: str
+        expected_line: str
         print('\n\nResult:\n\n')
-        for _line in result:
-            print(_line)
+        for line in result:
+            print(line)
 
-        for line_count, lines in enumerate(zip(result, expected_result)):
-            line: str = lines[0]
-            expected_line: str = lines[1]
+        for line_count, (line, expected_line) in enumerate(zip(result, expected_result)):
             for char_count, chars in enumerate(zip(line, expected_line)):
                 char: str = chars[0]
                 expected_char: str = chars[1]

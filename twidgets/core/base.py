@@ -12,11 +12,11 @@ import typing
 import collections
 import threading
 import time as time_module
-import pkgutil
 import types
 import importlib
 import importlib.util
 import sys
+import traceback
 import datetime
 
 
@@ -24,23 +24,13 @@ import datetime
 
 class Dimensions:
     def __init__(self, height: int, width: int, y: int, x: int) -> None:
-        self.base_height: int = height
         self.current_height: int = height
-        self.base_width: int = width
         self.current_width: int = width
-        self.base_y: int = y
         self.current_y: int = y
-        self.base_x: int = x
         self.current_x: int = x
 
     def formatted(self) -> list[int]:
         return [self.current_height, self.current_width, self.current_y, self.current_x]
-
-    # def reset_dimensions(self) -> None:
-    #     self.current_height = self.base_height
-    #     self.current_width = self.base_width
-    #     self.current_y = self.base_y
-    #     self.current_x = self.base_x
 
     def within_borders(self, min_height: int, min_width: int) -> bool:
         return (
@@ -53,18 +43,18 @@ class Dimensions:
 
 class Widget:
     DrawFunction = typing.Callable[
-        ['Widget', 'UIState', 'BaseConfig'], None
+        ['Widget', 'WidgetContainer'], None
     ]
     DrawFunctionWithDrawData = typing.Callable[
-        ['Widget', 'UIState', 'BaseConfig', list[str]], None
+        ['Widget', 'WidgetContainer', list[str]], None
     ]
     HelpFunction = typing.Callable[
-        ['Widget', 'UIState', 'BaseConfig'], None
+        ['Widget', 'WidgetContainer'], None
     ]
-    UpdateFunction = typing.Callable[['Widget', 'ConfigLoader'], list[str]]
-    MouseClickUpdateFunction = typing.Callable[['Widget', int, int, int, 'UIState'], None]
-    KeyBoardUpdateFunction = typing.Callable[['Widget', int, 'UIState', 'BaseConfig'], None]
-    InitializeFunction = typing.Callable[['Widget', 'UIState', 'BaseConfig'], None]
+    UpdateFunction = typing.Callable[['Widget', 'WidgetContainer'], list[str]]
+    MouseClickUpdateFunction = typing.Callable[['Widget', int, int, int, 'WidgetContainer'], None]
+    KeyBoardUpdateFunction = typing.Callable[['Widget', int, 'WidgetContainer'], None]
+    InitializeFunction = typing.Callable[['Widget', 'WidgetContainer'], None]
 
     def __init__(
             self,
@@ -110,30 +100,26 @@ class Widget:
 
     def init(self, widget_container: WidgetContainer) -> None:
         if self._init_func and self.config.enabled:
-            self._init_func(self, widget_container.ui_state, widget_container.base_config)
+            self._init_func(self, widget_container)
 
-    def draw(self, widget_container: WidgetContainer, draw_data: typing.Any | None = None) -> None:
+    def draw_function(self, widget_container: WidgetContainer, draw_data: typing.Any | None = None) -> None:
         if not self.config.enabled:
             return
 
         if self.help_mode and self._help_func:
             try:
-                self._help_func(self, widget_container.ui_state, widget_container.base_config)
+                self._help_func(self, widget_container)
             except Exception:
-                pass
+                raise  # Re-Raise, catch in main.py
             return
 
         try:
             if draw_data is not None:
-                typing.cast(Widget.DrawFunctionWithDrawData, self._draw_func)(
-                    self, widget_container.ui_state, widget_container.base_config, draw_data
-                )
+                typing.cast(Widget.DrawFunctionWithDrawData, self._draw_func)(self, widget_container, draw_data)
             else:
-                typing.cast(Widget.DrawFunction, self._draw_func)(
-                    self, widget_container.ui_state, widget_container.base_config
-                )
+                typing.cast(Widget.DrawFunction, self._draw_func)(self, widget_container)
         except Exception:
-            pass
+            raise  # Re-Raise, catch in main.py
 
     def disable_help_mode(self) -> None:
         self.help_mode = False
@@ -147,9 +133,9 @@ class Widget:
         else:
             self.enable_help_mode()
 
-    def update(self, config_loader: ConfigLoader) -> list[str] | None:
+    def update(self, widget_container: WidgetContainer) -> list[str] | None:
         if self._update_func and self.config.enabled:
-            return self._update_func(self, config_loader)
+            return self._update_func(self, widget_container)
         return None
 
     def updatable(self) -> bool:
@@ -159,17 +145,157 @@ class Widget:
 
     def mouse_action(self, mx: int, my: int, b_state: int, widget_container: WidgetContainer) -> None:
         if self._mouse_click_func:
-            self._mouse_click_func(self, mx, my, b_state, widget_container.ui_state)
+            self._mouse_click_func(self, mx, my, b_state, widget_container)
 
     def keyboard_action(self, key: int, widget_container: WidgetContainer) -> None:
         if self._keyboard_func:
-            self._keyboard_func(self, key, widget_container.ui_state, widget_container.base_config)
+            self._keyboard_func(self, key, widget_container)
 
     def reinit_window(self, widget_container: WidgetContainer) -> None:
         try:
             self.win = widget_container.stdscr.subwin(*self.dimensions.formatted())
         except CursesError:
             self.win = None
+
+    def draw_colored_border(self, color_pair: int, test_env: bool) -> None:
+        if not self.win:
+            return
+
+        if test_env:
+            self.win.border()
+        else:
+            self.win.attron(curses.color_pair(color_pair))
+            self.win.border()
+            self.win.attroff(curses.color_pair(color_pair))
+
+    @staticmethod
+    def convert_color_number_to_curses_pair(color_number: int) -> int:
+        return curses.color_pair(color_number)
+
+    def safe_addstr(
+            self,
+            y: int,
+            x: int,
+            text: str,
+            color_numbers: list[int] | None = None,
+            curses_color_pairs: list[int] | None = None
+    ) -> None:
+        if not color_numbers:
+            color_numbers = []
+
+        if not curses_color_pairs:
+            curses_color_pairs = []
+
+        if not self.win:
+            return
+
+        max_y, max_x = self.win.getmaxyx()
+        if y < 0 or y >= max_y:
+            return
+        safe_text = text[:max_x - x - 1]
+        try:
+            color_pairs: list[int] = [self.convert_color_number_to_curses_pair(color) for color in color_numbers]
+            color: int = 0
+            for color_pair in color_pairs + curses_color_pairs:
+                color |= color_pair
+            self.win.addstr(y, x, safe_text, color)
+        except CursesError:
+            pass
+
+    def add_widget_content(self, content: list[str]) -> None:
+        if not self.win:
+            return
+
+        for i, line in enumerate(content):
+            if i < self.dimensions.current_height - 2:  # Keep inside border
+                self.win.addstr(1 + i, 1, line[:self.dimensions.current_width - 2])
+
+    def prompt_user_input(self, prompt: str) -> str:
+        if not self.win:
+            return ''
+
+        win = self.win
+
+        curses.curs_set(1)
+        win.keypad(True)  # Enable special keys (arrow keys, backspace, etc.)
+
+        may_y: int
+        max_x: int
+
+        max_y, max_x = win.getmaxyx()
+        input_y: int = max_y - 2
+        left_margin: int = 2
+        right_margin: int = 2
+        usable_width: int = max_x - (left_margin + right_margin)
+
+        input_x: int = left_margin + len(prompt)
+        max_input_len: int = max(0, usable_width - len(prompt) - 1)
+
+        input_str: str = ''
+        cursor_pos: int = 0
+
+        def redraw_input() -> None:
+            win.move(input_y, left_margin)
+            # Clear only the safe inner region (never touch border)
+            win.addstr(' ' * usable_width)
+            win.move(input_y, left_margin)
+            win.addstr(prompt)
+            visible_text = input_str[:max_input_len]
+            win.addstr(visible_text)
+            win.move(input_y, input_x + cursor_pos)
+            win.refresh()
+
+        try:
+            redraw_input()
+        except CursesError:
+            return ''
+
+        while True:
+            ch = win.get_wch()
+
+            if ch == '\n':  # ENTER
+                break
+            if ch == '\x1b' or ch == CursesKeys.ESCAPE:
+                input_str = ''  # Return empty string
+                break
+            elif ch in ('\b', '\x7f', curses.KEY_BACKSPACE):  # BACKSPACE
+                if cursor_pos > 0:
+                    input_str = input_str[:cursor_pos - 1] + input_str[cursor_pos:]
+                    cursor_pos -= 1
+                    try:
+                        redraw_input()
+                    except CursesError:
+                        return ''
+            elif ch == curses.KEY_LEFT:  # LEFT
+                if cursor_pos > 0:
+                    cursor_pos -= 1
+                    win.move(input_y, input_x + cursor_pos)
+                    win.refresh()
+            elif ch == curses.KEY_RIGHT:  # RIGHT
+                if cursor_pos < len(input_str):
+                    cursor_pos += 1
+                    win.move(input_y, input_x + cursor_pos)
+                    win.refresh()
+            elif ch == curses.KEY_DC:  # DELETE
+                if cursor_pos < len(input_str):
+                    input_str = input_str[:cursor_pos] + input_str[cursor_pos + 1:]
+                    try:
+                        redraw_input()
+                    except CursesError:
+                        return ''
+            elif isinstance(ch, int):  # Ignore other special keys
+                continue
+            elif isinstance(ch, str) and len(ch) == 1:  # Normal text input
+                if len(input_str) < max_input_len:
+                    input_str = input_str[:cursor_pos] + ch + input_str[cursor_pos:]
+                    cursor_pos += 1
+                    try:
+                        redraw_input()
+                    except CursesError:
+                        return ''
+
+        curses.curs_set(0)
+        return input_str
 
 
 class Config:
@@ -246,163 +372,9 @@ class RGBColor:
         return RGBColor(r=int(color['r']), g=int(color['g']), b=int(color['b']))
 
 
-def draw_colored_border(widget: Widget, color_pair: int, test_env: bool) -> None:
-    if not widget.win:
-        return
-
-    if test_env:
-        widget.win.border()
-    else:
-        widget.win.attron(curses.color_pair(color_pair))
-        widget.win.border()
-        widget.win.attroff(curses.color_pair(color_pair))
-
-
-def draw_widget(
-        widget: Widget,
-        ui_state: UIState,
-        base_config: BaseConfig,
-        title: str | None = None,
-        loading: bool = False,
-        error: bool = False,
-        test_env: bool = False
-) -> None:
-    if not widget.win:
-        return
-    if not title:
-        title = widget.title[:widget.dimensions.current_width - 4]
-    else:
-        title = title[:widget.dimensions.current_width - 4]
-    widget.win.erase()  # Instead of clear(), prevents flickering
-    if widget == ui_state.highlighted:
-        draw_colored_border(widget, base_config.PRIMARY_PAIR_NUMBER, test_env)
-    elif loading:
-        draw_colored_border(widget, base_config.LOADING_PAIR_NUMBER, test_env)
-    elif error:
-        draw_colored_border(widget, base_config.ERROR_PAIR_NUMBER, test_env)
-    else:
-        widget.win.border()
-    widget.win.addstr(0, 2, f'{title}')
-
-
-def add_widget_content(widget: Widget, content: list[str]) -> None:
-    if not widget.win:
-        return
-
-    for i, line in enumerate(content):
-        if i < widget.dimensions.current_height - 2:  # Keep inside border
-            widget.win.addstr(1 + i, 1, line[:widget.dimensions.current_width - 2])
-
-
-def convert_color_number_to_curses_pair(color_number: int) -> int:
-    return curses.color_pair(color_number)
-
-
-def safe_addstr(widget: Widget, y: int, x: int, text: str, color: int = 0) -> None:
-    if not widget.win:
-        return
-
-    max_y, max_x = widget.win.getmaxyx()
-    if y < 0 or y >= max_y:
-        return
-    safe_text = text[:max_x - x - 1]
-    try:
-        widget.win.addstr(y, x, safe_text, color)
-    except CursesError:
-        pass
-
-
-def prompt_user_input(widget: Widget, prompt: str) -> str:
-    if not widget.win:
-        return ''
-
-    win = widget.win
-
-    curses.curs_set(1)
-    win.keypad(True)  # Enable special keys (arrow keys, backspace, etc.)
-
-    may_y: int
-    max_x: int
-
-    max_y, max_x = win.getmaxyx()
-    input_y: int = max_y - 2
-    left_margin: int = 2
-    right_margin: int = 2
-    usable_width: int = max_x - (left_margin + right_margin)
-
-    input_x: int = left_margin + len(prompt)
-    max_input_len: int = max(0, usable_width - len(prompt) - 1)
-
-    input_str: str = ''
-    cursor_pos: int = 0
-
-    def redraw_input() -> None:
-        win.move(input_y, left_margin)
-        # Clear only the safe inner region (never touch border)
-        win.addstr(' ' * usable_width)
-        win.move(input_y, left_margin)
-        win.addstr(prompt)
-        visible_text = input_str[:max_input_len]
-        win.addstr(visible_text)
-        win.move(input_y, input_x + cursor_pos)
-        win.refresh()
-
-    try:
-        redraw_input()
-    except CursesError:
-        return ''
-
-    while True:
-        ch = win.get_wch()
-
-        if ch == '\n':  # ENTER
-            break
-        if ch == '\x1b' or ch == CursesKeys.ESCAPE:
-            input_str = ''  # Return empty string
-            break
-        elif ch in ('\b', '\x7f', curses.KEY_BACKSPACE):  # BACKSPACE
-            if cursor_pos > 0:
-                input_str = input_str[:cursor_pos - 1] + input_str[cursor_pos:]
-                cursor_pos -= 1
-                try:
-                    redraw_input()
-                except CursesError:
-                    return ''
-        elif ch == curses.KEY_LEFT:  # LEFT
-            if cursor_pos > 0:
-                cursor_pos -= 1
-                win.move(input_y, input_x + cursor_pos)
-                win.refresh()
-        elif ch == curses.KEY_RIGHT:  # RIGHT
-            if cursor_pos < len(input_str):
-                cursor_pos += 1
-                win.move(input_y, input_x + cursor_pos)
-                win.refresh()
-        elif ch == curses.KEY_DC:  # DELETE
-            if cursor_pos < len(input_str):
-                input_str = input_str[:cursor_pos] + input_str[cursor_pos + 1:]
-                try:
-                    redraw_input()
-                except CursesError:
-                    return ''
-        elif isinstance(ch, int):  # Ignore other special keys
-            continue
-        elif isinstance(ch, str) and len(ch) == 1:  # Normal text input
-            if len(input_str) < max_input_len:
-                input_str = input_str[:cursor_pos] + ch + input_str[cursor_pos:]
-                cursor_pos += 1
-                try:
-                    redraw_input()
-                except CursesError:
-                    return ''
-
-    curses.curs_set(0)
-    return input_str
-
-
 # endregion Widget & essentials
 
-# region WarningWidget & essentials
+# region WarningWidget
 
 class WarningWidget:
     def __init__(
@@ -424,6 +396,30 @@ class WarningWidget:
         except CursesError:
             self.win = None
 
+    def add_content(self, content: list[str]) -> None:
+        if not self.win:
+            return
+
+        for i, line in enumerate(content):
+            if i < self.dimensions.current_height - 2:  # Keep inside border
+                self.win.addstr(1 + i, 1, line[:self.dimensions.current_width - 2])
+
+    def draw_warning_widget(self, widget_container: WidgetContainer) -> None:
+        if not self.win:
+            return
+        title = self.title[:self.dimensions.current_width - 4]
+        self.win.erase()  # Instead of clear(), prevents flickering
+        self.draw_colored_border(widget_container.base_config.ERROR_PAIR_NUMBER)
+        self.win.addstr(0, 2, f'{title}')
+
+    def draw_colored_border(self, color_pair: int) -> None:
+        if not self.win:
+            return
+
+        self.win.attron(curses.color_pair(color_pair))
+        self.win.border()
+        self.win.attroff(curses.color_pair(color_pair))
+
     def reinit_window(self, widget_container: WidgetContainer) -> None:
         try:
             self.win = widget_container.stdscr.subwin(*self.dimensions.formatted())
@@ -436,8 +432,8 @@ class WarningWidget:
 
         self.erase_content()
         content = self.description
-        draw_warning_widget(self, widget_container)
-        add_warning_widget_content(self, content)
+        self.draw_warning_widget(widget_container)
+        self.add_content(content)
 
     def erase_content(self) -> None:
         if not self.win:
@@ -446,65 +442,47 @@ class WarningWidget:
         self.win.erase()
 
 
-def add_warning_widget_content(warning_widget: WarningWidget, content: list[str]) -> None:
-    if not warning_widget.win:
-        return
+# endregion WarningWidget
 
-    for i, line in enumerate(content):
-        if i < warning_widget.dimensions.current_height - 2:  # Keep inside border
-            warning_widget.win.addstr(1 + i, 1, line[:warning_widget.dimensions.current_width - 2])
-
-
-def draw_warning_widget(warning_widget: WarningWidget, widget_container: WidgetContainer) -> None:
-    if not warning_widget.win:
-        return
-    title = warning_widget.title[:warning_widget.dimensions.current_width - 4]
-    warning_widget.win.erase()  # Instead of clear(), prevents flickering
-    draw_colored_border_warning_widget(warning_widget, widget_container.base_config.ERROR_PAIR_NUMBER)
-    warning_widget.win.addstr(0, 2, f'{title}')
-
-
-def draw_colored_border_warning_widget(warning_widget: WarningWidget, color_pair: int) -> None:
-    if not warning_widget.win:
-        return
-
-    warning_widget.win.attron(curses.color_pair(color_pair))
-    warning_widget.win.border()
-    warning_widget.win.attroff(curses.color_pair(color_pair))
-
-
-# endregion WarningWidget & essentials
+# TODO: Rename WarningWidget to FloatingWidget and make available to other stuff??
+# TODO: Maybe add a z-index to all Widgets' Config etc. if we wanna go crazy!
 
 # region WidgetContainer & essentials
 
 class WidgetContainer:
-    def __init__(self, stdscr: CursesWindowType, widgets_pkg: types.ModuleType | None, test_env: bool) -> None:
+    def __init__(self, stdscr: CursesWindowType, test_env: bool) -> None:
         self.test_env = test_env
-
         self.stdscr = stdscr
         self.ui_state: UIState = UIState()
 
         # Logs (Warnings, Errors)
         self.log_messages: LogMessages = LogMessages()
 
-        # Widget Loader
-        self.widget_loader: WidgetLoader = WidgetLoader()
+        # Directories
+        self.ROOT_CONFIG_DIR = pathlib.Path.home() / '.config' / 'twidgets'
+        self.ROOT_PER_WIDGET_CONFIG_DIR = self.ROOT_CONFIG_DIR / 'widgets'
+        self.ROOT_PY_WIDGET_DIR = self.ROOT_CONFIG_DIR / 'py_widgets'
+        self.SCRIPT_DIR = pathlib.Path(__file__).resolve().parent.parent  # Test ENV
+        self.SCRIPT_DIR_PY_WIDGET_DIR = self.SCRIPT_DIR / 'config' / 'py_widgets'
+
+        # Widget Loader (after directories are generated)
+        self.widget_loader: WidgetLoader = WidgetLoader(self)
 
         # Define config loader (Only loads secrets)
-        self.config_loader: ConfigLoader = ConfigLoader(self.test_env)
+        self.config_loader: ConfigLoader = ConfigLoader(self)
         self.config_loader.reload_secrets()  # Needed to reload secrets.env changes
 
         # Initiate base config
-        self.base_config: BaseConfig = self.config_loader.load_base_config(self.log_messages, self.test_env)
+        self.base_config: BaseConfig = self.config_loader.load_base_config(self.log_messages)
 
         # Reloader Thread
         self.stop_event: threading.Event = threading.Event()
         self.reloader_thread: threading.Thread = threading.Thread(
             target=self.reload_widget_scheduler_function
         )
-        self.reloader_thread.daemon = True  # Don't block exit if something goes wrong
+        # self.reloader_thread.daemon = True  # Don't block exit if something goes wrong
+        threading.excepthook = self.crash_on_thread_exception
 
-        self.widgets_pkg = widgets_pkg
         self._warnings: list[WarningWidget] = []
         self._all_widgets: list[Widget] = []
         self._widgets: list[Widget] = []
@@ -516,8 +494,36 @@ class WidgetContainer:
             self._all_widgets.append(widget)
         if widget not in self._widgets:
             if any(widget.name == _widget.name for _widget in self._widgets):
-                raise DebugException(f'Widget "{widget.name}" is already defined')
+                # raise DebugException(f'Widget "{widget.name}" is already defined')
+                return
             self._widgets.append(widget)
+
+    def draw_widget(
+            self,
+            widget: Widget,
+            title: str | None = None,
+            loading: bool = False,
+            error: bool = False
+    ) -> None:
+        if not widget.win:
+            return
+
+        if not title:
+            title = widget.title[:widget.dimensions.current_width - 4]
+        else:
+            title = title[:widget.dimensions.current_width - 4]
+
+        widget.win.erase()  # Instead of clear(), prevents flickering
+
+        if widget == self.ui_state.highlighted:
+            widget.draw_colored_border(self.base_config.PRIMARY_PAIR_NUMBER, self.test_env)
+        elif loading:
+            widget.draw_colored_border(self.base_config.LOADING_PAIR_NUMBER, self.test_env)
+        elif error:
+            widget.draw_colored_border(self.base_config.ERROR_PAIR_NUMBER, self.test_env)
+        else:
+            widget.win.border()
+        widget.win.addstr(0, 2, f'{title}')
 
     @staticmethod
     def remove_widget_content(widget: Widget) -> None:
@@ -563,7 +569,7 @@ class WidgetContainer:
         return self._warnings
 
     def get_max_height_width_all_widgets(self) -> tuple[int, int]:
-        """Get max height, width for all widgets, not just activated ones."""
+        """Get max height, width for all widgets, not just activated widgets"""
         if not self.return_all_widgets():
             return 0, 0
 
@@ -629,9 +635,6 @@ class WidgetContainer:
             if warning_widget.win:
                 warning_widget.win.erase()
 
-    def discover_builtin_widgets(self) -> list[str]:
-        return self.widget_loader.discover_builtin_widgets(self.widgets_pkg)
-
     def discover_custom_widgets(self) -> list[str]:
         if self.test_env:
             return []
@@ -640,33 +643,20 @@ class WidgetContainer:
     def scan_config(self) -> None:
         # Scan configs
         config_scanner: ConfigScanner = ConfigScanner(self.config_loader)
-        config_scan_results: LogMessages | bool = config_scanner.scan_config(
-            self.discover_builtin_widgets() + self.discover_custom_widgets(), self.test_env
-        )
+        config_scan_results: LogMessages | bool = config_scanner.scan_config(self.discover_custom_widgets())
 
         if config_scan_results is not True:
             raise ConfigScanFoundError(config_scan_results)  # type: ignore[arg-type]
 
     def build_widgets(self) -> dict[str, Widget]:
         # Import all widget modules
-        builtin_widget_modules: dict[str, types.ModuleType] = self.widget_loader.load_builtin_widget_modules(
-            self.discover_builtin_widgets()
-        )
         custom_widget_modules: dict[str, types.ModuleType] = self.widget_loader.load_custom_widget_modules()
 
         try:
             if self.test_env:
-                widget_dict = self.widget_loader.build_widgets(
-                    self, self.config_loader, self.log_messages,
-                    builtin_widget_modules,
-                    self.test_env
-                )
+                widget_dict = self.widget_loader.build_widgets(self, custom_widget_modules)
             else:
-                widget_dict = self.widget_loader.build_widgets(
-                    self, self.config_loader, self.log_messages,
-                    builtin_widget_modules | custom_widget_modules,
-                    self.test_env
-                )
+                widget_dict = self.widget_loader.build_widgets(self, custom_widget_modules)
 
             return widget_dict
         except Exception:
@@ -691,8 +681,8 @@ class WidgetContainer:
         for widget in self.return_widgets():
             if not widget.win:
                 continue
-            draw_widget(widget, self.ui_state, self.base_config, loading=True, test_env=self.test_env)
-            add_widget_content(widget, [' Loading... '])
+            self.draw_widget(widget, loading=True)
+            widget.add_widget_content([' Loading... '])
             widget.win.refresh()
         return None
 
@@ -732,7 +722,9 @@ class WidgetContainer:
     def handle_mouse_input(self, key: int) -> None:
         if key == CursesKeys.MOUSE:
             try:
-                _, mx, my, _, b_state = curses.getmouse()
+                _me_id, mx, my, _mz, b_state = curses.getmouse()
+
+                # Bitwise and, check if button 1 is pressed
                 if b_state & CursesKeys.BUTTON1_PRESSED:
                     self.switch_windows(mx, my, b_state)
                     if self.ui_state.highlighted is not None:
@@ -890,8 +882,8 @@ class WidgetContainer:
             pass  # Ignore; Doesn't happen on Py3.13, but does on some versions of Py3.12
 
     def display_error(self, widget: Widget, content: list[str]) -> None:
-        draw_widget(widget, self.ui_state, self.base_config, ' Error ', error=True)
-        add_widget_content(widget, content)
+        self.draw_widget(widget, ' Error ', error=True)
+        widget.add_widget_content(content)
 
     def reload_widget_scheduler_function(self) -> None:
         while not self.stop_event.is_set():
@@ -910,7 +902,7 @@ class WidgetContainer:
                 # See widget.updatable(), types are safe.
                 if now - widget.last_updated >= widget.interval:  # type: ignore[operator]
                     try:
-                        widget.draw_data = widget.update(self.config_loader)
+                        widget.draw_data = widget.update(self)
                         widget.last_updated = now
                     except ConfigSpecificException as e:
                         widget.draw_data = {'__error__': e.log_messages}
@@ -919,6 +911,12 @@ class WidgetContainer:
 
             # Small sleep to avoid busy loop, tuned to a small value
             time_module.sleep(0.06667)  # -> ~15 FPS
+
+    @staticmethod
+    def crash_on_thread_exception(args: typing.Any) -> None:
+        print("Thread crashed:", args.exc_type.__name__, args.exc_value)
+        traceback.print_tb(args.exc_traceback)
+        sys.exit(1)
 
     @staticmethod
     def update_screen() -> None:
@@ -1120,21 +1118,27 @@ class UIState:
 
 # region Custom Exceptions
 
-class RestartException(Exception):
+class TWidgetException(Exception):
+    """Superclass for all `twidgets`-specific errors, never gets raised directly"""
+    def __init__(self, *args: typing.Any) -> None:
+        super().__init__(args)
+
+
+class RestartException(TWidgetException):
     """Raised to signal that the curses UI should restart"""
 
 
-class StopException(Exception):
+class StopException(TWidgetException):
     """Raised to signal that the curses UI should stop"""
     def __init__(self, log_messages: LogMessages) -> None:
         self.log_messages: LogMessages = log_messages
 
 
-class YAMLParseException(Exception):
+class YAMLParseException(TWidgetException):
     """Raised to signal that there was an error parsing a YAML file"""
 
 
-class TerminalTooSmall(Exception):
+class TerminalTooSmall(TWidgetException):
     def __init__(self, height: int, width: int, min_height: int, min_width: int) -> None:
         """Raised to signal that the terminal is too small"""
         self.height = height
@@ -1157,38 +1161,44 @@ class TerminalTooSmall(Exception):
             f'or remove widgets.\n'
 
 
-class ConfigScanFoundError(Exception):
+class ConfigScanFoundError(TWidgetException):
+    """Raised to signal that the ConfigScanner found an error"""
     def __init__(self, log_messages: LogMessages) -> None:
         self.log_messages: LogMessages = log_messages
         super().__init__(log_messages)
 
 
-class ConfigFileNotFoundError(Exception):
+class ConfigFileNotFoundError(TWidgetException):
+    """Raised to signal that a configuration (or base configuration) file was not found"""
     def __init__(self, error_details: str) -> None:
         self.error_details: str = error_details
         super().__init__(error_details)
 
 
-class ConfigSpecificException(Exception):
+class ConfigSpecificException(TWidgetException):
+    """Raised to signal that something is wrong with a widget configuration"""
     def __init__(self, log_messages: LogMessages) -> None:
         self.log_messages: LogMessages = log_messages
         super().__init__(log_messages)
 
 
-class WidgetSourceFileException(Exception):
+class WidgetSourceFileException(TWidgetException):
+    """Raised to signal that the code for some widget python file is not correct"""
     def __init__(self, log_messages: LogMessages) -> None:
         self.log_messages: LogMessages = log_messages
         super().__init__(log_messages)
 
 
-class UnknownException(Exception):
+class UnknownException(TWidgetException):
+    """Raised instead of Exception to keep log messages and the initial exception that caused UnknownException"""
     def __init__(self, widget_container: WidgetContainer, initial_exception: Exception) -> None:
         self.widget_container: WidgetContainer = widget_container
         self.initial_exception = initial_exception
         super().__init__(widget_container, initial_exception)
 
 
-class DebugException(Exception):
+class DebugException(TWidgetException):
+    """Raised to make debugging easier (not used in production)"""
     def __init__(self, error_message: str) -> None:
         self.error_message = error_message
         super().__init__(error_message)
@@ -1203,7 +1213,7 @@ class LogLevels(enum.Enum):
     INFO = (1, 'ℹ️ Info')
     DEBUG = (2, '🐞 Debug')
     WARNING = (3, '⚠️ Warnings')
-    ERROR = (4, '⚠️ Errors')  # 🔴️
+    ERROR = (4, '⚠️ Errors')  # Alternative Symbol: 🔴️
 
     @property
     def key(self) -> int:
@@ -1316,44 +1326,20 @@ class LogMessages:
 # region Loaders & Scanners
 
 class WidgetLoader:
-    def __init__(self) -> None:
-        self.CONFIG_DIR = pathlib.Path.home() / '.config' / 'twidgets'
-        self.PER_WIDGET_PY_DIR = self.CONFIG_DIR / 'py_widgets'
-
-    @staticmethod
-    def discover_builtin_widgets(widgets_pkg: types.ModuleType | None) -> list[str]:
-        """Discord built-in widgets in twidgets/widgets/*_widget.py"""
-        widget_names: list[str] = []
-
-        if not widgets_pkg:
-            return widget_names
-
-        for module in pkgutil.iter_modules(widgets_pkg.__path__):
-            # Only care about modules ending in `_widget`
-            if module.name.endswith('_widget'):
-                widget_name: str = module.name.replace('_widget', '')
-                widget_names.append(widget_name)
-
-        return widget_names
-
-    @staticmethod
-    def load_builtin_widget_modules(widget_names: list[str]) -> dict[str, types.ModuleType]:
-        """Load builtin widgets"""
-        modules: dict[str, types.ModuleType] = {}
-
-        for name in widget_names:
-            module_path = f'twidgets.widgets.{name}_widget'
-            modules[name] = importlib.import_module(module_path)
-
-        return modules
+    def __init__(self, widget_container: WidgetContainer) -> None:
+        self._test_env = widget_container.test_env
+        if self._test_env:
+            self.PY_WIDGET_DIR = widget_container.SCRIPT_DIR_PY_WIDGET_DIR
+        else:
+            self.PY_WIDGET_DIR = widget_container.ROOT_PY_WIDGET_DIR
 
     def discover_custom_widgets(self) -> list[str]:
         """Discover user-defined widgets in ~/.config/twidgets/py_widgets/*_widget.py"""
         widget_names: list[str] = []
-        if not self.PER_WIDGET_PY_DIR.exists():
+        if not self.PY_WIDGET_DIR.exists():
             return widget_names
 
-        for file in self.PER_WIDGET_PY_DIR.iterdir():
+        for file in self.PY_WIDGET_DIR.iterdir():
             if file.is_file() and file.name.endswith('_widget.py'):
                 widget_name = file.stem.replace('_widget', '')
                 widget_names.append(widget_name)
@@ -1363,34 +1349,34 @@ class WidgetLoader:
     def load_custom_widget_modules(self) -> dict[str, types.ModuleType]:
         """Load custom widgets dynamically from files"""
         modules: dict[str, types.ModuleType] = {}
-        if not self.PER_WIDGET_PY_DIR.exists():
+        if not self.PY_WIDGET_DIR.exists():
             return modules
 
-        for file in self.PER_WIDGET_PY_DIR.iterdir():
-            if file.is_file() and file.name.endswith('_widget.py'):
-                widget_name = file.stem.replace('_widget', '')
+        for file in self.PY_WIDGET_DIR.iterdir():
+            widget_name = ''
+            try:
+                if file.is_file() and file.name.endswith('_widget.py'):
+                    # widget_name = file.stem.replace('_widget', '')
+                    widget_name = file.stem
 
-                spec = importlib.util.spec_from_file_location(widget_name, file)
-                if spec and spec.loader:
-                    module = importlib.util.module_from_spec(spec)
-                    sys.modules[widget_name] = module
-                    spec.loader.exec_module(module)
-                    modules[widget_name] = module
+                    spec = importlib.util.spec_from_file_location(widget_name, file)
+                    if spec and spec.loader:
+                        module = importlib.util.module_from_spec(spec)
+                        sys.modules[widget_name] = module
+                        spec.loader.exec_module(module)
+                        modules[widget_name] = module
+            except Exception as e:
+                raise WidgetSourceFileException(LogMessages(
+                    [LogMessage(f'Error loading widget {widget_name}: {e}', LogLevels.ERROR.key)]
+                ))
 
         return modules
 
     @staticmethod
-    def build_widgets(
-            widget_container: WidgetContainer,
-            config_loader: ConfigLoader,
-            log_messages: LogMessages,
-            modules: dict[str, types.ModuleType],
-            test_env: bool
-    ) -> dict[str, Widget]:
+    def build_widgets(widget_container: WidgetContainer, modules: dict[str, types.ModuleType]) -> dict[str, Widget]:
         widgets: dict[str, Widget] = {}
-
         for name, module in modules.items():
-            widget_config = config_loader.load_widget_config(log_messages, name, test_env)
+            widget_config = widget_container.config_loader.load_widget_config(widget_container.log_messages, name)
             try:
                 widgets[name] = module.build(widget_container.stdscr, widget_config)
             except Exception:
@@ -1404,21 +1390,19 @@ class WidgetLoader:
 
 
 class ConfigLoader:
-    def __init__(self, test_env: bool) -> None:
-        self.CONFIG_DIR = pathlib.Path.home() / '.config' / 'twidgets'
-        self.PER_WIDGET_CONFIG_DIR = self.CONFIG_DIR / 'widgets'
-        self.SCRIPT_DIR = pathlib.Path(__file__).resolve().parent.parent  # for test_env
-        self.test_env = test_env
-        if self.test_env:
-            path = self.SCRIPT_DIR / 'config' / f'secrets.env.example'
-            dotenv.load_dotenv(path)
+    def __init__(self, widget_container: WidgetContainer) -> None:
+        self.SCRIPT_DIR = widget_container.SCRIPT_DIR
+        self.CONFIG_DIR = widget_container.ROOT_CONFIG_DIR
+        self.PER_WIDGET_CONFIG_DIR = widget_container.ROOT_PER_WIDGET_CONFIG_DIR
+        self._test_env = widget_container.test_env
+        if self._test_env:
+            dotenv.load_dotenv(self.SCRIPT_DIR / 'config' / f'secrets.env.example')
         else:
             dotenv.load_dotenv(self.CONFIG_DIR / 'secrets.env')
 
     def reload_secrets(self) -> None:
-        if self.test_env:
-            path = self.SCRIPT_DIR / 'config' / f'secrets.env.example'
-            dotenv.load_dotenv(path)
+        if self._test_env:
+            dotenv.load_dotenv(self.SCRIPT_DIR / 'config' / f'secrets.env.example')
         else:
             dotenv.load_dotenv(self.CONFIG_DIR / 'secrets.env', override=True)
 
@@ -1434,12 +1418,12 @@ class ConfigLoader:
         except yaml.scanner.ScannerError:
             raise YAMLParseException(f'Config for path "{path}" not valid YAML')
 
-    def load_base_config(self, log_messages: LogMessages, test_env: bool) -> BaseConfig:
+    def load_base_config(self, log_messages: LogMessages) -> BaseConfig:
         base_path = self.CONFIG_DIR / 'base.yaml'
         if not base_path.exists():
-            if test_env:
+            if self._test_env:
                 # Fallback completely to BaseStandardFallbackConfig
-                return BaseConfig(log_messages=log_messages, _test_env=test_env)
+                return BaseConfig(log_messages=log_messages, _test_env=self._test_env)
             else:
                 raise ConfigFileNotFoundError(f'Base config "{base_path}" not found')
         try:
@@ -1447,51 +1431,55 @@ class ConfigLoader:
         except yaml.parser.ParserError:
             raise YAMLParseException(f'Base config "{base_path}" not valid YAML')
 
-        return BaseConfig(log_messages=log_messages, _test_env=test_env, **pure_yaml)
+        return BaseConfig(log_messages=log_messages, _test_env=self._test_env, **pure_yaml)
 
-    def load_widget_config(self, log_messages: LogMessages, widget_name: str, test_env: bool) -> Config:
-        if test_env:
-            path = self.SCRIPT_DIR / 'config' / 'widgets' / f'{widget_name}.yaml'
+    def load_widget_config(self, log_messages: LogMessages, widget_name: str) -> Config:
+        config_name: str = widget_name.replace('_widget', '')
+
+        if self._test_env:
+            path = self.SCRIPT_DIR / 'config' / 'widgets' / f'{config_name}.yaml'
             if not path.exists():
-                raise ConfigFileNotFoundError(f'Config for widget "{widget_name}" not found (test_env), {path}')
+                raise ConfigFileNotFoundError(f'Config for widget "{config_name}" not found (test_env), {path}')
             try:
                 pure_yaml: dict[typing.Any, typing.Any] = self.load_yaml(path)
             except yaml.parser.ParserError:
-                raise YAMLParseException(f'Config for widget "{widget_name}" not valid YAML')
+                raise YAMLParseException(f'Config for widget "{config_name}" not valid YAML')
 
-            return Config(file_name=widget_name, log_messages=log_messages, _test_env=test_env, **pure_yaml)
+            return Config(file_name=config_name, log_messages=log_messages, _test_env=self._test_env, **pure_yaml)
 
-        path = self.PER_WIDGET_CONFIG_DIR / f'{widget_name}.yaml'
+        path = self.PER_WIDGET_CONFIG_DIR / f'{config_name}.yaml'
         if not path.exists():
-            raise ConfigFileNotFoundError(f'Config for widget "{widget_name}" not found')
+            raise ConfigFileNotFoundError(f'Config for widget "{config_name}" not found')
         try:
             pure_yaml = self.load_yaml(path)
         except yaml.parser.ParserError:
-            raise YAMLParseException(f'Config for widget "{widget_name}" not valid YAML')
+            raise YAMLParseException(f'Config for widget "{config_name}" not valid YAML')
 
-        return Config(file_name=widget_name, log_messages=log_messages, _test_env=test_env, **pure_yaml)
+        return Config(file_name=config_name, log_messages=log_messages, _test_env=self._test_env, **pure_yaml)
 
 
 class ConfigScanner:
     def __init__(self, config_loader: ConfigLoader) -> None:
-        self.config_loader = config_loader
+        self.test_env: bool  # TODO!
+        self.config_loader: ConfigLoader = config_loader
 
-    def scan_config(self, widget_names: list[str], test_env: bool) -> LogMessages | typing.Literal[True]:
+    def scan_config(self, widget_names: list[str]) -> LogMessages | typing.Literal[True]:
         """Scan config, either returns log messages or 'True' representing that no errors were found"""
         final_log: LogMessages = LogMessages()
 
         current_log: LogMessages = LogMessages()
         try:
-            self.config_loader.load_base_config(current_log, test_env)
+            self.config_loader.load_base_config(current_log)
             if current_log.contains_error():
                 final_log += current_log
         except YAMLParseException as e:
             final_log += LogMessages([LogMessage(str(e), LogLevels.ERROR.key)])
 
         for widget_name in widget_names:
+            config_name: str = widget_name.replace('_widget', '')
             current_log = LogMessages()
             try:
-                self.config_loader.load_widget_config(current_log, widget_name, test_env)
+                self.config_loader.load_widget_config(current_log, config_name)
                 if current_log.contains_error():
                     final_log += current_log
             except YAMLParseException as e:
@@ -1507,10 +1495,12 @@ class ConfigScanner:
 # region Constants
 
 CursesWindowType = _curses.window  # Type of stdscr, widget.win
-
-CursesBold = curses.A_BOLD
-CursesReverse = curses.A_REVERSE
 CursesError = _curses.error
+
+
+class CursesColors(enum.IntEnum):
+    REVERSE = curses.A_REVERSE
+    BOLD = curses.A_BOLD
 
 
 class CursesKeys(enum.IntEnum):

@@ -1,20 +1,16 @@
 import requests
 from twidgets.core.base import (
     Widget,
+    WidgetContainer,
     Config,
-    CursesWindowType,
-    draw_widget,
-    add_widget_content,
-    ConfigLoader,
-    UIState,
-    BaseConfig
+    CursesWindowType
 )
 
 
-def update(_widget: Widget, _config_loader: ConfigLoader) -> list[str]:
-    api_key: str | None = _config_loader.get_secret('WEATHER_API_KEY')
-    city: str | None = _config_loader.get_secret('WEATHER_CITY')
-    units: str | None = _config_loader.get_secret('WEATHER_UNIT')
+def update(_widget: Widget, widget_container: WidgetContainer) -> list[str]:
+    api_key: str | None = widget_container.config_loader.get_secret('WEATHER_API_KEY')
+    city: str | None = widget_container.config_loader.get_secret('WEATHER_CITY')
+    units: str | None = widget_container.config_loader.get_secret('WEATHER_UNIT')
 
     if api_key is None or city is None or units is None:
         return [
@@ -90,16 +86,15 @@ def update(_widget: Widget, _config_loader: ConfigLoader) -> list[str]:
         ]
 
 
-def draw(widget: Widget, ui_state: UIState, base_config: BaseConfig, info: list[str]) -> None:
-    draw_widget(widget, ui_state, base_config)
-    add_widget_content(widget, info)
+def draw(widget: Widget, widget_container: WidgetContainer, info: list[str]) -> None:
+    widget_container.draw_widget(widget)
+    widget.add_widget_content(info)
 
 
-def draw_help(widget: Widget, ui_state: UIState, base_config: BaseConfig) -> None:
-    draw_widget(widget, ui_state, base_config)
+def draw_help(widget: Widget, widget_container: WidgetContainer) -> None:
+    widget_container.draw_widget(widget)
 
-    add_widget_content(
-        widget,
+    widget.add_widget_content(
         [
             f'Help page ({widget.name} widget)',
             '',
