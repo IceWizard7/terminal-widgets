@@ -480,7 +480,8 @@ class WidgetContainer:
         self.reloader_thread: threading.Thread = threading.Thread(
             target=self.reload_widget_scheduler_function
         )
-        # self.reloader_thread.daemon = True  # Don't block exit if something goes wrong
+        if self.test_env:
+            self.reloader_thread.daemon = True  # Make tests exit when they are all executed
         threading.excepthook = self.crash_on_thread_exception
 
         self._warnings: list[WarningWidget] = []
