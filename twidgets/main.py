@@ -22,7 +22,7 @@ from twidgets.core.base import (
     UnknownException,
 
     # Wrapper (starting twidgets)
-    curses_wrapper
+    curses_wrapper, DebugException
 )
 
 
@@ -65,8 +65,12 @@ def main_curses(stdscr: CursesWindowType) -> None:
             if widget_container.stop_event.is_set():
                 break
 
-            # Refresh all widgets
-            for widget in widget_container.return_widgets():
+            # Main drawing loop (refresh all widgets)
+            for widget in (
+                    w
+                    for widgets in widget_container.return_widgets_ordered_by_z_index().values()
+                    for w in widgets
+            ):
                 try:
                     if widget_container.stop_event.is_set():
                         break

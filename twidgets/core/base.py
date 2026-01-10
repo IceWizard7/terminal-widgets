@@ -23,11 +23,12 @@ import datetime
 # region Widget & essentials
 
 class Dimensions:
-    def __init__(self, height: int, width: int, y: int, x: int) -> None:
+    def __init__(self, height: int, width: int, y: int, x: int, z_index: int) -> None:
         self.current_height: int = height
         self.current_width: int = width
         self.current_y: int = y
         self.current_x: int = x
+        self.z_index: int = z_index
 
     def formatted(self) -> list[int]:
         return [self.current_height, self.current_width, self.current_y, self.current_x]
@@ -312,6 +313,7 @@ class Config:
             width: int | None = None,
             y: int | None = None,
             x: int | None = None,
+            z: int | None = None,
             **kwargs: typing.Any  # Used for extra arguments, e.g. 'time_format' in clock_widget
     ) -> None:
         fields: list[tuple[str, object, type | tuple[type, ...]]] = [
@@ -323,6 +325,7 @@ class Config:
             ('width', width, int),
             ('y', y, int),
             ('x', x, int),
+            ('z', z, int),
         ]
 
         for field_name, value, expected_type in fields:
@@ -339,15 +342,24 @@ class Config:
         if interval == 0:
             self.interval = None
         self.last_updated: int = 0
-        self.dimensions: Dimensions = Dimensions(height=height, width=width, y=y, x=x)  # type: ignore[arg-type]
+        self.dimensions: Dimensions = Dimensions(
+            height=height, width=width, y=y, x=x, z_index=z  # type: ignore[arg-type]
+        )
 
         for key, value in kwargs.items():
-            if key.startswith('test_env_'):
-                setattr(self, key.removeprefix('test_env_'), value)
-                continue
-            if f'test_env_{key}' in kwargs.keys():
-                continue
-            setattr(self, key, value)
+            if _test_env:
+                if key.startswith('test_env_'):
+                    setattr(self, key.removeprefix('test_env_'), value)
+                    continue
+
+                if f'test_env_{key}' in kwargs.keys():
+                    continue
+
+                setattr(self, key, value)
+            else:
+                if key.startswith('test_env_'):
+                    continue
+                setattr(self, key, value)
 
     def __getattr__(self, name: str) -> typing.Any:  # only gets called if key is not found
         return None  # signal to code editor that any key may exist
@@ -444,7 +456,7 @@ class WarningWidget:
 
 # endregion WarningWidget
 
-# TODO: Rename WarningWidget to FloatingWidget and make available to other stuff??
+# TODO: Rename WarningWidget to FloatingWidget and make available to custom widget stuff??
 # TODO: Maybe add a z-index to all Widgets' Config etc. if we wanna go crazy!
 
 # region WidgetContainer & essentials
@@ -562,6 +574,16 @@ class WidgetContainer:
 
     def return_widgets(self) -> list[Widget]:
         return self._widgets
+
+    def return_widgets_ordered_by_z_index(self) -> dict[int, list[Widget]]:
+        widgets_by_z_index: dict[int, list[Widget]] = {}
+        for widget in self._widgets:
+            z_index = widget.dimensions.z_index
+            if z_index not in widgets_by_z_index.keys():
+                widgets_by_z_index[z_index] = [widget]
+            else:
+                widgets_by_z_index[z_index].append(widget)
+        return widgets_by_z_index
 
     def return_all_widgets(self) -> list[Widget]:
         return self._all_widgets
@@ -795,6 +817,7 @@ class WidgetContainer:
 
         warning_message_y = (current_terminal_height - warning_message_height) // 2
         warning_message_x = (current_terminal_width - warning_message_width) // 2
+        warning_message_z_index: int = 1000
 
         warning_error: TerminalTooSmall = TerminalTooSmall(
             current_terminal_height,
@@ -807,7 +830,8 @@ class WidgetContainer:
             warning_message_height,
             warning_message_width,
             warning_message_y,
-            warning_message_x
+            warning_message_x,
+            warning_message_z_index
         )
 
         if not warning_dimensions.within_borders(current_terminal_height, current_terminal_width):
@@ -1377,7 +1401,9 @@ class WidgetLoader:
     def build_widgets(widget_container: WidgetContainer, modules: dict[str, types.ModuleType]) -> dict[str, Widget]:
         widgets: dict[str, Widget] = {}
         for name, module in modules.items():
-            widget_config = widget_container.config_loader.load_widget_config(widget_container.log_messages, name)
+            widget_config: Config = widget_container.config_loader.load_widget_config(
+                widget_container.log_messages, name
+            )
             try:
                 widgets[name] = module.build(widget_container.stdscr, widget_config)
             except Exception:
@@ -1461,7 +1487,6 @@ class ConfigLoader:
 
 class ConfigScanner:
     def __init__(self, config_loader: ConfigLoader) -> None:
-        self.test_env: bool  # TODO!
         self.config_loader: ConfigLoader = config_loader
 
     def scan_config(self, widget_names: list[str]) -> LogMessages | typing.Literal[True]:
