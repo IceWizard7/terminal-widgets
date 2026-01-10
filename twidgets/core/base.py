@@ -459,25 +459,28 @@ class WarningWidget:
 # TODO: Rename WarningWidget to FloatingWidget and make available to custom widget stuff??
 # TODO: Maybe add a z-index to all Widgets' Config etc. if we wanna go crazy!
 
-# TODO: ADD DOCUMENTATION FOR `Z`!
+# TODO: Add documentation for `Z`!
+# TODO: prompt_user_input
+# 1) Freezes everything else
+# 2) Overlays on top of other widgets with higher z-index; issue?
 
 # region WidgetContainer & essentials
 
 class WidgetContainer:
     def __init__(self, stdscr: CursesWindowType, test_env: bool) -> None:
-        self.test_env = test_env
-        self.stdscr = stdscr
+        self.test_env: bool = test_env
+        self.stdscr: CursesWindowType = stdscr
         self.ui_state: UIState = UIState()
 
         # Logs (Warnings, Errors)
         self.log_messages: LogMessages = LogMessages()
 
         # Directories
-        self.ROOT_CONFIG_DIR = pathlib.Path.home() / '.config' / 'twidgets'
-        self.ROOT_PER_WIDGET_CONFIG_DIR = self.ROOT_CONFIG_DIR / 'widgets'
-        self.ROOT_PY_WIDGET_DIR = self.ROOT_CONFIG_DIR / 'py_widgets'
-        self.SCRIPT_DIR = pathlib.Path(__file__).resolve().parent.parent  # Test ENV
-        self.SCRIPT_DIR_PY_WIDGET_DIR = self.SCRIPT_DIR / 'config' / 'py_widgets'
+        self.ROOT_CONFIG_DIR: pathlib.Path = pathlib.Path.home() / '.config' / 'twidgets'
+        self.ROOT_PER_WIDGET_CONFIG_DIR: pathlib.Path = self.ROOT_CONFIG_DIR / 'widgets'
+        self.ROOT_PY_WIDGET_DIR: pathlib.Path = self.ROOT_CONFIG_DIR / 'py_widgets'
+        self.SCRIPT_DIR: pathlib.Path = pathlib.Path(__file__).resolve().parent.parent  # Test ENV
+        self.SCRIPT_DIR_PY_WIDGET_DIR: pathlib.Path = self.SCRIPT_DIR / 'config' / 'py_widgets'
 
         # Widget Loader (after directories are generated)
         self.widget_loader: WidgetLoader = WidgetLoader(self)
@@ -794,7 +797,14 @@ class WidgetContainer:
         # Find which widget was clicked
         self.ui_state.previously_highlighted = self.ui_state.highlighted
         self.ui_state.highlighted = None
-        for widget in self.return_widgets():
+
+        widgets_by_z: dict[int, list[Widget]] = self.return_widgets_ordered_by_z_index()
+
+        for widget in (
+                w
+                for z in sorted(widgets_by_z, reverse=True)  # Start at highest z-index
+                for w in widgets_by_z[z]
+        ):
             y1 = widget.dimensions.current_y
             y2 = y1 + widget.dimensions.current_height
             x1 = widget.dimensions.current_x

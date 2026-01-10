@@ -2,6 +2,7 @@ import os
 import typing
 from twidgets.core.base import (
     # Essentials
+    Widget,
     WidgetContainer,
     CursesWindowType,
 
@@ -65,11 +66,13 @@ def main_curses(stdscr: CursesWindowType) -> None:
             if widget_container.stop_event.is_set():
                 break
 
+            widgets_by_z: dict[int, list[Widget]] = widget_container.return_widgets_ordered_by_z_index()
+
             # Main drawing loop (refresh all widgets)
             for widget in (
                     w
-                    for widgets in widget_container.return_widgets_ordered_by_z_index().values()
-                    for w in widgets
+                    for z in sorted(widgets_by_z)
+                    for w in widgets_by_z[z]
             ):
                 try:
                     if widget_container.stop_event.is_set():
