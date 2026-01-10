@@ -6,6 +6,7 @@ height: 10
 width: 85
 y: 20
 x: 2
+z: 0
 
 save_path: '~/.config/twidgets/widgets/todo_save_file.txt'
 test_env_save_path: 'twidgets/config/widgets/todo_save_file.txt'
