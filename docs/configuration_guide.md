@@ -24,7 +24,7 @@ error_color:
 # ...
 
 # Any key (a-z, 0-9) works
-# You have to put it in quotes though, e.g. '7', or 'd'
+# Quotes are necessary, e.g. '7', or 'd'
 quit_key: 'q'
 reload_key: 'r'
 help_key: 'h'
@@ -67,8 +67,17 @@ height: 5  # Height of Widget
 width: 30  # Width of Widget
 y: 4  # Position of Widget (y)
 x: 87  # Position of Widget (x)
+z: 0 # See below for explanation
 
+# Custom attributes of the clock widget
 weekday_format: '%A'  # day of the week
 date_format: '%d.%m.%Y'  # us: '%m.%d.%Y', international: '%Y-%m-%d'
 time_format: '%H:%M:%S'  # time
 ```
+
+### 2.4 z-index
+
+Each widget has a `z` attribute. This can be any integer. If two or more widgets overlay, the widget with the highest
+z-index will be shown on top, and all other widgets will only be shown partially. If the `z` attributes are equal,
+the widget that got loaded last will appear on top. The order of widget loading order is based
+on the implementation of `pathlib.Path.iterdir()` on your platform. (Usually ordered by widget file name)

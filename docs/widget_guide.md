@@ -7,7 +7,7 @@ Create the configuration file at `~/.config/twidgets/widgets/custom.yaml`
 > **Naming schemes are described [here](#33-adding-widgets-to-your-layout).** \
 > You can create an infinite number of widgets, the file names `custom.yaml` and `custom_widget.py` are just examples.
 
-Configure `name`, `title`, `enabled`, `interval`, `height`, `width`, `y` and `x`.
+Configure `name`, `title`, `enabled`, `interval`, `height`, `width`, `y`, `x` and `z`.
 For simple widgets, set `interval = 0` (see [Configuration Guide](configuration_guide.md))
 
 ### 3.2 Write the Widget Logic (`.py`)
@@ -187,9 +187,6 @@ Example:
 def update(widget: Widget, widget_container: WidgetContainer) -> typing.Any:
     api_key: str = widget_container.config_loader.get_secret('WEATHER_API_KEY')
 ```
-TODO: Remove all occurrences of vars starting with _
-TODO: Remove BaseConfig & UIState
-
 > Note that this can only be used in the `update` function, so secrets do not get reloaded every frame.
 
 #### 3.2.7 Adding custom data to your widget configuration
@@ -208,7 +205,7 @@ custom_attribute: 'this is a custom attribute!'
 
 > Note that this will not be checked by the ConfigScanner.
 It only checks `base.yaml` for integrity, as well as `name`,
-`title`, `enabled`, `interval`, `height`, `width`, `y` and `x` for every widget.
+`title`, `enabled`, `interval`, `height`, `width`, `y`, `x` and `z` for every widget.
 > 
 > To detect if these attributes are missing, see the next section.
 

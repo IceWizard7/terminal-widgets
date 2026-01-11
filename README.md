@@ -88,6 +88,7 @@ height: 5
 width: 30
 y: 4
 x: 87
+z: 0
 
 weekday_format: '%A'  # day of the week
 date_format: '%d.%m.%Y'  # us: '%m.%d.%Y', international: '%Y-%m-%d'
@@ -118,6 +119,7 @@ height: 7
 width: 30
 y: 1
 x: 1
+z: 1
 ```
 
 #### 3.2 Write the Widget Logic (`.py`)
