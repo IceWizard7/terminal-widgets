@@ -16,11 +16,13 @@
 </div>
 
 ![Example Image of Terminal Widgets](examples/example_1.png)
-![Stats](https://img.shields.io/pypi/v/twidgets)
-![Stats](https://img.shields.io/pypi/pyversions/twidgets)
-![Stats](https://img.shields.io/pypi/l/twidgets)
-![Stats](https://static.pepy.tech/badge/twidgets)
-![Stats](https://static.pepy.tech/badge/twidgets/month)
+![PyPI Version](https://img.shields.io/pypi/v/twidgets)
+![Python Versions](https://img.shields.io/pypi/pyversions/twidgets)
+![License](https://img.shields.io/pypi/l/twidgets)
+![Downloads (all time)](https://static.pepy.tech/badge/twidgets)
+![Downloads (last month)](https://static.pepy.tech/badge/twidgets/month)
+
+### ⚠️ **Note:** This package is only compatible with Unix-based systems.
 
 ---
 
@@ -86,6 +88,7 @@ height: 5
 width: 30
 y: 4
 x: 87
+z: 0
 
 weekday_format: '%A'  # day of the week
 date_format: '%d.%m.%Y'  # us: '%m.%d.%Y', international: '%Y-%m-%d'
@@ -101,7 +104,7 @@ Adding new widgets is very easy. For a simple widget, that does not require heav
 you only need to define a configuration and 2 python functions
 
 > **Naming schemes are described [here](docs/widget_guide.md#33-adding-widgets-to-your-layout).** \
-> You can create an infinite amount of widgets, the file names `custom.yaml` and `custom_widget.py` are just examples.
+> You can create an infinite number of widgets, the file names `custom.yaml` and `custom_widget.py` are just examples.
 
 #### 3.1 Define Configuration (`.yaml`)
 
@@ -116,6 +119,7 @@ height: 7
 width: 30
 y: 1
 x: 1
+z: 1
 ```
 
 #### 3.2 Write the Widget Logic (`.py`)
@@ -126,13 +130,12 @@ Then define `draw` and `build` functions.
 Example:
 
 ```python
-from twidgets.core.base import Widget, draw_widget, add_widget_content, Config, UIState, BaseConfig, CursesWindowType
-import typing
+from twidgets.core.base import Widget, WidgetContainer, Config, CursesWindowType
 
 # Define the draw function for content
-def draw(widget: Widget, ui_state: UIState, base_config: BaseConfig) -> None:
+def draw(widget: Widget, widget_container: WidgetContainer) -> None:
     # Initialize the widget title, make it loadable and highlightable
-    draw_widget(widget, ui_state, base_config)
+    draw_widget(widget, widget_container)
 
     # Add your content (list of strings)
     content: list[str] = [
@@ -140,7 +143,7 @@ def draw(widget: Widget, ui_state: UIState, base_config: BaseConfig) -> None:
         'This is a test.',
         'It was very easy to create.'
     ]
-    add_widget_content(widget, content)
+    widget.add_widget_content(content)
 
 # Define the build function
 def build(stdscr: CursesWindowType, config: Config) -> Widget:
@@ -158,7 +161,13 @@ For full documentation see [Widget Guide](docs/widget_guide.md).
 
 ---
 
-### 🌅 **4. Examples**
+### **4. Upgrading to 2.0 ⚠️**
+
+Version 2.0 introduces breaking changes. Please see the [migration guide](docs/migration/v1.3-v2.0.md) for instructions on updating your code.
+
+---
+
+### 🌅 **5. Examples**
 
 ![Example 1 of Terminal Widgets](examples/example_1.png)
 ![Example 2 of Terminal Widgets](examples/example_2.png)
@@ -168,12 +177,12 @@ For all examples see [Examples](examples/index.md).
 
 ---
 
-### 🧩 **5. Contributing**
+### 🧩 **6. Contributing**
 
 Help the project grow: create an issue or pull request!
 
 ---
 
-### 📜 **6. License**
+### 📜 **7. License**
 
 See [License](LICENSE)

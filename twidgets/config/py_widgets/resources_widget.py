@@ -2,17 +2,13 @@ import psutil
 import shutil
 from twidgets.core.base import (
     Widget,
+    WidgetContainer,
     Config,
-    CursesWindowType,
-    draw_widget,
-    add_widget_content,
-    ConfigLoader,
-    UIState,
-    BaseConfig
+    CursesWindowType
 )
 
 
-def update(_widget: Widget, _config_loader: ConfigLoader) -> list[str]:
+def update(widget: Widget, _widget_container: WidgetContainer) -> list[str]:
     cpu = psutil.cpu_percent()
     cpu_cores = psutil.cpu_count(logical=False)
     max_freq_mhz = 0.0
@@ -33,8 +29,8 @@ def update(_widget: Widget, _config_loader: ConfigLoader) -> list[str]:
     disk_usage = shutil.disk_usage('/')
     network = psutil.net_io_counters()
 
-    old_bytes_sent: int = _widget.internal_data.get('bytes_sent')
-    old_bytes_recv: int = _widget.internal_data.get('bytes_recv')
+    old_bytes_sent: int = widget.internal_data.get('bytes_sent')
+    old_bytes_recv: int = widget.internal_data.get('bytes_recv')
 
     new_bytes_sent: int = network.bytes_sent
     new_bytes_recv: int = network.bytes_recv
@@ -42,15 +38,15 @@ def update(_widget: Widget, _config_loader: ConfigLoader) -> list[str]:
     difference_bytes_sent_mib: float = 0.0
     difference_bytes_recv_mib: float = 0.0
 
-    if _widget.config.interval is not None:
+    if widget.config.interval is not None:
         if old_bytes_sent is not None:
-            difference_bytes_sent_mib = round(((new_bytes_sent - old_bytes_sent) / _widget.config.interval) /
+            difference_bytes_sent_mib = round(((new_bytes_sent - old_bytes_sent) / widget.config.interval) /
                                               (1024 ** 2), 2)
         if old_bytes_recv is not None:
-            difference_bytes_recv_mib = round(((new_bytes_recv - old_bytes_recv) / _widget.config.interval) /
+            difference_bytes_recv_mib = round(((new_bytes_recv - old_bytes_recv) / widget.config.interval) /
                                               (1024 ** 2), 2)
 
-    _widget.internal_data = {
+    widget.internal_data = {
         'bytes_sent': new_bytes_sent,
         'bytes_recv': new_bytes_recv,
     }
@@ -86,16 +82,15 @@ def update(_widget: Widget, _config_loader: ConfigLoader) -> list[str]:
     ]
 
 
-def draw(widget: Widget, ui_state: UIState, base_config: BaseConfig, content: list[str]) -> None:
-    draw_widget(widget, ui_state, base_config)
-    add_widget_content(widget, content)
+def draw(widget: Widget, widget_container: WidgetContainer, content: list[str]) -> None:
+    widget_container.draw_widget(widget)
+    widget.add_widget_content(content)
 
 
-def draw_help(widget: Widget, ui_state: UIState, base_config: BaseConfig) -> None:
-    draw_widget(widget, ui_state, base_config)
+def draw_help(widget: Widget, widget_container: WidgetContainer) -> None:
+    widget_container.draw_widget(widget)
 
-    add_widget_content(
-        widget,
+    widget.add_widget_content(
         [
             f'Help page ({widget.name} widget)',
             '',

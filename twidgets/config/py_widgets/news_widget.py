@@ -2,19 +2,15 @@ import requests
 import feedparser  # type: ignore[import-untyped]
 from twidgets.core.base import (
     Widget,
+    WidgetContainer,
     Config,
-    CursesWindowType,
-    draw_widget,
-    add_widget_content,
-    ConfigLoader,
-    UIState,
-    BaseConfig
+    CursesWindowType
 )
 
 
-def update(_widget: Widget, _config_loader: ConfigLoader) -> list[str]:
-    feed_url: str | None = _config_loader.get_secret('NEWS_FEED_URL')
-    feed_name: str | None = _config_loader.get_secret('NEWS_FEED_NAME')
+def update(widget: Widget, widget_container: WidgetContainer) -> list[str]:
+    feed_url: str | None = widget_container.config_loader.get_secret('NEWS_FEED_URL')
+    feed_name: str | None = widget_container.config_loader.get_secret('NEWS_FEED_NAME')
 
     if feed_url is None:
         return [
@@ -24,7 +20,7 @@ def update(_widget: Widget, _config_loader: ConfigLoader) -> list[str]:
         ]
 
     if feed_name != '':
-        _widget.title = f'{_widget.config.title} [{feed_name}]'
+        widget.title = f'{widget.config.title} [{feed_name}]'
 
     content = []
 
@@ -62,16 +58,15 @@ def update(_widget: Widget, _config_loader: ConfigLoader) -> list[str]:
     return content
 
 
-def draw(widget: Widget, ui_state: UIState, base_config: BaseConfig, info: list[str]) -> None:
-    draw_widget(widget, ui_state, base_config)
-    add_widget_content(widget, info)
+def draw(widget: Widget, widget_container: WidgetContainer, info: list[str]) -> None:
+    widget_container.draw_widget(widget)
+    widget.add_widget_content(info)
 
 
-def draw_help(widget: Widget, ui_state: UIState, base_config: BaseConfig) -> None:
-    draw_widget(widget, ui_state, base_config)
+def draw_help(widget: Widget, widget_container: WidgetContainer) -> None:
+    widget_container.draw_widget(widget)
 
-    add_widget_content(
-        widget,
+    widget.add_widget_content(
         [
             f'Help page ({widget.name} widget)',
             '',

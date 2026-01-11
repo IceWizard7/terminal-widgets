@@ -7,19 +7,13 @@ import os
 import typing
 from twidgets.core.base import (
     Widget,
+    WidgetContainer,
     Config,
     CursesWindowType,
-    draw_widget,
-    safe_addstr,
-    ConfigLoader,
-    UIState,
-    BaseConfig,
-    convert_color_number_to_curses_pair,
     ConfigSpecificException,
     LogMessages,
     LogMessage,
-    LogLevels,
-    add_widget_content
+    LogLevels
 )
 
 
@@ -228,12 +222,12 @@ def return_linux_info() -> list[str]:
     ]
 
 
-def update(_widget: Widget, _config_loader: ConfigLoader) -> list[str]:
-    system_type: str | None = _widget.config.system_type
+def update(widget: Widget, _widget_container: WidgetContainer) -> list[str]:
+    system_type: str | None = widget.config.system_type
 
     if not system_type:
         raise ConfigSpecificException(LogMessages([LogMessage(
-            f'Configuration for system_type is missing / incorrect ("{_widget.name}" widget)',
+            f'Configuration for system_type is missing / incorrect ("{widget.name}" widget)',
             LogLevels.ERROR.key)]))
 
     if system_type == 'macos':
@@ -248,25 +242,19 @@ def update(_widget: Widget, _config_loader: ConfigLoader) -> list[str]:
         ]
 
 
-def draw(widget: Widget, ui_state: UIState, base_config: BaseConfig, lines: list[str]) -> None:
-    draw_widget(widget, ui_state, base_config)
-
-    if ui_state.highlighted == widget and widget.help_mode:
-        draw_help(widget, ui_state, base_config)
-        return
+def draw(widget: Widget, widget_container: WidgetContainer, lines: list[str]) -> None:
+    widget_container.draw_widget(widget)
 
     colors = [i for i in range(1, 18)]
 
     for i, line in enumerate(lines):
-        safe_addstr(widget, 1 + i, 2, line,
-                    convert_color_number_to_curses_pair(colors[i % len(colors)] + 6))
+        widget.safe_addstr(1 + i, 2, line, [colors[i % len(colors)] + 6])
 
 
-def draw_help(widget: Widget, ui_state: UIState, base_config: BaseConfig) -> None:
-    draw_widget(widget, ui_state, base_config)
+def draw_help(widget: Widget, widget_container: WidgetContainer) -> None:
+    widget_container.draw_widget(widget)
 
-    add_widget_content(
-        widget,
+    widget.add_widget_content(
         [
             f'Help page ({widget.name} widget)',
             '',

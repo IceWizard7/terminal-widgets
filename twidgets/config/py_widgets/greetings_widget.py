@@ -1,11 +1,8 @@
 from twidgets.core.base import (
     Widget,
+    WidgetContainer,
     Config,
     CursesWindowType,
-    draw_widget,
-    add_widget_content,
-    UIState,
-    BaseConfig,
     ConfigSpecificException,
     LogMessages,
     LogMessage,
@@ -13,7 +10,7 @@ from twidgets.core.base import (
 )
 
 
-def draw(widget: Widget, ui_state: UIState, base_config: BaseConfig) -> None:
+def draw(widget: Widget, widget_container: WidgetContainer) -> None:
     if not widget.config.your_name:
         raise ConfigSpecificException(LogMessages([LogMessage(
             f'Configuration for your_name is missing / incorrect ("{widget.name}" widget)',
@@ -23,15 +20,14 @@ def draw(widget: Widget, ui_state: UIState, base_config: BaseConfig) -> None:
         f'Hello, {widget.config.your_name}!'
     ]
 
-    draw_widget(widget, ui_state, base_config)
-    add_widget_content(widget, content)
+    widget_container.draw_widget(widget)
+    widget.add_widget_content(content)
 
 
-def draw_help(widget: Widget, ui_state: UIState, base_config: BaseConfig) -> None:
-    draw_widget(widget, ui_state, base_config)
+def draw_help(widget: Widget, widget_container: WidgetContainer) -> None:
+    widget_container.draw_widget(widget)
 
-    add_widget_content(
-        widget,
+    widget.add_widget_content(
         [
             f'Help page ({widget.name} widget)',
             'Displays a greeting message.'

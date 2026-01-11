@@ -2,31 +2,26 @@ import datetime
 import calendar
 from twidgets.core.base import (
     Widget,
+    WidgetContainer,
     Config,
     CursesWindowType,
-    draw_widget,
-    safe_addstr,
-    UIState,
-    BaseConfig,
-    CursesBold,
-    convert_color_number_to_curses_pair,
-    add_widget_content
+    CursesColors
 )
 
 
-def draw(widget: Widget, ui_state: UIState, base_config: BaseConfig) -> None:
-    draw_widget(widget, ui_state, base_config)
+def draw(widget: Widget, widget_container: WidgetContainer) -> None:
+    widget_container.draw_widget(widget)
 
     today = datetime.date.today()
     year, month, day = today.year, today.month, today.day
 
     # Month header
     month_name = today.strftime('%B %Y')
-    safe_addstr(widget, 1, 2, month_name)
+    widget.safe_addstr(1, 2, month_name)
 
     # Weekday headers
     weekdays = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su']
-    safe_addstr(widget, 2, 2, ' '.join(weekdays))
+    widget.safe_addstr(2, 2, ' '.join(weekdays))
 
     # Calendar days
     cal = calendar.Calendar(firstweekday=0)  # Monday first
@@ -35,23 +30,22 @@ def draw(widget: Widget, ui_state: UIState, base_config: BaseConfig) -> None:
     for i, week in enumerate(cal.monthdayscalendar(year, month)):
         for d in week:
             if d == 0:
-                safe_addstr(widget, row, col, ' ')
+                widget.safe_addstr(row, col, ' ')
             elif d == day:
-                safe_addstr(
-                    widget, row, col, f'{d:02}',
-                    convert_color_number_to_curses_pair(base_config.PRIMARY_PAIR_NUMBER) | CursesBold)
+                widget.safe_addstr(
+                    row, col, f'{d:02}', [widget_container.base_config.PRIMARY_PAIR_NUMBER], [CursesColors.BOLD]
+                )
             else:
-                safe_addstr(widget, row, col, f'{d:02}')
+                widget.safe_addstr(row, col, f'{d:02}')
             col += 3
         col = 2
         row += 1
 
 
-def draw_help(widget: Widget, ui_state: UIState, base_config: BaseConfig) -> None:
-    draw_widget(widget, ui_state, base_config)
+def draw_help(widget: Widget, widget_container: WidgetContainer) -> None:
+    widget_container.draw_widget(widget)
 
-    add_widget_content(
-        widget,
+    widget.add_widget_content(
         [
             'Help page ',
             f'({widget.name} widget)',

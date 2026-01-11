@@ -6,6 +6,7 @@ height: 5
 width: 30
 y: 4
 x: 87
+z: 0
 
 weekday_format: '%A'
 date_format: '%d.%m.%Y'  # us: '%m.%d.%Y', international: '%Y-%m-%d'

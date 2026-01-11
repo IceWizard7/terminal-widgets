@@ -1,28 +1,24 @@
 from twidgets.core.base import (
     Widget,
+    WidgetContainer,
     Config,
-    CursesWindowType,
-    draw_widget,
-    add_widget_content,
-    UIState,
-    BaseConfig
+    CursesWindowType
 )
 
 
-def draw(widget: Widget, ui_state: UIState, base_config: BaseConfig) -> None:
+def draw(widget: Widget, widget_container: WidgetContainer) -> None:
     mode: str = 'none'
-    if ui_state.highlighted:
-        mode = str(ui_state.highlighted.name)
+    if widget_container.ui_state.highlighted:
+        mode = str(widget_container.ui_state.highlighted.name)
 
-    draw_widget(widget, ui_state, base_config)
-    add_widget_content(widget, [mode])
+    widget_container.draw_widget(widget)
+    widget.add_widget_content([mode])
 
 
-def draw_help(widget: Widget, ui_state: UIState, base_config: BaseConfig) -> None:
-    draw_widget(widget, ui_state, base_config)
+def draw_help(widget: Widget, widget_container: WidgetContainer) -> None:
+    widget_container.draw_widget(widget)
 
-    add_widget_content(
-        widget,
+    widget.add_widget_content(
         [
             f'Help page ({widget.name} widget)',
             'Displays selected widget.'

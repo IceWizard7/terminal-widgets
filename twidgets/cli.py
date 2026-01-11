@@ -23,7 +23,7 @@ def init_command(args: typing.Any) -> None:
         print('Error: Could not find the package config files. Is \'twidgets\' installed correctly?', file=sys.stderr)
         sys.exit(1)
 
-    dest_config_dir = pathlib.Path.home() / '.config' / 'twidgets'
+    dest_config_dir: pathlib.Path = pathlib.Path.home() / '.config' / 'twidgets'
 
     # Create destination directory
     try:
@@ -33,13 +33,13 @@ def init_command(args: typing.Any) -> None:
         print(f'Error: Could not create directory {dest_config_dir}. {e}', file=sys.stderr)
         sys.exit(1)
 
-    # --- Improved File Copying Logic ---
+    # File copying logic
     with as_file(source_config_dir_traversable) as source_config_path:
 
         print(f'Copying config files to {dest_config_dir}...')
 
         # Define allowed extensions
-        allowed_extensions = {'.yaml', '.yml', '.env', '.env.example', '.example', '.txt'}
+        allowed_extensions = {'.yaml', '.yml', '.env', '.env.example', '.example', '.txt', '.py'}
 
         # Iterate ONCE to find all relevant files
         files_to_copy = [

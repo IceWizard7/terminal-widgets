@@ -3,6 +3,7 @@ __pycache__/*
 tests/__pycache__
 twidgets/__pycache__/*
 twidgets/config/__pycache__
+twidgets/config/py_widgets/__pycache__
 twidgets/core/__pycache__/*
 twidgets/widgets/__pycache__/*
 .idea/*
