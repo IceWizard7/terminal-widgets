@@ -456,13 +456,12 @@ class WarningWidget:
 
 # endregion WarningWidget
 
-# TODO: Rename WarningWidget to FloatingWidget and make available to custom widget stuff??
-# TODO: Maybe add a z-index to all Widgets' Config etc. if we wanna go crazy!
-
+# TODO: We could create a nice manager to change configuration? xD Or like make windows draggable :skull:
 # TODO: Add documentation for `Z`!
 # TODO: prompt_user_input
 # 1) Freezes everything else
 # 2) Overlays on top of other widgets with higher z-index; issue?
+# 3) add coordinates??
 
 # region WidgetContainer & essentials
 
@@ -681,11 +680,7 @@ class WidgetContainer:
         custom_widget_modules: dict[str, types.ModuleType] = self.widget_loader.load_custom_widget_modules()
 
         try:
-            if self.test_env:
-                widget_dict = self.widget_loader.build_widgets(self, custom_widget_modules)
-            else:
-                widget_dict = self.widget_loader.build_widgets(self, custom_widget_modules)
-
+            widget_dict = self.widget_loader.build_widgets(self, custom_widget_modules)
             return widget_dict
         except Exception:
             raise
