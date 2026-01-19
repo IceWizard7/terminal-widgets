@@ -120,12 +120,11 @@ def main_curses(stdscr: CursesWindowType) -> None:
 
                 widget.noutrefresh()
 
-            # Refresh all warnings
-            # Draw LAST, so they show on top
-            for warning in widget_container.return_all_warnings():
-                warning.draw(widget_container)
-                if warning.win:
-                    warning.win.noutrefresh()
+            # Refresh all floating widgets
+            # Draw last, so they show on top
+            for floating_widget in widget_container.return_all_floating_windows():
+                floating_widget.draw(widget_container)
+                floating_widget.noutrefresh()
             widget_container.update_screen()
         except (
                 RestartException,

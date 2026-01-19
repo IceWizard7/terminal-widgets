@@ -388,7 +388,66 @@ class RGBColor:
 
 # region WarningWidget
 
-class WarningWidget:
+class FloatingWidget:
+    def __init__(
+            self,
+            name: str,
+            title: str,
+            dimensions: Dimensions,
+            description: list[str],
+            stdscr: CursesWindowType
+    ) -> None:
+        self.name: str = name
+        self.title: str = title
+        self._dimensions: Dimensions = dimensions
+        self._description: list[str] = description
+        try:
+            self.win: CursesWindowType | None = stdscr.subwin(*self._dimensions.formatted())
+        except CursesError:
+            self.win = None
+
+    def noutrefresh(self) -> None:
+        if self.win:
+            self.win.noutrefresh()
+
+    def reinit_window(self, widget_container: WidgetContainer) -> None:
+        try:
+            self.win = widget_container.stdscr.subwin(*self._dimensions.formatted())
+        except CursesError:
+            self.win = None
+
+    def draw(self, widget_container: WidgetContainer) -> None:
+        if not self.win:
+            return
+
+        self.erase_content()
+
+        # Draw widget
+        if self.win:
+            title = self.title[:self._dimensions.current_width - 4]
+            self.win.erase()  # Instead of clear(), prevents flickering
+
+            # Add border
+            self.win.attron(curses.color_pair(widget_container.base_config.ERROR_PAIR_NUMBER))
+            self.win.border()
+            self.win.attroff(curses.color_pair(widget_container.base_config.ERROR_PAIR_NUMBER))
+
+            self.win.addstr(0, 2, f'{title}')
+
+        # Add content
+        if self.win:
+            for i, line in enumerate(self._description):
+                if i < self._dimensions.current_height - 2:  # Keep inside border
+                    self.win.addstr(1 + i, 1, line[:self._dimensions.current_width - 2])
+
+    def erase_content(self) -> None:
+        if not self.win:
+            return
+
+        self.win.erase()
+
+
+class WarningWidget(FloatingWidget):
     def __init__(
             self,
             name: str,
@@ -398,70 +457,12 @@ class WarningWidget:
             dimensions: Dimensions,
             stdscr: CursesWindowType
     ) -> None:
-        self.name = name
-        self.title = title
-        self.warning_error = warning_error
-        self.description = description
-        self.dimensions = dimensions
-        try:
-            self.win: CursesWindowType | None = stdscr.subwin(*self.dimensions.formatted())
-        except CursesError:
-            self.win = None
-
-    def add_content(self, content: list[str]) -> None:
-        if not self.win:
-            return
-
-        for i, line in enumerate(content):
-            if i < self.dimensions.current_height - 2:  # Keep inside border
-                self.win.addstr(1 + i, 1, line[:self.dimensions.current_width - 2])
-
-    def draw_warning_widget(self, widget_container: WidgetContainer) -> None:
-        if not self.win:
-            return
-        title = self.title[:self.dimensions.current_width - 4]
-        self.win.erase()  # Instead of clear(), prevents flickering
-        self.draw_colored_border(widget_container.base_config.ERROR_PAIR_NUMBER)
-        self.win.addstr(0, 2, f'{title}')
-
-    def draw_colored_border(self, color_pair: int) -> None:
-        if not self.win:
-            return
-
-        self.win.attron(curses.color_pair(color_pair))
-        self.win.border()
-        self.win.attroff(curses.color_pair(color_pair))
-
-    def reinit_window(self, widget_container: WidgetContainer) -> None:
-        try:
-            self.win = widget_container.stdscr.subwin(*self.dimensions.formatted())
-        except CursesError:
-            self.win = None
-
-    def draw(self, widget_container: WidgetContainer) -> None:
-        if not self.win:
-            return
-
-        self.erase_content()
-        content = self.description
-        self.draw_warning_widget(widget_container)
-        self.add_content(content)
-
-    def erase_content(self) -> None:
-        if not self.win:
-            return
-
-        self.win.erase()
+        super().__init__(name, title, dimensions, description, stdscr)
+        self.name: str = name
+        self.warning_error: Exception = warning_error
 
 
 # endregion WarningWidget
-
-# TODO: We could create a nice manager to change configuration? xD Or like make windows draggable :skull:
-# TODO: Add documentation for `Z`!
-# TODO: prompt_user_input
-# 1) Freezes everything else
-# 2) Overlays on top of other widgets with higher z-index; issue?
-# 3) add coordinates??
 
 # region WidgetContainer & essentials
 
@@ -500,7 +501,7 @@ class WidgetContainer:
             self.reloader_thread.daemon = True  # Make tests exit when they are all executed
         threading.excepthook = self.crash_on_thread_exception
 
-        self._warnings: list[WarningWidget] = []
+        self._floating_widgets: list[FloatingWidget] = []
         self._all_widgets: list[Widget] = []
         self._widgets: list[Widget] = []
 
@@ -566,11 +567,11 @@ class WidgetContainer:
         for widget in self._widgets:
             widget.reinit_window(self)
 
-    def reinit_all_warning_windows(self) -> None:
-        for warning in self._warnings:
-            warning.reinit_window(self)
-            if warning.win:
-                warning.win.noutrefresh()
+    def reinit_all_floating_windows(self) -> None:
+        for floating_widget in self._floating_widgets:
+            floating_widget.reinit_window(self)
+            if floating_widget.win:
+                floating_widget.win.noutrefresh()
 
     def add_widget_list(self, widget_list: list[Widget]) -> None:
         for widget in widget_list:
@@ -592,8 +593,8 @@ class WidgetContainer:
     def return_all_widgets(self) -> list[Widget]:
         return self._all_widgets
 
-    def return_all_warnings(self) -> list[WarningWidget]:
-        return self._warnings
+    def return_all_floating_windows(self) -> list[FloatingWidget]:
+        return self._floating_widgets
 
     def get_max_height_width_all_widgets(self) -> tuple[int, int]:
         """Get max height, width for all widgets, not just activated widgets"""
@@ -622,45 +623,28 @@ class WidgetContainer:
 
         return min_height, min_width
 
-    def return_similar_warnings(self, warning_widget: WarningWidget) -> list[WarningWidget]:
-        similar_warnings: list[WarningWidget] = []
+    def add_floating_widget(self, floating_widget: FloatingWidget) -> None:
+        self.remove_floating_widget_by_name_title(floating_widget.name, floating_widget.title)
+        self._floating_widgets.append(floating_widget)
 
-        for warning in self._warnings:
+    def remove_floating_widget_by_name_title(self, name: str, title: str) -> None:
+        remove_floating_widgets: list[FloatingWidget] = []
+
+        for floating_widget in self._floating_widgets:
             if (
-                    warning.name == warning_widget.name and
-                    warning.title == warning_widget.title
+                    floating_widget.name == name and
+                    floating_widget.title == title
             ):
-                similar_warnings.append(warning)
-        return similar_warnings
+                remove_floating_widgets.append(floating_widget)
 
-    def return_similar_warnings_by_name_title(self, name: str, title: str) -> list[WarningWidget]:
-        similar_warnings: list[WarningWidget] = []
+        for floating_widget in remove_floating_widgets:
+            self.remove_floating_widget(floating_widget)
 
-        for warning in self._warnings:
-            if (
-                    warning.name == name and
-                    warning.title == title
-            ):
-                similar_warnings.append(warning)
-        return similar_warnings
-
-    def add_warning(
-            self,
-            warning_widget: WarningWidget,
-    ) -> None:
-        similar_warnings: list[WarningWidget] = self.return_similar_warnings(warning_widget)
-
-        for similar_warning in similar_warnings:
-            self.remove_warning(similar_warning)
-
-        if not self.return_similar_warnings(warning_widget):
-            self._warnings.append(warning_widget)
-
-    def remove_warning(self, warning_widget: WarningWidget) -> None:
-        if warning_widget in self._warnings:
-            self._warnings.remove(warning_widget)
-            if warning_widget.win:
-                warning_widget.win.erase()
+    def remove_floating_widget(self, floating_widget: FloatingWidget) -> None:
+        if floating_widget in self._floating_widgets:
+            self._floating_widgets.remove(floating_widget)
+            if floating_widget.win:
+                floating_widget.win.erase()
 
     def discover_custom_widgets(self) -> list[str]:
         if self.test_env:
@@ -701,7 +685,12 @@ class WidgetContainer:
         self.stdscr.timeout(100)
 
     def loading_screen(self) -> None:
-        for widget in self.return_widgets():
+        widgets_by_z: dict[int, list[Widget]] = self.return_widgets_ordered_by_z_index()
+        for widget in (
+                w
+                for z in sorted(widgets_by_z)
+                for w in widgets_by_z[z]
+        ):
             if not widget.win:
                 continue
             self.draw_widget(widget, loading=True)
@@ -731,16 +720,14 @@ class WidgetContainer:
                 self.deactivate_widget(widget)
 
         self.reinit_all_widget_windows()  # Allows for making the terminal bigger
-        self.reinit_all_warning_windows()  # Allows for making the terminal bigger
+        self.reinit_all_floating_windows()  # Allows for making the terminal bigger
         if self.validate_terminal_too_small(min_height_current_layout, min_width_current_layout):
             self.display_error_message_screen_too_small(min_height_current_layout, min_width_current_layout)
         else:
-            similar_warnings: list[WarningWidget] = self.return_similar_warnings_by_name_title(
+            self.remove_floating_widget_by_name_title(
                 'terminal_too_small',
                 ' Terminal Too Small '
             )
-            for similar_warning in similar_warnings:
-                self.remove_warning(similar_warning)
 
     def handle_mouse_input(self, key: int) -> None:
         if key == CursesKeys.MOUSE:
@@ -853,9 +840,7 @@ class WidgetContainer:
             self.stdscr
         )
 
-        self.add_warning(
-            warning
-        )
+        self.add_floating_widget(warning)
 
     def init_colors(self) -> None:
         if self.test_env:
