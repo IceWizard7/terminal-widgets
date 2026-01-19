@@ -1,5 +1,5 @@
-name: 'neofetch'
-title: '  Neofetch '
+name: 'sysfetch'
+title: '  Sysfetch '
 enabled: True
 interval: 60
 height: 20
