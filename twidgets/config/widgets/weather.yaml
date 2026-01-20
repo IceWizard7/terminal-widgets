@@ -1,5 +1,6 @@
 name: 'weather'
-title: ' ☀ Weather '
+emoji_title: ' ☀ Weather '
+title: ' Weather '
 enabled: True
 interval: 1800
 height: 9

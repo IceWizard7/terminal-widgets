@@ -22,8 +22,8 @@ from twidgets.core.base import (
     CursesError,
     UnknownException,
 
-    # Wrapper (starting twidgets)
-    curses_wrapper, DebugException
+    # Wrapper (starts twidgets)
+    curses_wrapper
 )
 
 
@@ -42,7 +42,7 @@ def main_curses(stdscr: CursesWindowType) -> None:
     widget_container.init_curses_setup()
 
     # Build widgets
-    widget_container.add_widget_list(list(widget_container.build_widgets().values()))
+    widget_container.build_widgets()
 
     min_height: int
     min_width: int
@@ -153,14 +153,16 @@ def main_entry_point() -> None:
             # wrapper() has already cleaned up curses at this point
             continue  # Restart main
         except ConfigScanFoundError as e:
-            e.log_messages.print_log_messages(heading='Config errors & warnings (found by ConfigScanner):\n')
+            # e.log_messages.print_log_messages(heading='Config errors & warnings (found by ConfigScanner):\n')
+            e.log_messages.print_log_messages(heading='Config errors & warnings:\n')
             break
         except ConfigFileNotFoundError as e:
             print(f'⚠️ Config File Not Found Error: {e}')
             print(f'\nPerhaps you haven\'t initialized the configuration. Please run: twidgets init')
             break
         except ConfigSpecificException as e:
-            e.log_messages.print_log_messages(heading='Config errors & warnings (found at runtime):\n')
+            # e.log_messages.print_log_messages(heading='Config errors & warnings (found at runtime):\n')
+            e.log_messages.print_log_messages(heading='Config errors & warnings:\n')
             break
         except StopException as e:
             e.log_messages.print_log_messages(heading='Config errors & warnings:\n')

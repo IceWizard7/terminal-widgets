@@ -1,5 +1,6 @@
 name: 'resources'
-title: ' ⚙ Resources '
+emoji_title: ' ⚙ Resources '
+title: ' Resources '
 enabled: True
 interval: 4
 height: 10

@@ -302,11 +302,13 @@ class Widget:
 class Config:
     def __init__(
             self,
-            _test_env: bool,
             file_name: str,
-            log_messages: LogMessages,
+            widget_container: WidgetContainer,
+            test_env: bool,
+            error_found_by: str,
             name: str | None = None,
             title: str | None = None,
+            emoji_title: str | None = None,
             enabled: bool | None = None,
             interval: int | float | None = None,
             height: int | None = None,
@@ -316,7 +318,7 @@ class Config:
             z: int | None = None,
             **kwargs: typing.Any  # Used for extra arguments, e.g. 'time_format' in clock_widget
     ) -> None:
-        fields: list[tuple[str, object, type | tuple[type, ...]]] = [
+        required_fields: list[tuple[str, object, type | tuple[type, ...]]] = [
             ('name', name, str),
             ('title', title, str),
             ('enabled', enabled, bool),
@@ -328,26 +330,49 @@ class Config:
             ('z', z, int),
         ]
 
-        for field_name, value, expected_type in fields:
+        optional_fields: list[tuple[str, object, type | tuple[type, ...]]] = [
+            ('emoji_title', emoji_title, str)
+        ]
+
+        for field_name, value, expected_type in required_fields:
             if value is None or not isinstance(value, expected_type):
-                log_messages.add_log_message(LogMessage(
+                widget_container.log_messages.add_log_message(LogMessage(
                     f'Configuration for {field_name} is missing / incorrect ("{file_name}" widget)',
-                    LogLevels.ERROR.key
+                    LogLevels.ERROR.key,
+                    error_found_by
+                ))
+
+        for field_name, value, expected_type in optional_fields:
+            if value is None or not isinstance(value, expected_type):
+                widget_container.log_messages.add_log_message(LogMessage(
+                    f'Configuration for {field_name} is missing / incorrect'
+                    f' ("{file_name}" widget, falling back to default)',
+                    LogLevels.WARNING.key,
+                    error_found_by
                 ))
 
         self.name: str = typing.cast(str, name)
         self.title: str = typing.cast(str, title)
+        self.emoji_title: str | None = emoji_title
         self.enabled: bool = typing.cast(bool, enabled)
         self.interval: int | float | None = interval
         if interval == 0:
             self.interval = None
         self.last_updated: int = 0
         self.dimensions: Dimensions = Dimensions(
-            height=height, width=width, y=y, x=x, z_index=z  # type: ignore[arg-type]
+            height=typing.cast(int, height),
+            width=typing.cast(int, width),
+            y=typing.cast(int, y),
+            x=typing.cast(int, x),
+            z_index=typing.cast(int, z)
         )
 
+        if widget_container.base_config.use_emoji_titles:
+            if self.emoji_title is not None:
+                self.title = self.emoji_title
+
         for key, value in kwargs.items():
-            if _test_env:
+            if test_env:
                 if key.startswith('test_env_'):
                     setattr(self, key.removeprefix('test_env_'), value)
                     continue
@@ -490,7 +515,9 @@ class WidgetContainer:
         self.config_loader.reload_secrets()  # Needed to reload secrets.env changes
 
         # Initiate base config
-        self.base_config: BaseConfig = self.config_loader.load_base_config(self.log_messages)
+        self.base_config: BaseConfig = self.config_loader.load_base_config(
+            self.log_messages, LogErrorFoundBy.RUNTIME.value
+        )
 
         # Reloader Thread
         self.stop_event: threading.Event = threading.Event()
@@ -653,21 +680,19 @@ class WidgetContainer:
 
     def scan_config(self) -> None:
         # Scan configs
-        config_scanner: ConfigScanner = ConfigScanner(self.config_loader)
+        config_scanner: ConfigScanner = ConfigScanner(self)
         config_scan_results: LogMessages | bool = config_scanner.scan_config(self.discover_custom_widgets())
 
         if config_scan_results is not True:
             raise ConfigScanFoundError(config_scan_results)  # type: ignore[arg-type]
 
-    def build_widgets(self) -> dict[str, Widget]:
+    def build_widgets(self) -> None:
         # Import all widget modules
         custom_widget_modules: dict[str, types.ModuleType] = self.widget_loader.load_custom_widget_modules()
 
-        try:
-            widget_dict = self.widget_loader.build_widgets(self, custom_widget_modules)
-            return widget_dict
-        except Exception:
-            raise
+        widget_list: list[Widget] = self.widget_loader.build_widgets(self, custom_widget_modules)
+        self.add_widget_list(widget_list)
+        return None
 
     def start_reloader_thread(self) -> None:
         self.reloader_thread.start()
@@ -762,6 +787,7 @@ class WidgetContainer:
                 raise StopException(self.log_messages)
             elif key == ord(self.base_config.help_key):
                 pass  # TODO: General help page
+                # TODO! UPDATE DOCS W/ EMOJI TITLE!
             elif key == ord(self.base_config.reload_key):  # Reload widgets & config
                 raise RestartException
             return
@@ -944,7 +970,8 @@ class BaseConfig:
     def __init__(
         self,
         log_messages: LogMessages,
-        _test_env: bool,
+        test_env: bool,
+        error_found_by: str,
         use_standard_terminal_background: bool | None = None,
         background_color: dict[str, int] | None = None,
         foreground_color: dict[str, int] | None = None,
@@ -955,6 +982,7 @@ class BaseConfig:
         quit_key: str | None = None,
         reload_key: str | None = None,
         help_key: str | None = None,
+        use_emoji_titles: bool | None = None,
         reset_help_mode_after_escape: bool | None = None,
         **kwargs: typing.Any
     ) -> None:
@@ -973,6 +1001,7 @@ class BaseConfig:
         self.quit_key: str = base_cfg.quit_key
         self.reload_key: str = base_cfg.reload_key
         self.help_key: str = base_cfg.help_key
+        self.use_emoji_titles: bool = base_cfg.use_emoji_titles
         self.reset_help_mode_after_escape: bool = base_cfg.reset_help_mode_after_escape
 
         def apply_color(field_name: str, value: dict[str, int] | None) -> RGBColor:
@@ -980,6 +1009,7 @@ class BaseConfig:
                 log_messages.add_log_message(LogMessage(
                     f'Configuration for {field_name} is missing (base.yaml, falling back to standard config)',
                     LogLevels.WARNING.key,
+                    error_found_by
                 ))
                 return getattr(self, field_name)  # type: ignore[no-any-return]
 
@@ -989,11 +1019,13 @@ class BaseConfig:
                 log_messages.add_log_message(LogMessage(
                     f'Configuration for {field_name} is missing for {e}',
                     LogLevels.ERROR.key,
+                    error_found_by
                 ))
             except ValueError as e:
                 log_messages.add_log_message(LogMessage(
                     f'Configuration for {field_name} is invalid for {e}',
                     LogLevels.ERROR.key,
+                    error_found_by
                 ))
             return getattr(self, field_name)  # type: ignore[no-any-return]
 
@@ -1024,6 +1056,7 @@ class BaseConfig:
                 log_messages.add_log_message(LogMessage(
                     f'Configuration for {field} is missing (base.yaml, falling back to standard config)',
                     LogLevels.WARNING.key,
+                    error_found_by
                 ))
                 return getattr(self, field)  # type: ignore[no-any-return]
 
@@ -1031,6 +1064,7 @@ class BaseConfig:
                 log_messages.add_log_message(LogMessage(
                     f'Configuration for {field} is invalid (not True / False)',
                     LogLevels.ERROR.key,
+                    error_found_by
                 ))
                 return getattr(self, field)
 
@@ -1040,13 +1074,17 @@ class BaseConfig:
             'use_standard_terminal_background',
             use_standard_terminal_background
         )
+        self.use_emoji_titles = apply_bool(
+            'use_emoji_titles',
+            use_emoji_titles
+        )
         self.reset_help_mode_after_escape = apply_bool(
             'reset_help_mode_after_escape',
             reset_help_mode_after_escape
         )
 
         self.BACKGROUND_NUMBER: int = -1 if self.use_standard_terminal_background else 1
-        if _test_env:
+        if test_env:
             self.BACKGROUND_NUMBER = -1
 
         self.BACKGROUND_FOREGROUND_PAIR_NUMBER: int = 1
@@ -1060,6 +1098,7 @@ class BaseConfig:
                 log_messages.add_log_message(LogMessage(
                     f'Configuration for {field} is missing (base.yaml, falling back to standard config)',
                     LogLevels.WARNING.key,
+                    error_found_by
                 ))
                 return getattr(self, field)  # type: ignore[no-any-return]
 
@@ -1067,6 +1106,7 @@ class BaseConfig:
                 log_messages.add_log_message(LogMessage(
                     f'Configuration for {field} value wrong length (not 1)',
                     LogLevels.ERROR.key,
+                    error_found_by
                 ))
                 return getattr(self, field)  # type: ignore[no-any-return]
 
@@ -1074,6 +1114,7 @@ class BaseConfig:
                 log_messages.add_log_message(LogMessage(
                     f'Configuration for {field} value not alphabetic or numeric',
                     LogLevels.ERROR.key,
+                    error_found_by
                 ))
                 return getattr(self, field)  # type: ignore[no-any-return]
 
@@ -1088,6 +1129,7 @@ class BaseConfig:
             log_messages.add_log_message(LogMessage(
                 f'Configuration for key "{key}" is not expected (base.yaml)',
                 LogLevels.WARNING.key,
+                error_found_by
             ))
 
 
@@ -1122,6 +1164,7 @@ class BaseStandardFallBackConfig:
         self.quit_key: str = 'q'
         self.reload_key: str = 'r'
         self.help_key: str = 'h'
+        self.use_emoji_titles: bool = False
         self.reset_help_mode_after_escape: bool = True
 
 
@@ -1156,8 +1199,8 @@ class YAMLParseException(TWidgetException):
 
 
 class TerminalTooSmall(TWidgetException):
+    """Raised to signal that the terminal is too small"""
     def __init__(self, height: int, width: int, min_height: int, min_width: int) -> None:
-        """Raised to signal that the terminal is too small"""
         self.height = height
         self.width = width
         self.min_height = min_height
@@ -1225,6 +1268,11 @@ class DebugException(TWidgetException):
 
 # region Logging
 
+class LogErrorFoundBy(enum.Enum):
+    RUNTIME = 'at RunTime'
+    CONFIG_SCANNER = 'by ConfigScanner'
+
+
 class LogLevels(enum.Enum):
     UNKNOWN = (0, '? Unknown')
     INFO = (1, 'ℹ️ Info')
@@ -1250,13 +1298,14 @@ class LogLevels(enum.Enum):
 
 
 class LogMessage:
-    def __init__(self, message: str, level: int) -> None:
+    def __init__(self, message: str, level: int, error_found_by: str | None = None) -> None:
         self.log_time: datetime.datetime = datetime.datetime.now()
         self.message: str = message
         self.level: int = level
+        self.error_found_by: str | None = error_found_by
 
     def __str__(self) -> str:
-        return f'{self.log_time.strftime("%H:%M:%S")}: {self.message}'
+        return f'{self.log_time.strftime("%H:%M:%S")}: {self.message} (found {self.error_found_by})'
 
     def __repr__(self) -> str:
         return self.message
@@ -1306,7 +1355,9 @@ class LogMessages:
         return iter(self.log_messages)
 
     def add_log_message(self, message: LogMessage) -> None:
-        self.log_messages.append(message)
+        if message not in self.log_messages:
+            self.log_messages.append(message)
+        # TODO: Does this make sense?
 
     def print_log_messages(self, heading: str) -> None:
         if not self.log_messages:
@@ -1390,11 +1441,11 @@ class WidgetLoader:
         return modules
 
     @staticmethod
-    def build_widgets(widget_container: WidgetContainer, modules: dict[str, types.ModuleType]) -> dict[str, Widget]:
+    def build_widgets(widget_container: WidgetContainer, modules: dict[str, types.ModuleType]) -> list[Widget]:
         widgets: dict[str, Widget] = {}
         for name, module in modules.items():
             widget_config: Config = widget_container.config_loader.load_widget_config(
-                widget_container.log_messages, name
+                widget_container, name, LogErrorFoundBy.RUNTIME.value
             )
             try:
                 widgets[name] = module.build(widget_container.stdscr, widget_config)
@@ -1405,7 +1456,7 @@ class WidgetLoader:
                     )])
                 )
 
-        return widgets
+        return list(widgets.values())
 
 
 class ConfigLoader:
@@ -1437,12 +1488,12 @@ class ConfigLoader:
         except yaml.scanner.ScannerError:
             raise YAMLParseException(f'Config for path "{path}" not valid YAML')
 
-    def load_base_config(self, log_messages: LogMessages) -> BaseConfig:
+    def load_base_config(self, log_messages: LogMessages, error_found_by: str) -> BaseConfig:
         base_path = self.CONFIG_DIR / 'base.yaml'
         if not base_path.exists():
             if self._test_env:
                 # Fallback completely to BaseStandardFallbackConfig
-                return BaseConfig(log_messages=log_messages, _test_env=self._test_env)
+                return BaseConfig(log_messages=log_messages, test_env=self._test_env, error_found_by=error_found_by)
             else:
                 raise ConfigFileNotFoundError(f'Base config "{base_path}" not found')
         try:
@@ -1450,9 +1501,11 @@ class ConfigLoader:
         except yaml.parser.ParserError:
             raise YAMLParseException(f'Base config "{base_path}" not valid YAML')
 
-        return BaseConfig(log_messages=log_messages, _test_env=self._test_env, **pure_yaml)
+        return BaseConfig(
+            log_messages=log_messages, test_env=self._test_env, error_found_by=error_found_by, **pure_yaml
+        )
 
-    def load_widget_config(self, log_messages: LogMessages, widget_name: str) -> Config:
+    def load_widget_config(self, widget_container: WidgetContainer, widget_name: str, error_found_by: str) -> Config:
         config_name: str = widget_name.replace('_widget', '')
 
         if self._test_env:
@@ -1464,7 +1517,10 @@ class ConfigLoader:
             except yaml.parser.ParserError:
                 raise YAMLParseException(f'Config for widget "{config_name}" not valid YAML')
 
-            return Config(file_name=config_name, log_messages=log_messages, _test_env=self._test_env, **pure_yaml)
+            return Config(
+                file_name=config_name, widget_container=widget_container, test_env=self._test_env,
+                error_found_by=error_found_by, **pure_yaml
+            )
 
         path = self.PER_WIDGET_CONFIG_DIR / f'{config_name}.yaml'
         if not path.exists():
@@ -1474,12 +1530,15 @@ class ConfigLoader:
         except yaml.parser.ParserError:
             raise YAMLParseException(f'Config for widget "{config_name}" not valid YAML')
 
-        return Config(file_name=config_name, log_messages=log_messages, _test_env=self._test_env, **pure_yaml)
+        return Config(
+            file_name=config_name, widget_container=widget_container, test_env=self._test_env,
+            error_found_by=error_found_by, **pure_yaml
+        )
 
 
 class ConfigScanner:
-    def __init__(self, config_loader: ConfigLoader) -> None:
-        self.config_loader: ConfigLoader = config_loader
+    def __init__(self, widget_container: WidgetContainer) -> None:
+        self.widget_container: WidgetContainer = widget_container
 
     def scan_config(self, widget_names: list[str]) -> LogMessages | typing.Literal[True]:
         """Scan config, either returns log messages or 'True' representing that no errors were found"""
@@ -1487,7 +1546,7 @@ class ConfigScanner:
 
         current_log: LogMessages = LogMessages()
         try:
-            self.config_loader.load_base_config(current_log)
+            self.widget_container.config_loader.load_base_config(current_log, LogErrorFoundBy.CONFIG_SCANNER.value)
             if current_log.contains_error():
                 final_log += current_log
         except YAMLParseException as e:
@@ -1497,7 +1556,9 @@ class ConfigScanner:
             config_name: str = widget_name.replace('_widget', '')
             current_log = LogMessages()
             try:
-                self.config_loader.load_widget_config(current_log, config_name)
+                self.widget_container.config_loader.load_widget_config(
+                    self.widget_container, config_name, LogErrorFoundBy.CONFIG_SCANNER.value
+                )
                 if current_log.contains_error():
                     final_log += current_log
             except YAMLParseException as e:

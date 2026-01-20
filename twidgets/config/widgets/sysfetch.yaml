@@ -1,5 +1,6 @@
 name: 'sysfetch'
-title: '  Sysfetch '
+emoji_title: '  Sysfetch '
+title: ' Sysfetch '
 enabled: True
 interval: 60
 height: 20

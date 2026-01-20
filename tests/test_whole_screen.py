@@ -14,7 +14,7 @@ class TestWholeScreen(unittest.TestCase):
             widget_container: WidgetContainer = WidgetContainer(stdscr, test_env=True)
             widget_container.scan_config()
             widget_container.init_curses_setup()
-            widget_container.add_widget_list(list(widget_container.build_widgets().values()))
+            widget_container.build_widgets()
             widget_container.loading_screen()
             widget_container.initialize_widgets()
             widget_container.start_reloader_thread()

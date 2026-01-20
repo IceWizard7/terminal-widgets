@@ -1,4 +1,5 @@
 name: 'greetings'
+emoji_title: ' Greeting '
 title: ' Greeting '
 enabled: True
 interval: 0

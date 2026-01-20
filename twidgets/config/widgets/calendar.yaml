@@ -1,5 +1,6 @@
 name: 'calendar'
-title: ' ▦️ Calendar '
+emoji_title: ' ▦️ Calendar '
+title: ' Calendar '
 enabled: True
 interval: 0
 height: 9
