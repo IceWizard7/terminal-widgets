@@ -8,6 +8,8 @@ os.environ['LINES'] = '30'
 os.environ['COLUMNS'] = '172'
 
 
+# TODO: config gfiles r used of repo
+# TODO: BUT BASE .YAML NOT!!
 class TestWholeScreen(unittest.TestCase):
     def test_whole_screen(self) -> None:
         def main_curses(stdscr: CursesWindowType) -> list[str]:
@@ -19,10 +21,9 @@ class TestWholeScreen(unittest.TestCase):
             widget_container.initialize_widgets()
             widget_container.start_reloader_thread()
 
-            # Give the reloader thread 0.5 seconds to load every widget
             time_module.sleep(0.01)
-            # (Re-)Draw every widget
 
+            # (Re-)Draw every widget
             done: bool = False
 
             while not done:
@@ -58,23 +59,23 @@ class TestWholeScreen(unittest.TestCase):
 
             return screenshot
 
-        result: list[str] = returnable_curses_wrapper(main_curses)
+        screen_result: list[str] = returnable_curses_wrapper(main_curses)
         with open('tests/test_screen_expected_result.txt', 'r') as file:
             expected_result: list[str] = file.readlines()
         ignored_character: str = '*'  # Char (in test_screen_expected_result.txt) that means Any
 
-        if len(result) != len(expected_result):
+        if len(screen_result) != len(expected_result):
             raise AssertionError(
-                f'Length of screenshot {len(result)} != {len(expected_result)} (expected {len(expected_result)})'
+                f'Length of screenshot {len(screen_result)} != {len(expected_result)} (expected {len(expected_result)})'
             )
 
         line: str
         expected_line: str
         print('\n\nResult:\n\n')
-        for line in result:
+        for line in screen_result:
             print(line)
 
-        for line_count, (line, expected_line) in enumerate(zip(result, expected_result)):
+        for line_count, (line, expected_line) in enumerate(zip(screen_result, expected_result)):
             for char_count, chars in enumerate(zip(line, expected_line)):
                 char: str = chars[0]
                 expected_char: str = chars[1]
