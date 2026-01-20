@@ -1,20 +1,20 @@
-  lq  Sysfetch qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqklq Mode qqqqqqqqqqqqqqqqqqqqqklq ▦* Calendar qqqqqqqqqqklq ☀ Weather qqqqqqqqqqqqqqqqk
+  lq Sysfetch qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqklq Mode qqqqqqqqqqqqqqqqqqqqqklq Calendar qqqqqqqqqqqqklq Weather qqqqqqqqqqqqqqqqqqk
   x                     'c.          *************************************************xxnone                        xx***********************xx****************************x
   x                  ,xNMM.          --------------------                             xx                            xx***********************xx****************************x
   x                .OMMMMo           OS: *********************************************xmqqqqqqqqqqqqqqqqqqqqqqqqqqqqjx***********************xx****************************x
-  x                OMMM0,            Host: *******************************************xlq ⏲ Clock qqqqqqqqqqqqqqqqqqkx***********************xx****************************x
+  x                OMMM0,            Host: *******************************************xlq Clock qqqqqqqqqqqqqqqqqqqqkx***********************xx****************************x
   x      .;loddo:' loolloddol;.      Kernel: *****************************************xx****************************xx***********************xx****************************x
   x    cKMMMMMMMMMMNWMMMMMMMMMM0:    Uptime: *****************************************xx**.**.****                  xx***********************xx****************************x
   x  .KMMMMMMMMMMMMMMMMMMMMMMMWd.    Packages: ***************************************xx**:**:**                    xx***********************xx****************************x
   x  XMMMMMMMMMMMMMMMMMMMMMMMX.      Shell: ******************************************xmqqqqqqqqqqqqqqqqqqqqqqqqqqqqjmqqqqqqqqqqqqqqqqqqqqqqqjmqqqqqqqqqqqqqqqqqqqqqqqqqqqqj
-  x ;MMMMMMMMMMMMMMMMMMMMMMMM:       Resolution: *************************************xlq ▦* News [BCC]qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqk
+  x ;MMMMMMMMMMMMMMMMMMMMMMMM:       Resolution: *************************************xlq News [BCC]qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqk
   x :MMMMMMMMMMMMMMMMMMMMMMMM:       Language: ***************************************xx***********************************************************************************x
   x .MMMMMMMMMMMMMMMMMMMMMMMMX.      Encoding: ***************************************xx***********************************************************************************x
   x  kMMMMMMMMMMMMMMMMMMMMMMMMWd.    Terminal: ***************************************xx***********************************************************************************x
   x  .XMMMMMMMMMMMMMMMMMMMMMMMMMMk   Terminal Font: **********************************xx***********************************************************************************x
   x   .XMMMMMMMMMMMMMMMMMMMMMMMMK.   CPU: ********************************************xx***********************************************************************************x
   x     kMMMMMMMMMMMMMMMMMMMMMMd     GPU: ********************************************xmqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqj
-  x      ;KMMMMMMMWXXWMMMMMMMk.                                                       xlq ⚙ Resources qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqk
+  x      ;KMMMMMMMWXXWMMMMMMMk.                                                       xlq Resources qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqk
   x        .cooc,.    .,coo:.                                                         xxCPU: ******************************************************************************x
   x                                                                                   xxMemory: ***************************************************************************x
   mqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqjxSwap: *****************************************************************************x
