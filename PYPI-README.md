@@ -81,7 +81,8 @@ NEWS_FEED_NAME='BCC'
 Example:
 ```yaml
 name: 'clock'
-title: ' ⏲ Clock'
+emoji_title: ' ⏲ Clock '
+title: ' Clock '
 enabled: True
 interval: 1
 height: 5
@@ -114,7 +115,8 @@ Create the configuration file at `~/.config/twidgets/widgets/custom.yaml` and se
 
 ```yaml
 name: custom
-title: My Custom Widget
+title: ' My Custom Widget '
+emoji_title: ' ▦️ My Custom Widget '
 enabled: true
 interval: 0  # For simple widgets (no heavy loading, no `update` function)
 height: 7

@@ -29,6 +29,9 @@ quit_key: 'q'
 reload_key: 'r'
 help_key: 'h'
 
+# Whether to use emoji titles for each widget (if applicable)
+use_emoji_titles: False
+
 # Whether to disable the help mode of a widget if you highlight a different one; True / False
 reset_help_mode_after_escape: True
 ```
@@ -60,7 +63,8 @@ This mainly matters for high-load widgets such as weather or news, where frequen
 Example:
 ```yaml
 name: 'clock'  # Will be shown in the mode widget
-title: ' ⏲ Clock '  # Will be shown at the top of the widget
+emoji_title: ' ⏲ Clock '  # Will be shown at the top of the widget (If use_emoji_titles is True)
+title: ' Clock '  # Will be shown at the top of the widget (If use_emoji_titles is False; This is also the fallback)
 enabled: True  # Whether the widget will be shown or not (True / False)
 interval: 0  # (0 = None) This widget doesn't have any update function (doesn't require heavy loading / API calls)
 height: 5  # Height of Widget

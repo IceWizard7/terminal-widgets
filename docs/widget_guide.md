@@ -7,7 +7,7 @@ Create the configuration file at `~/.config/twidgets/widgets/custom.yaml`
 > **Naming schemes are described [here](#33-adding-widgets-to-your-layout).** \
 > You can create an infinite number of widgets, the file names `custom.yaml` and `custom_widget.py` are just examples.
 
-Configure `name`, `title`, `enabled`, `interval`, `height`, `width`, `y`, `x` and `z`.
+Configure `name`, `emoji_title`, `title` `enabled`, `interval`, `height`, `width`, `y`, `x` and `z`.
 For simple widgets, set `interval = 0` (see [Configuration Guide](configuration_guide.md))
 
 ### 3.2 Write the Widget Logic (`.py`)
@@ -205,7 +205,7 @@ custom_attribute: 'this is a custom attribute!'
 
 > Note that this will not be checked by the ConfigScanner.
 It only checks `base.yaml` for integrity, as well as `name`,
-`title`, `enabled`, `interval`, `height`, `width`, `y`, `x` and `z` for every widget.
+`emoji_title`, `title`, `enabled`, `interval`, `height`, `width`, `y`, `x` and `z` for every widget.
 > 
 > To detect if these attributes are missing, see the next section.
 
