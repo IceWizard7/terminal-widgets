@@ -24,6 +24,10 @@
 
 ### ⚠️ **Note:** This package is only compatible with Unix-based systems.
 
+### ⚠️**Upgrading to 2.0**
+
+Version 2.0 introduces breaking changes. Please see the [migration guide](docs/migration/v1.3-v2.0.md) for instructions on updating your code.
+
 ---
 
 ### 🚀 **1. Getting started**
@@ -163,13 +167,7 @@ For full documentation see [Widget Guide](docs/widget_guide.md).
 
 ---
 
-### **4. Upgrading to 2.0 ⚠️**
-
-Version 2.0 introduces breaking changes. Please see the [migration guide](docs/migration/v1.3-v2.0.md) for instructions on updating your code.
-
----
-
-### 🌅 **5. Examples**
+### 🌅 **4. Examples**
 
 ![Example 1 of Terminal Widgets](examples/example_1.png)
 ![Example 2 of Terminal Widgets](examples/example_2.png)
@@ -179,12 +177,12 @@ For all examples see [Examples](examples/index.md).
 
 ---
 
-### 🧩 **6. Contributing**
+### 🧩 **5. Contributing**
 
 Help the project grow: create an issue or pull request!
 
 ---
 
-### 📜 **7. License**
+### 📜 **6. License**
 
 See [License](LICENSE)
