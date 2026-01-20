@@ -787,7 +787,6 @@ class WidgetContainer:
                 raise StopException(self.log_messages)
             elif key == ord(self.base_config.help_key):
                 pass  # TODO: General help page
-                # TODO! UPDATE DOCS W/ EMOJI TITLE!
             elif key == ord(self.base_config.reload_key):  # Reload widgets & config
                 raise RestartException
             return
@@ -1357,7 +1356,6 @@ class LogMessages:
     def add_log_message(self, message: LogMessage) -> None:
         if message not in self.log_messages:
             self.log_messages.append(message)
-        # TODO: Does this make sense?
 
     def print_log_messages(self, heading: str) -> None:
         if not self.log_messages:
