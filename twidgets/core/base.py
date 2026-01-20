@@ -1490,12 +1490,13 @@ class ConfigLoader:
 
     def load_base_config(self, log_messages: LogMessages, error_found_by: str) -> BaseConfig:
         base_path = self.CONFIG_DIR / 'base.yaml'
+        if self._test_env:
+            # Fallback completely to BaseStandardFallbackConfig
+            return BaseConfig(log_messages=log_messages, test_env=self._test_env, error_found_by=error_found_by)
+
         if not base_path.exists():
-            if self._test_env:
-                # Fallback completely to BaseStandardFallbackConfig
-                return BaseConfig(log_messages=log_messages, test_env=self._test_env, error_found_by=error_found_by)
-            else:
-                raise ConfigFileNotFoundError(f'Base config "{base_path}" not found')
+            raise ConfigFileNotFoundError(f'Base config "{base_path}" not found')
+
         try:
             pure_yaml: dict[typing.Any, typing.Any] = self.load_yaml(base_path)
         except yaml.parser.ParserError:
