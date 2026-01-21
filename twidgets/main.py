@@ -18,6 +18,7 @@ from twidgets.core.base import (
     ConfigSpecificException,
     StopException,
     TerminalTooSmall,
+    NoWidgetsFound,
     WidgetSourceFileException,
     CursesError,
     UnknownException,
@@ -44,24 +45,21 @@ def main_curses(stdscr: CursesWindowType) -> None:
     # Build widgets
     widget_container.build_widgets()
 
-    min_height: int
-    min_width: int
-    min_height, min_width = widget_container.get_max_height_width_all_widgets()
-
+    # Load screen & initialize
     widget_container.loading_screen()
     widget_container.initialize_widgets()
-    widget_container.move_widgets_resize(min_height, min_width)
+
+    # Initial resizing to current height / width
+    widget_container.move_widgets_resize()
     widget_container.start_reloader_thread()
 
     while True:
         try:
-            min_height, min_width = widget_container.get_max_height_width_all_widgets()
-
             key: int = widget_container.stdscr.getch()  # Keypresses
 
             widget_container.handle_mouse_input(key)
 
-            widget_container.handle_key_input(key, min_height, min_width)
+            widget_container.handle_key_input(key)
 
             if widget_container.stop_event.is_set():
                 break
@@ -133,6 +131,7 @@ def main_curses(stdscr: CursesWindowType) -> None:
                 ConfigSpecificException,
                 StopException,
                 TerminalTooSmall,
+                NoWidgetsFound,
                 WidgetSourceFileException
         ):
             # Clean up threads and re-raise so outer loop stops
@@ -164,16 +163,17 @@ def main_entry_point() -> None:
             # e.log_messages.print_log_messages(heading='Config errors & warnings (found at runtime):\n')
             e.log_messages.print_log_messages(heading='Config errors & warnings:\n')
             break
+        except (TerminalTooSmall, NoWidgetsFound) as e:
+            print(e)
+            e.log_messages.print_log_messages(heading='Config errors & warnings:\n')
+            break
         except StopException as e:
             e.log_messages.print_log_messages(heading='Config errors & warnings:\n')
             break
         except KeyboardInterrupt:
             break
-        except TerminalTooSmall as e:
-            print(e)
         except WidgetSourceFileException as e:
             e.log_messages.print_log_messages(heading='WidgetSource errors & warnings (found at runtime):\n')
-            # raise
         except CursesError:
             break  # Ignore; Doesn't happen on Py3.13, but does on Py3.12
         except UnknownException as e:

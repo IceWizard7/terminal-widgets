@@ -692,6 +692,8 @@ class WidgetContainer:
 
         widget_list: list[Widget] = self.widget_loader.build_widgets(self, custom_widget_modules)
         self.add_widget_list(widget_list)
+        if not widget_list:
+            raise NoWidgetsFound(self.log_messages)
         return None
 
     def start_reloader_thread(self) -> None:
@@ -728,11 +730,7 @@ class WidgetContainer:
             widget.init(self)
         return None
 
-    def move_widgets_resize(
-            self,
-            min_height_current_layout: int,
-            min_width_current_layout: int
-    ) -> None:
+    def move_widgets_resize(self) -> None:
         current_terminal_height: int
         current_terminal_width: int
 
@@ -746,13 +744,7 @@ class WidgetContainer:
 
         self.reinit_all_widget_windows()  # Allows for making the terminal bigger
         self.reinit_all_floating_windows()  # Allows for making the terminal bigger
-        if self.validate_terminal_too_small(min_height_current_layout, min_width_current_layout):
-            self.display_error_message_screen_too_small(min_height_current_layout, min_width_current_layout)
-        else:
-            self.remove_floating_widget_by_name_title(
-                'terminal_too_small',
-                ' Terminal Too Small '
-            )
+        self.redraw_all_warnings()
 
     def handle_mouse_input(self, key: int) -> None:
         if key == CursesKeys.MOUSE:
@@ -768,7 +760,7 @@ class WidgetContainer:
                 # Ignore invalid mouse events (like scroll in some terminals)
                 return
 
-    def handle_key_input(self, key: int, min_height_current_layout: int, min_width_current_layout: int) -> None:
+    def handle_key_input(self, key: int) -> None:
         highlighted_widget: Widget | None = self.ui_state.highlighted
 
         if key == CursesKeys.ESCAPE:
@@ -779,7 +771,7 @@ class WidgetContainer:
             self.ui_state.highlighted = None
 
         if key == curses.KEY_RESIZE:
-            self.move_widgets_resize(min_height_current_layout, min_width_current_layout)
+            self.move_widgets_resize()
             return
 
         if highlighted_widget is None:
@@ -828,7 +820,38 @@ class WidgetContainer:
             return True
         return False
 
-    def display_error_message_screen_too_small(self, min_height: int, min_width: int) -> None:
+    def redraw_all_warnings(self) -> None:
+        self.display_error_message_screen_too_small()
+
+    def raise_terminal_too_small(self) -> None:
+        min_height_current_layout: int
+        min_width_current_layout: int
+        min_height_current_layout, min_width_current_layout = self.get_max_height_width_all_widgets()
+
+        current_terminal_height, current_terminal_width = self.stdscr.getmaxyx()
+
+        warning_error: TerminalTooSmall = TerminalTooSmall(
+            current_terminal_height,
+            current_terminal_width,
+            min_height_current_layout,
+            min_width_current_layout,
+            self.log_messages
+        )
+
+        raise warning_error
+
+    def display_error_message_screen_too_small(self) -> None:
+        min_height_current_layout: int
+        min_width_current_layout: int
+        min_height_current_layout, min_width_current_layout = self.get_max_height_width_all_widgets()
+
+        if not self.validate_terminal_too_small(min_height_current_layout, min_width_current_layout):
+            self.remove_floating_widget_by_name_title(
+                'terminal_too_small',
+                ' Terminal Too Small '
+            )
+            return
+
         current_terminal_height, current_terminal_width = self.stdscr.getmaxyx()
 
         warning_message_height: int = 10
@@ -841,8 +864,9 @@ class WidgetContainer:
         warning_error: TerminalTooSmall = TerminalTooSmall(
             current_terminal_height,
             current_terminal_width,
-            min_height,
-            min_width
+            min_height_current_layout,
+            min_width_current_layout,
+            self.log_messages
         )
 
         warning_dimensions: Dimensions = Dimensions(
@@ -854,7 +878,7 @@ class WidgetContainer:
         )
 
         if not warning_dimensions.within_borders(current_terminal_height, current_terminal_width):
-            raise warning_error
+            self.raise_terminal_too_small()
 
         warning: WarningWidget = WarningWidget(
             'terminal_too_small',
@@ -1177,12 +1201,14 @@ class UIState:
 
 # region Custom Exceptions
 
+# Twidget Exception Superclass
 class TWidgetException(Exception):
     """Superclass for all `twidgets`-specific errors, never gets raised directly"""
     def __init__(self, *args: typing.Any) -> None:
         super().__init__(args)
 
 
+# Control flow Exceptions
 class RestartException(TWidgetException):
     """Raised to signal that the curses UI should restart"""
 
@@ -1193,18 +1219,16 @@ class StopException(TWidgetException):
         self.log_messages: LogMessages = log_messages
 
 
-class YAMLParseException(TWidgetException):
-    """Raised to signal that there was an error parsing a YAML file"""
-
-
+# UI Exceptions
 class TerminalTooSmall(TWidgetException):
     """Raised to signal that the terminal is too small"""
-    def __init__(self, height: int, width: int, min_height: int, min_width: int) -> None:
+    def __init__(self, height: int, width: int, min_height: int, min_width: int, log_messages: LogMessages) -> None:
         self.height = height
         self.width = width
         self.min_height = min_height
         self.min_width = min_width
-        super().__init__(height, width)
+        self.log_messages: LogMessages = log_messages
+        super().__init__()
 
     def __repr__(self) -> str:
         return self.__str__()
@@ -1220,34 +1244,62 @@ class TerminalTooSmall(TWidgetException):
             f'or remove widgets.\n'
 
 
-class ConfigScanFoundError(TWidgetException):
+class NoWidgetsFound(TWidgetException):
+    """Raised to signal that no widgets were found"""
+    def __init__(self, log_messages: LogMessages) -> None:
+        self.log_messages: LogMessages = log_messages
+        super().__init__()
+
+    def __repr__(self) -> str:
+        return self.__str__()
+
+    def __str__(self) -> str:
+        return \
+            f'\n' \
+            f'⚠️ No widgets were found.\n' \
+            f'Try running twidgets init in your terminal.\n'
+
+
+# Config Exceptions
+class ConfigException(TWidgetException):
+    """Superclass for all config-specific errors, never gets raised directly"""
+    def __init__(self, *args: typing.Any) -> None:
+        super().__init__(args)
+
+
+class ConfigScanFoundError(ConfigException):
     """Raised to signal that the ConfigScanner found an error"""
     def __init__(self, log_messages: LogMessages) -> None:
         self.log_messages: LogMessages = log_messages
         super().__init__(log_messages)
 
 
-class ConfigFileNotFoundError(TWidgetException):
+class ConfigFileNotFoundError(ConfigException):
     """Raised to signal that a configuration (or base configuration) file was not found"""
     def __init__(self, error_details: str) -> None:
         self.error_details: str = error_details
         super().__init__(error_details)
 
 
-class ConfigSpecificException(TWidgetException):
+class ConfigSpecificException(ConfigException):
     """Raised to signal that something is wrong with a widget configuration"""
     def __init__(self, log_messages: LogMessages) -> None:
         self.log_messages: LogMessages = log_messages
         super().__init__(log_messages)
 
 
-class WidgetSourceFileException(TWidgetException):
+class WidgetSourceFileException(ConfigException):
     """Raised to signal that the code for some widget python file is not correct"""
     def __init__(self, log_messages: LogMessages) -> None:
         self.log_messages: LogMessages = log_messages
         super().__init__(log_messages)
 
 
+class YAMLParseException(ConfigException):
+    """Raised to signal that there was an error parsing a YAML file"""
+
+
+# Unknown & Debug Exceptions
 class UnknownException(TWidgetException):
     """Raised instead of Exception to keep log messages and the initial exception that caused UnknownException"""
     def __init__(self, widget_container: WidgetContainer, initial_exception: Exception) -> None:
