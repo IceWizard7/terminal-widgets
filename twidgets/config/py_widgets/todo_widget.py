@@ -185,7 +185,7 @@ def init(widget: Widget, _widget_container: WidgetContainer) -> None:
 
 
 def draw(widget: Widget, widget_container: WidgetContainer) -> None:
-    widget_container.draw_widget(widget, widget.title)
+    widget_container.draw_widget(widget)
 
     if widget_container.ui_state.highlighted != widget:
         remove_highlighted_line(widget)
