@@ -4,7 +4,7 @@ from twidgets.core.base import WidgetContainer, returnable_curses_wrapper, Curse
 import os
 import time as time_module
 
-os.environ['LINES'] = '30'
+os.environ['LINES'] = '32'
 os.environ['COLUMNS'] = '172'
 
 

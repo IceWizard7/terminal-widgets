@@ -13,18 +13,20 @@
   x  kMMMMMMMMMMMMMMMMMMMMMMMMWd.    Terminal: ***************************************xx***********************************************************************************x
   x  .XMMMMMMMMMMMMMMMMMMMMMMMMMMk   Terminal Font: **********************************xx***********************************************************************************x
   x   .XMMMMMMMMMMMMMMMMMMMMMMMMK.   CPU: ********************************************xx***********************************************************************************x
-  x     kMMMMMMMMMMMMMMMMMMMMMMd     GPU: ********************************************xmqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqj
-  x      ;KMMMMMMMWXXWMMMMMMMk.                                                       xlq Resources qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqk
-  x        .cooc,.    .,coo:.                                                         xxCPU: ******************************************************************************x
-  x                                                                                   xxMemory: ***************************************************************************x
-  mqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqjxSwap: *****************************************************************************x
-  lq To-Do qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqkxDisk: *****************************************************************************x
-  x(1) https://github.com/IceWizard7/terminal-widgets                                 xxNetwork sent: *********************************************************************x
-  x(2) ---                                                                            xxNetwork received: *****************************************************************x
-  x(3) Buy milk                                                                       xx                                                                                   x
-  x(4) Shop groceries                                                                 xx                                                                                   x
-  x(5) Study C                                                                        xmqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqj
-  x(6) Get a job                                                                      xlq Greeting qqqqqqqqqqqqqqqqqk                                                      *
-  x(7) I'm running out of ideas '#123                                                 xxHello, Ice!                 x                                                      *
-  x...                                                                                xx                            x                                                      *
-  mqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqjmqqqqqqqqqqqqqqqqqqqqqqqqqqqqj                                                      *
+  x     kMMMMMMMMMMMMMMMMMMMMMMd     GPU: ********************************************xx***********************************************************************************x
+  x      ;KMMMMMMMWXXWMMMMMMMk.                                                       xx***********************************************************************************x
+  x        .cooc,.    .,coo:.                                                         xmqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqj
+  x                                                                                   xlq Resources qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqk
+  mqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqjxCPU: ******************************************************************************x
+  lq To-Do qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqkxMemory: ***************************************************************************x
+  x(1) https://github.com/IceWizard7/terminal-widgets                                 xxSwap: *****************************************************************************x
+  x(2) ---                                                                            xxDisk: *****************************************************************************x
+  x(3) Buy milk                                                                       xxNetwork sent: *********************************************************************x
+  x(4) Shop groceries                                                                 xxNetwork received: *****************************************************************x
+  x(5) Study C                                                                        xx                                                                                   x
+  x(6) Get a job                                                                      xx                                                                                   x
+  x(7) I'm running out of ideas '#123                                                 xmqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqj
+  x...                                                                                xlq Greeting qqqqqqqqqqqqqqqqqk                                                      *
+  mqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqjxHello, Ice!                 x                                                      *
+                                                                                       x                            x                                                      *
+                                                                                       mqqqqqqqqqqqqqqqqqqqqqqqqqqqqj                                                      *
