@@ -1,7 +1,7 @@
 name: '2048'
 emoji_title: ' ⌨ 2048 '
 title: ' 2048 '
-enabled: True
+enabled: False
 interval: 0
 height: 9
 width: 31
