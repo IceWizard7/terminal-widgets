@@ -1,0 +1,10 @@
+name: '2048'
+emoji_title: ' ⌨ 2048 '
+title: ' 2048 '
+enabled: True
+interval: 0
+height: 9
+width: 31
+y: 30
+x: 2
+z: 1
