@@ -89,8 +89,9 @@ class Widget:
         except CursesError:
             self.win = None
         self.help_mode: bool = False
-        self.draw_data: typing.Any = {}  # data used for drawing
-        self.internal_data: typing.Any = {}  # internal data stored by widgets
+        self.draw_data: list[str] = []  # data used for drawing
+        self.error_data: dict[str, typing.Any] = {}  # data used for holding errors
+        self.internal_data: dict[typing.Any, typing.Any] = {}  # internal data stored by widgets
 
         self.lock: threading.Lock = threading.Lock()
 
@@ -134,10 +135,10 @@ class Widget:
         else:
             self.enable_help_mode()
 
-    def update(self, widget_container: WidgetContainer) -> list[str] | None:
+    def update(self, widget_container: WidgetContainer) -> list[str]:
         if self._update_func and self.config.enabled:
             return self._update_func(self, widget_container)
-        return None
+        raise WidgetNoUpdateFunction()
 
     def updatable(self) -> bool:
         if self._update_func and self.interval and self.config.enabled:
@@ -970,10 +971,12 @@ class WidgetContainer:
                     try:
                         widget.draw_data = widget.update(self)
                         widget.last_updated = now
+                    except WidgetNoUpdateFunction:
+                        pass
                     except ConfigSpecificException as e:
-                        widget.draw_data = {'__error__': e.log_messages}
+                        widget.error_data = {'__error__': e.log_messages}
                     except Exception as e:
-                        widget.draw_data = {'__error__': str(e)}
+                        widget.error_data = {'__error__': str(e)}
 
             # Small sleep to avoid busy loop, tuned to a small value
             time_module.sleep(0.06667)  # -> ~15 FPS
@@ -1297,6 +1300,10 @@ class WidgetSourceFileException(ConfigException):
 
 class YAMLParseException(ConfigException):
     """Raised to signal that there was an error parsing a YAML file"""
+
+
+class WidgetNoUpdateFunction(ConfigException):
+    """Raised to signal that no update function is available"""
 
 
 # Unknown & Debug Exceptions

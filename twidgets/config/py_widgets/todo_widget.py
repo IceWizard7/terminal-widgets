@@ -15,20 +15,20 @@ from twidgets.core.base import (
 
 
 def add_todo(widget: Widget, title: str) -> None:
-    if 'todos' in widget.draw_data:
-        widget.draw_data['todos'][widget.draw_data['todo_count']] = f'({widget.draw_data["todo_count"]}) {title}'
-        widget.draw_data['todo_count'] += 1
+    if 'todos' in widget.internal_data:
+        widget.internal_data['todos'][widget.internal_data['todo_count']] = f'({widget.internal_data["todo_count"]}) {title}'
+        widget.internal_data['todo_count'] += 1
     else:
-        widget.draw_data['todos'] = {1: f'(1) {title}'}
-        widget.draw_data['todo_count'] = 2
+        widget.internal_data['todos'] = {1: f'(1) {title}'}
+        widget.internal_data['todo_count'] = 2
     save_todos(widget)  # auto-save
 
 
 def remove_todo(widget: Widget, line: int) -> None:
-    if 'todos' in widget.draw_data:
-        keys = list(widget.draw_data['todos'].keys())
+    if 'todos' in widget.internal_data:
+        keys = list(widget.internal_data['todos'].keys())
         todo_id = keys[line]
-        widget.draw_data['todos'].pop(todo_id, None)
+        widget.internal_data['todos'].pop(todo_id, None)
     save_todos(widget)  # auto-save
 
 
@@ -38,8 +38,8 @@ def save_todos(widget: Widget) -> None:
     if widget.config.save_path:
         file_path = pathlib.Path(widget.config.save_path).expanduser()
         with open(file_path, 'w') as file:
-            if 'todos' in widget.draw_data:
-                json.dump(widget.draw_data['todos'], file)
+            if 'todos' in widget.internal_data:
+                json.dump(widget.internal_data['todos'], file)
             else:
                 json.dump({}, file)
     else:
@@ -65,12 +65,12 @@ def load_todos(widget: Widget) -> None:
 
     data = {int(k): v for k, v in data.items()}
 
-    widget.draw_data['todos'] = data
-    widget.draw_data['todo_count'] = max(data.keys(), default=0) + 1
+    widget.internal_data['todos'] = data
+    widget.internal_data['todo_count'] = max(data.keys(), default=0) + 1
 
 
 def remove_highlighted_line(widget: Widget) -> None:
-    widget.draw_data['selected_line'] = None
+    widget.internal_data['selected_line'] = None
 
 
 def mouse_click_action(widget: Widget, _mx: int, my: int, _b_state: int, widget_container: WidgetContainer) -> None:
@@ -79,16 +79,16 @@ def mouse_click_action(widget: Widget, _mx: int, my: int, _b_state: int, widget_
     if widget.help_mode:
         return
 
-    todos = list(widget.draw_data.get('todos', {}).values())
+    todos = list(widget.internal_data.get('todos', {}).values())
     if not todos or widget_container.ui_state.highlighted != widget:
-        widget.draw_data['selected_line'] = None
+        widget.internal_data['selected_line'] = None
         return
 
     # Click relative to widget border
     local_y: int = my - widget.dimensions.current_y - 1  # -1 for top border
     if 0 <= local_y < min(len(todos), widget.dimensions.current_height - 2):
         # Compute which part of todos is currently visible
-        abs_index = widget.draw_data.get('selected_line', 0) or 0
+        abs_index = widget.internal_data.get('selected_line', 0) or 0
         start = max(abs_index - (widget.dimensions.current_height - 2)//2, 0)
         if start + (widget.dimensions.current_height - 2) > len(todos):
             start = max(len(todos) - (widget.dimensions.current_height - 2), 0)
@@ -98,9 +98,9 @@ def mouse_click_action(widget: Widget, _mx: int, my: int, _b_state: int, widget_
         if clicked_index >= len(todos):
             clicked_index = len(todos) - 1
 
-        widget.draw_data['selected_line'] = clicked_index
+        widget.internal_data['selected_line'] = clicked_index
     else:
-        widget.draw_data['selected_line'] = None
+        widget.internal_data['selected_line'] = None
 
 
 def keyboard_press_action(widget: Widget, key: int, _widget_container: WidgetContainer) -> None:
@@ -109,11 +109,11 @@ def keyboard_press_action(widget: Widget, key: int, _widget_container: WidgetCon
     if widget.help_mode:
         return
 
-    if 'todos' not in widget.draw_data:
+    if 'todos' not in widget.internal_data:
         return
 
-    len_todos = len(widget.draw_data['todos'])
-    selected = widget.draw_data.get('selected_line', 0)
+    len_todos = len(widget.internal_data['todos'])
+    selected = widget.internal_data.get('selected_line', 0)
 
     if not isinstance(selected, int):
         selected = 0
@@ -131,7 +131,7 @@ def keyboard_press_action(widget: Widget, key: int, _widget_container: WidgetCon
     if selected > (len_todos - 1):  # If you delete the last to-do, this will wrap around to 0
         selected = 0
 
-    widget.draw_data['selected_line'] = selected
+    widget.internal_data['selected_line'] = selected
 
     # Add new to_do
     if key in (CursesKeys.ENTER, 10, 13):
@@ -144,7 +144,7 @@ def keyboard_press_action(widget: Widget, key: int, _widget_container: WidgetCon
         if len_todos > 0:
             confirm = widget.prompt_user_input('Confirm deletion (y): ')
             if confirm.lower().strip() in ['y']:
-                remove_todo(widget, widget.draw_data['selected_line'])
+                remove_todo(widget, widget.internal_data['selected_line'])
 
 
 def render_todos(todos: list[str], highlighted_line: int | None, max_render: int) -> tuple[list[str], int | None]:
@@ -191,8 +191,8 @@ def draw(widget: Widget, widget_container: WidgetContainer) -> None:
         remove_highlighted_line(widget)
 
     todos, rel_index = render_todos(
-        list(widget.draw_data.get('todos', {}).values()),
-        widget.draw_data.get('selected_line'),
+        list(widget.internal_data.get('todos', {}).values()),
+        widget.internal_data.get('selected_line'),
         widget.config.max_rendering if widget.config.max_rendering else 3
     )
 

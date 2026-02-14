@@ -94,7 +94,7 @@ def draw(widget: Widget, widget_container: WidgetContainer, info: list[str]) -> 
 You can adapt the time, when the `update` function will be called again (reloading the data) by changing
 `interval` in `~/.config/twidgets/widgets/custom.yaml`
 
-> To integrate this, see [building widget](#328-building-widget).
+> To integrate this, see [building widget](#329-building-widget).
 
 #### 3.2.5 Custom mouse, keyboard, initialise & help functions
 
@@ -162,7 +162,7 @@ This function will get called whenever the help key (default: `h`) is pressed fo
 
 #### 3.2.5.5 Integrating custom functions
 
-> To integrate any custom function, see [building widget](#328-building-widget).
+> To integrate any custom function, see [building widget](#329-building-widget).
 
 #### 3.2.6 Using secrets
 
@@ -229,7 +229,15 @@ def draw(widget: Widget, widget_container: WidgetContainer) -> None:
 
 With this you can add custom error messages to your widget, for example if certain attributes are missing.
 
-#### 3.2.8 Building widget
+#### 3.2.8 Preserving internal & draw data
+
+`widget.draw_data: list[str] = []`: Data used by twidgets.core internally; a list that holds the value of the return result of the last update function call. If you don't define any update function, this stays an empty list. Never read or modify this directly.
+
+`widget.error_data: dict[str, typing.Any] = {}`: Data used by twidgets.core internally; a dictionary that holds values of errors that occured. Never read or modify this directly.
+
+`widget.internal_data: dict[typing.Any, typing.Any] = {}`: Internal data stored by widgets; This is what you, as a developer, can use to save & preserve data over a longer period of time. Ex. in the news widget, this holds all new entries for later operationns.
+
+#### 3.2.9 Building widget
 
 If your widget has an `update`, `mouse_click_action`, `keyboard_press_action`, `init` or a `draw_help` function,
 specify them here. (See the comments for examples)

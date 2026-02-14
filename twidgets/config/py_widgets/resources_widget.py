@@ -1,5 +1,6 @@
 import psutil
 import shutil
+import typing
 from twidgets.core.base import (
     Widget,
     WidgetContainer,
@@ -29,8 +30,8 @@ def update(widget: Widget, _widget_container: WidgetContainer) -> list[str]:
     disk_usage = shutil.disk_usage('/')
     network = psutil.net_io_counters()
 
-    old_bytes_sent: int = widget.internal_data.get('bytes_sent')
-    old_bytes_recv: int = widget.internal_data.get('bytes_recv')
+    old_bytes_sent: int = typing.cast(int, widget.internal_data.get('bytes_sent'))
+    old_bytes_recv: int = typing.cast(int, widget.internal_data.get('bytes_recv'))
 
     new_bytes_sent: int = network.bytes_sent
     new_bytes_recv: int = network.bytes_recv

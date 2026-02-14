@@ -83,15 +83,16 @@ def main_curses(stdscr: CursesWindowType) -> None:
 
                     if widget.draw_data:
                         with widget.lock:
-                            data_copy: typing.Any = widget.draw_data.copy()
+                            data_copy: list[typing.Any] = widget.draw_data.copy()
+                            error_copy: dict[str, typing.Any] = widget.error_data.copy()
                         if '__error__' in data_copy:
-                            if isinstance(data_copy['__error__'], LogMessages):
-                                for log_message in list(data_copy['__error__']):
+                            if isinstance(error_copy['__error__'], LogMessages):
+                                for log_message in list(error_copy['__error__']):
                                     widget_container.display_error(widget, [str(log_message)])
                                     if log_message not in list(widget_container.log_messages):
                                         widget_container.log_messages.add_log_message(log_message)
                             else:
-                                widget_container.display_error(widget, [widget.draw_data['__error__']])
+                                widget_container.display_error(widget, [error_copy['__error__']])
                         else:
                             widget.draw_function(widget_container, data_copy)
                     # else: Data still loading
