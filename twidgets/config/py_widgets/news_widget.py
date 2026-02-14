@@ -224,6 +224,3 @@ def build(stdscr: CursesWindowType, config: Config) -> Widget:
         init_func=None,
         help_func=draw_help
     )
-
-# TODO make this like TODO Widget
-# TODO so enter -> website, and scrollable with arrow keys etc.
