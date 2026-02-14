@@ -126,8 +126,11 @@ class Board:
 
         for line in lines:
             for i in range(len(line) - 1):
-                if line[i] is not None and line[i] == line[i + 1]:
-                    line[i] = Cell(line[i].number * 2)
+                current: Cell | None = line[i]
+                next_cell: Cell | None = line[i + 1]
+
+                if current is not None and current == next_cell:
+                    current = Cell(current.number * 2)
                     line[i + 1] = None
 
         self._set_lines(direction, lines)
@@ -148,8 +151,8 @@ class Board:
         self.spawn_random_tile()
         self.spawn_random_tile()
 
-    def reset_board(self):
-        self.cells: list[list[Cell | None]] = [
+    def reset_board(self) -> None:
+        self.cells = [
             [
                 None for _ in range(self.width)
             ] for _ in range(self.height)
