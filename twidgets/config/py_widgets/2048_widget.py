@@ -130,7 +130,7 @@ class Board:
                 next_cell: Cell | None = line[i + 1]
 
                 if current is not None and current == next_cell:
-                    current = Cell(current.number * 2)
+                    line[i] = Cell(current.number * 2)
                     line[i + 1] = None
 
         self._set_lines(direction, lines)
