@@ -85,7 +85,7 @@ def main_curses(stdscr: CursesWindowType) -> None:
                         with widget.lock:
                             data_copy: list[typing.Any] = widget.draw_data.copy()
                             error_copy: dict[str, typing.Any] = widget.error_data.copy()
-                        if '__error__' in data_copy:
+                        if '__error__' in error_copy:
                             if isinstance(error_copy['__error__'], LogMessages):
                                 for log_message in list(error_copy['__error__']):
                                     widget_container.display_error(widget, [str(log_message)])
@@ -95,7 +95,8 @@ def main_curses(stdscr: CursesWindowType) -> None:
                                 widget_container.display_error(widget, [error_copy['__error__']])
                         else:
                             widget.draw_function(widget_container, data_copy)
-                    # else: Data still loading
+                    # else: Data still loading; Or the function is intended to return []
+                    # In that case, make the function instead return ['Success'] or similar
                 except ConfigSpecificException as e:
                     for log_message in list(e.log_messages):
                         widget_container.display_error(widget, [str(log_message)])

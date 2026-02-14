@@ -7,7 +7,8 @@ from twidgets.core.base import (
     WidgetContainer,
     Config,
     CursesWindowType,
-    CursesKeys
+    CursesKeys,
+    CursesColors, DebugException
 )
 
 
@@ -50,12 +51,9 @@ def update(widget: Widget, widget_container: WidgetContainer) -> list[str]:
             'Check your internet connection.'
         ]
 
-    feed_entries: list[feedparser.FeedParserDict] = feed.entries[:25]
+    feed_entries: list[feedparser.FeedParserDict] = feed.entries[:50]  # 50 internal maximum
 
-    for i, entry in enumerate(feed_entries[:5]):  # Get top 5 articles
-        content.append(f'{i+1}. {entry.title}')
-
-    if not content:
+    if not feed_entries:
         return [
             'News data not available.',
             '',
@@ -63,7 +61,7 @@ def update(widget: Widget, widget_container: WidgetContainer) -> list[str]:
         ]
 
     widget.internal_data['feed_entries'] = feed_entries
-    return content
+    return ['Success']
 
 
 def mouse_click_action(widget: Widget, _mx: int, my: int, _b_state: int, widget_container: WidgetContainer) -> None:
@@ -77,7 +75,7 @@ def mouse_click_action(widget: Widget, _mx: int, my: int, _b_state: int, widget_
         widget.internal_data['selected_line'] = None
         return
 
-    amount_rendered_articles: int = min(len(feed_entries), 5)  # 5 top articles are rendered at max
+    amount_rendered_articles: int = len(feed_entries)
 
     # Click relative to widget border
     local_y: int = my - widget.dimensions.current_y - 1  # -1 for top border
@@ -108,7 +106,7 @@ def keyboard_press_action(widget: Widget, key: int, _widget_container: WidgetCon
     if feed_entries is None:
         return
 
-    amount_rendered_articles: int = min(len(feed_entries), 5)  # 5 top articles are rendered at max
+    amount_rendered_articles: int = len(feed_entries)
     selected: int = widget.internal_data.get('selected_line', 0)
 
     if not isinstance(selected, int):
@@ -131,12 +129,74 @@ def keyboard_press_action(widget: Widget, key: int, _widget_container: WidgetCon
 
     # Open link in browser
     if key in (CursesKeys.ENTER, 10, 13):
-        webbrowser.open_new_tab(widget.internal_data['feed_entries'])
+        if selected <= len(feed_entries) - 1:
+            target_entry: feedparser.FeedParserDict = feed_entries[selected]
+            webbrowser.open_new_tab(target_entry.link)
+
+
+def render_feed(
+        feed_entries: list[feedparser.FeedParserDict], highlighted_line: int | None, max_render: int
+) -> tuple[list[str], int | None]:
+    # Everything fits, no slicing needed
+    if len(feed_entries) <= max_render:
+        return [
+            f'{i+1}. {entry.title}' for i, entry in enumerate(feed_entries)
+        ], highlighted_line
+
+    if highlighted_line is None:
+        # No highlight -> show first items
+        start = 0
+    else:
+        radius = max_render // 2
+        # Compute slice around highlighted line
+        start = max(highlighted_line - radius, 0)
+
+        # Make sure we don't go past the list
+        if start + max_render > len(feed_entries):
+            start = max(len(feed_entries) - max_render, 0)
+
+    end: int = start + max_render
+    visible_feed: list[str] = [
+        f'{start+i+1}. {entry.title}' for i, entry in enumerate(feed_entries[start:end])
+    ]
+
+    if highlighted_line is None:
+        rel_index: int | None = None
+    else:
+        rel_index = highlighted_line - start
+
+    # Ellipsis if needed
+    if end < len(feed_entries):
+        visible_feed.append('...')
+        if rel_index is not None and rel_index >= max_render:
+            rel_index = max_render - 1  # highlight the last visible line
+
+    return visible_feed, rel_index
 
 
 def draw(widget: Widget, widget_container: WidgetContainer, info: list[str]) -> None:
     widget_container.draw_widget(widget)
-    widget.add_widget_content(info)
+
+    if info and info != ['Success']:  # Display error if something went wrong
+        widget.add_widget_content(info)
+        return
+
+    if widget_container.ui_state.highlighted != widget:
+        widget.internal_data['selected_line'] = None
+
+    feed_entries, rel_index = render_feed(
+        widget.internal_data.get('feed_entries', []),
+        widget.internal_data.get('selected_line'),
+        widget.config.max_rendering if widget.config.max_rendering else 5
+    )
+
+    for i, entry in enumerate(feed_entries):
+        if rel_index is not None and i == rel_index:
+            widget.safe_addstr(
+                1 + i, 1, entry[:widget.dimensions.current_width - 2],
+                [widget_container.base_config.SECONDARY_PAIR_NUMBER], [CursesColors.REVERSE])
+        else:
+            widget.safe_addstr(1 + i, 1, entry[:widget.dimensions.current_width - 2])
 
 
 def draw_help(widget: Widget, widget_container: WidgetContainer) -> None:
@@ -145,6 +205,10 @@ def draw_help(widget: Widget, widget_container: WidgetContainer) -> None:
     widget.add_widget_content(
         [
             f'Help page ({widget.name} widget)',
+            '',
+            'Keybinds: ',
+            'Enter - Open link in web browser',
+            'Arrow Keys - Navigation',
             '',
             'Displays current news.'
         ]

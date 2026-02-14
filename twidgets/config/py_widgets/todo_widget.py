@@ -69,10 +69,6 @@ def load_todos(widget: Widget) -> None:
     widget.internal_data['todo_count'] = max(data.keys(), default=0) + 1
 
 
-def remove_highlighted_line(widget: Widget) -> None:
-    widget.internal_data['selected_line'] = None
-
-
 def mouse_click_action(widget: Widget, _mx: int, my: int, _b_state: int, widget_container: WidgetContainer) -> None:
     load_todos(widget)
 
@@ -148,8 +144,9 @@ def keyboard_press_action(widget: Widget, key: int, _widget_container: WidgetCon
 
 
 def render_todos(todos: list[str], highlighted_line: int | None, max_render: int) -> tuple[list[str], int | None]:
+    # Everything fits, no slicing needed
     if len(todos) <= max_render:
-        return todos.copy(), highlighted_line  # everything fits, no slicing needed
+        return todos.copy(), highlighted_line
 
     if highlighted_line is None:
         # No highlight -> show first items
@@ -163,11 +160,11 @@ def render_todos(todos: list[str], highlighted_line: int | None, max_render: int
         if start + max_render > len(todos):
             start = max(len(todos) - max_render, 0)
 
-    end = start + max_render
-    visible_todos = todos[start:end]
+    end: int = start + max_render
+    visible_todos: list[str] = todos[start:end]
 
     if highlighted_line is None:
-        rel_index = None
+        rel_index: int | None = None
     else:
         rel_index = highlighted_line - start
 
@@ -188,7 +185,7 @@ def draw(widget: Widget, widget_container: WidgetContainer) -> None:
     widget_container.draw_widget(widget)
 
     if widget_container.ui_state.highlighted != widget:
-        remove_highlighted_line(widget)
+        widget.internal_data['selected_line'] = None
 
     todos, rel_index = render_todos(
         list(widget.internal_data.get('todos', {}).values()),

@@ -71,7 +71,7 @@ import typing
 ```
 
 ```python
-def update(widget: Widget, widget_container: WidgetContainer) -> typing.Any:
+def update(widget: Widget, widget_container: WidgetContainer) -> list[str]:
 ```
 
 > Note that `widget` and `widget_container` will **always** be passed to your update function,
@@ -80,8 +80,12 @@ def update(widget: Widget, widget_container: WidgetContainer) -> typing.Any:
 Additionally, modify the `draw` function to accept `info`.
 (`info` will be passed automatically from the `update` function by the scheduler):
 
+> On top of that, if the `update` function is intended to return `[]` and, ex. only manipulate `widget.internal_data`
+(see [preserving data](#328-preserving-data)), the widget will stay in the loading state. To overcome this,
+make sure you **never** return `[]`. Instead, return `['Success']` or similar.
+
 ```python
-def draw(widget: Widget, widget_container: WidgetContainer, info: typing.Any) -> None:
+def draw(widget: Widget, widget_container: WidgetContainer, info: list[str]) -> None:
 ```
 
 Example:
@@ -229,7 +233,7 @@ def draw(widget: Widget, widget_container: WidgetContainer) -> None:
 
 With this you can add custom error messages to your widget, for example if certain attributes are missing.
 
-#### 3.2.8 Preserving internal & draw data
+#### 3.2.8 Preserving data
 
 `widget.draw_data: list[str] = []`: Data used by twidgets.core internally; a list that holds the value of the return result of the last update function call. If you don't define any update function, this stays an empty list. Never read or modify this directly.
 

@@ -3,8 +3,12 @@ emoji_title: ' ▦️ News'
 title: ' News'
 enabled: True
 interval: 7200
-height: 7
+height: 9
 width: 85
 y: 9
 x: 87
 z: 0
+
+max_rendering: 6  # adapt based on height, use around height - 3
+# 50 is the max internally; source code modifications would be needed (not recommended)
+# Additionally, most RSS feed have a limit somewhere between 25 and 30 too.
