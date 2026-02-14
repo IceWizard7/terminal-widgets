@@ -28,7 +28,7 @@ class Cell:
         return self.number == other.number
 
     @classmethod
-    def random_value(cls) -> Cell:
+    def random_value(cls) -> "Cell":
         random_value: int = random.choices([2, 4], weights=[90, 10])[0]
         return Cell(random_value)
 
