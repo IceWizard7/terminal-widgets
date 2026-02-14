@@ -8,8 +8,6 @@ os.environ['LINES'] = '30'
 os.environ['COLUMNS'] = '172'
 
 
-# TODO: config gfiles r used of repo
-# TODO: BUT BASE .YAML NOT!!
 class TestWholeScreen(unittest.TestCase):
     def test_whole_screen(self) -> None:
         def main_curses(stdscr: CursesWindowType) -> list[str]:
