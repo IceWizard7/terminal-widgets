@@ -90,7 +90,7 @@ class Widget:
             self.win = None
         self.help_mode: bool = False
         self.draw_data: list[str] = []  # data used for drawing
-        self.error_data: dict[str, typing.Any] = {}  # data used for holding errors
+        self.error_data: dict[str, LogMessages | str] = {}  # data used for holding errors
         self.internal_data: dict[typing.Any, typing.Any] = {}  # internal data stored by widgets
 
         self.lock: threading.Lock = threading.Lock()
@@ -104,7 +104,7 @@ class Widget:
         if self._init_func and self.config.enabled:
             self._init_func(self, widget_container)
 
-    def draw_function(self, widget_container: WidgetContainer, draw_data: typing.Any | None = None) -> None:
+    def draw_function(self, widget_container: WidgetContainer, draw_data: list[str] | None = None) -> None:
         if not self.config.enabled:
             return
 
@@ -1207,19 +1207,22 @@ class UIState:
 # Twidget Exception Superclass
 class TWidgetException(Exception):
     """Superclass for all `twidgets`-specific errors, never gets raised directly"""
-    def __init__(self, *args: typing.Any) -> None:
+    def __init__(self, *args: LogMessages | str | WidgetContainer | Exception) -> None:
         super().__init__(args)
 
 
 # Control flow Exceptions
 class RestartException(TWidgetException):
     """Raised to signal that the curses UI should restart"""
+    def __init__(self) -> None:
+        super().__init__()
 
 
 class StopException(TWidgetException):
     """Raised to signal that the curses UI should stop"""
     def __init__(self, log_messages: LogMessages) -> None:
         self.log_messages: LogMessages = log_messages
+        super().__init__(log_messages)
 
 
 # UI Exceptions
@@ -1266,8 +1269,8 @@ class NoWidgetsFound(TWidgetException):
 # Config Exceptions
 class ConfigException(TWidgetException):
     """Superclass for all config-specific errors, never gets raised directly"""
-    def __init__(self, *args: typing.Any) -> None:
-        super().__init__(args)
+    def __init__(self, *args: LogMessages | str) -> None:
+        super().__init__(*args)
 
 
 class ConfigScanFoundError(ConfigException):

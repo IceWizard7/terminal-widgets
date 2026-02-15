@@ -83,7 +83,7 @@ def main_curses(stdscr: CursesWindowType) -> None:
 
                     if widget.draw_data:
                         with widget.lock:
-                            data_copy: list[typing.Any] = widget.draw_data.copy()
+                            data_copy: list[str] = widget.draw_data.copy()
                             error_copy: dict[str, typing.Any] = widget.error_data.copy()
                         if '__error__' in error_copy:
                             if isinstance(error_copy['__error__'], LogMessages):
