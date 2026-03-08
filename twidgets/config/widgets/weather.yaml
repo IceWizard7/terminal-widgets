@@ -3,7 +3,7 @@ emoji_title: ' ☀ Weather '
 title: ' Weather '
 enabled: True
 interval: 1800
-height: 9
+height: 10
 width: 30
 y: 0
 x: 142

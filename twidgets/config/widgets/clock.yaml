@@ -3,7 +3,7 @@ emoji_title: ' ⏲ Clock '
 title: ' Clock '
 enabled: True
 interval: 0
-height: 5
+height: 6
 width: 30
 y: 4
 x: 87

@@ -3,7 +3,7 @@ emoji_title: ' ▦️ Calendar '
 title: ' Calendar '
 enabled: True
 interval: 0
-height: 9
+height: 10
 width: 25
 y: 0
 x: 117

@@ -53,6 +53,7 @@ def update(_widget: Widget, widget_container: WidgetContainer) -> list[str]:
             f'Humidity: {main_data["humidity"]}%',
             f'Wind Speed: {wind["speed"]} m/s',
             f'',
+            f'',
             f'Unit: {units}'
         ]
 
@@ -64,6 +65,7 @@ def update(_widget: Widget, widget_container: WidgetContainer) -> list[str]:
             f'Humidity: {main_data["humidity"]}%',
             f'Wind Speed: {wind["speed"]} mph',
             f'',
+            f'',
             f'Unit: {units}'
         ]
 
@@ -74,6 +76,7 @@ def update(_widget: Widget, widget_container: WidgetContainer) -> list[str]:
             f'Condition: {weather["description"]}',
             f'Humidity: {main_data["humidity"]}%',
             f'Wind Speed: {wind["speed"]} m/s',
+            f'',
             f'',
             f'Unit: {units}'
         ]
