@@ -6,27 +6,27 @@
   x      .;loddo:' loolloddol;.      Kernel: *****************************************xx****************************xx***********************xx****************************x
   x    cKMMMMMMMMMMNWMMMMMMMMMM0:    Uptime: *****************************************xx**.**.****                  xx***********************xx****************************x
   x  .KMMMMMMMMMMMMMMMMMMMMMMMWd.    Packages: ***************************************xx**:**:**                    xx***********************xx****************************x
-  x  XMMMMMMMMMMMMMMMMMMMMMMMX.      Shell: ******************************************xmqqqqqqqqqqqqqqqqqqqqqqqqqqqqjmqqqqqqqqqqqqqqqqqqqqqqqjmqqqqqqqqqqqqqqqqqqqqqqqqqqqqj
-  x ;MMMMMMMMMMMMMMMMMMMMMMMM:       Resolution: *************************************xlq News [BCC]qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqk
-  x :MMMMMMMMMMMMMMMMMMMMMMMM:       Language: ***************************************xx***********************************************************************************x
+  x  XMMMMMMMMMMMMMMMMMMMMMMMX.      Shell: ******************************************xx                            xx***********************xx****************************x
+  x ;MMMMMMMMMMMMMMMMMMMMMMMM:       Resolution: *************************************xmqqqqqqqqqqqqqqqqqqqqqqqqqqqqjmqqqqqqqqqqqqqqqqqqqqqqqjmqqqqqqqqqqqqqqqqqqqqqqqqqqqqj
+  x :MMMMMMMMMMMMMMMMMMMMMMMM:       Language: ***************************************xlq News [BCC]qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqk
   x .MMMMMMMMMMMMMMMMMMMMMMMMX.      Encoding: ***************************************xx***********************************************************************************x
   x  kMMMMMMMMMMMMMMMMMMMMMMMMWd.    Terminal: ***************************************xx***********************************************************************************x
   x  .XMMMMMMMMMMMMMMMMMMMMMMMMMMk   Terminal Font: **********************************xx***********************************************************************************x
   x   .XMMMMMMMMMMMMMMMMMMMMMMMMK.   CPU: ********************************************xx***********************************************************************************x
   x     kMMMMMMMMMMMMMMMMMMMMMMd     GPU: ********************************************xx***********************************************************************************x
   x      ;KMMMMMMMWXXWMMMMMMMk.                                                       xx***********************************************************************************x
-  x        .cooc,.    .,coo:.                                                         xmqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqj
-  x                                                                                   xlq Resources qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqk
-  mqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqjxCPU: ******************************************************************************x
-  lq To-Do qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqkxMemory: ***************************************************************************x
-  x(1) https://github.com/IceWizard7/terminal-widgets                                 xxSwap: *****************************************************************************x
-  x(2) ---                                                                            xxDisk: *****************************************************************************x
-  x(3) Buy milk                                                                       xxNetwork sent: *********************************************************************x
-  x(4) Shop groceries                                                                 xxNetwork received: *****************************************************************x
-  x(5) Study C                                                                        xx                                                                                   x
+  x        .cooc,.    .,coo:.                                                         xx***********************************************************************************x
+  x                                                                                   xmqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqj
+  mqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqjlq Resources qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqk
+  lq To-Do qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqkxCPU: ******************************************************************************x
+  x(1) https://github.com/IceWizard7/terminal-widgets                                 xxMemory: ***************************************************************************x
+  x(2) ---                                                                            xxSwap: *****************************************************************************x
+  x(3) Buy milk                                                                       xxDisk: *****************************************************************************x
+  x(4) Shop groceries                                                                 xxNetwork sent: *********************************************************************x
+  x(5) Study C                                                                        xxNetwork received: *****************************************************************x
   x(6) Get a job                                                                      xx                                                                                   x
-  x(7) I'm running out of ideas '#123                                                 xmqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqj
-  x...                                                                                xlq Greeting qqqqqqqqqqqqqqqqqk                                                      *
-  mqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqjxHello, Ice!                 x                                                      *
-                                                                                       x                            x                                                      *
-                                                                                       mqqqqqqqqqqqqqqqqqqqqqqqqqqqqj                                                      *
+  x(7) I'm running out of ideas '#123                                                 xx                                                                                   x
+  x...                                                                                xmqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqj
+  mqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqj                                                                                    *
+                                                                                                                                                                           *
+                                                                                                                                                                           *
