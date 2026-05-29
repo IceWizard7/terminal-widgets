@@ -24,3 +24,6 @@ publish-guide.txt
 # Secret files
 # twidgets/config/secrets.env
 # twidgets/config/widgets/todo_save_file.txt
+
+# Notes
+notes.md
