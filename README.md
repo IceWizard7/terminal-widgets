@@ -28,6 +28,9 @@
 
 Version 2.0 introduces breaking changes. Please see the [migration guide](docs/migration/v1.3-v2.0.md) for instructions on updating your code.
 
+> [!Note]
+> A C version is also available [here](https://github.com/IceWizard7/twidgets-c).
+
 ---
 
 ### 🚀 **1. Getting started**
